@@ -28,5 +28,5 @@ Documentation à venir...
 ## Auteurs
 
 Équipe de développement - Binôme :
--Fourat Jebali (jebalifourat@issatso.u-sousse.tn) ING A2-GRP03-02
--Mohamed Amin Neji (mohamedneji2025@gmail.com) ING A2-GRP03-02
+- Fourat Jebali (jebalifourat@issatso.u-sousse.tn) ING A2-GRP03-02
+- Mohamed Amin Neji (mohamedneji2025@gmail.com) ING A2-GRP03-02

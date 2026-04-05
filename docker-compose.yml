@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: institut-db
+    environment:
+      POSTGRES_DB: institut_db
+      POSTGRES_USER: institut_user
+      POSTGRES_PASSWORD: institut_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/init:/docker-entrypoint-initdb.d
+    networks:
+      - institut-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U institut_user -d institut_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: institut-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/institut_db
+      SPRING_DATASOURCE_USERNAME: institut_user
+      SPRING_DATASOURCE_PASSWORD: institut_password
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - institut-network
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # Angular Frontend (Development)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: institut-frontend-dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - institut-network
+    command: npm start
+
+  # Angular Frontend (Production - Nginx)
+  frontend-prod:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: institut-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - institut-network
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+
+networks:
+  institut-network:
+    driver: bridge
