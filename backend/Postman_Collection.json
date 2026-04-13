@@ -1,0 +1,434 @@
+{
+  "info": {
+    "_postman_id": "student-management-api",
+    "name": "Student Management System API",
+    "description": "Complete collection for testing JWT authentication and all API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register New User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    pm.environment.set(\"user_id\", jsonData.userId);",
+                  "    pm.environment.set(\"user_email\", jsonData.email);",
+                  "    console.log(\"Token saved: \" + jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomComplet\": \"Mohammed Aziz\",\"email\": \"aziz@student.edu\",\"password\": \"SecurePass123!\",\"userType\": \"ETUDIANT\",\"matricule\": \"ETU001\",\"niveau\": \"L3\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"jwt_token\", jsonData.token);",
+                  "    pm.environment.set(\"user_id\", jsonData.userId);",
+                  "    pm.environment.set(\"user_email\", jsonData.email);",
+                  "    console.log(\"Logged in successfully. Token saved.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\": \"aziz@student.edu\",\"password\": \"SecurePass123!\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/validate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "validate"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "App Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          }
+        },
+        {
+          "name": "App Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health/info",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health", "info"]
+            }
+          }
+        },
+        {
+          "name": "Welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Etudiants (Protected)",
+      "item": [
+        {
+          "name": "Get All Students",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/etudiants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "etudiants"]
+            }
+          }
+        },
+        {
+          "name": "Get Student by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/etudiants/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "etudiants", "{{user_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create Student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomComplet\": \"Leila Ben Salah\",\"email\": \"leila@student.edu\",\"motDePasseHash\": \"hash123\",\"actif\": true,\"matricule\": \"ETU002\",\"niveau\": \"L3\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/etudiants",
+              "host": ["{{base_url}}"],
+              "path": ["api", "etudiants"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Professeurs (Protected)",
+      "item": [
+        {
+          "name": "Get All Professors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/professeurs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "professeurs"]
+            }
+          }
+        },
+        {
+          "name": "Create Professor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nomComplet\": \"Dr. Fatima Belkhir\",\"email\": \"fatima@university.edu\",\"motDePasseHash\": \"hash123\",\"actif\": true,\"matriculePro\": \"PROF001\",\"grade\": \"Maître de Conférences\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/professeurs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "professeurs"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Departements (Protected)",
+      "item": [
+        {
+          "name": "Get All Departments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/departements",
+              "host": ["{{base_url}}"],
+              "path": ["api", "departements"]
+            }
+          }
+        },
+        {
+          "name": "Create Department",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nom\": \"Informatique\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/departements",
+              "host": ["{{base_url}}"],
+              "path": ["api", "departements"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Groupes (Protected)",
+      "item": [
+        {
+          "name": "Get All Groups",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/groupes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "groupes"]
+            }
+          }
+        },
+        {
+          "name": "Create Group",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"libelle\": \"L3-INFO-A\",\"niveau\": \"L3\",\"anneeUniversitaire\": \"2025-2026\",\"departementId\": 1}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/groupes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "groupes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Matieres (Protected)",
+      "item": [
+        {
+          "name": "Get All Subjects",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/matieres",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matieres"]
+            }
+          }
+        },
+        {
+          "name": "Create Subject",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"code\": \"INFO-301\",\"libelle\": \"Algorithmes Avancés\",\"coefficient\": 3.0,\"departementId\": 1}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/matieres",
+              "host": ["{{base_url}}"],
+              "path": ["api", "matieres"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_email",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
+

@@ -1,0 +1,38 @@
+package MiniProjet_Backend.Backend.Model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name="annonce")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Annonce {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @Column(nullable = false)
+    private String titre;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String contenu;
+
+    @Column(nullable = false)
+    private LocalDateTime datePublication;
+
+    @Column(nullable = false)
+    private LocalDateTime dateExpiration;
+
+    @Column(nullable = false)
+    private Boolean cibleGlobale;
+
+    @ManyToOne
+    @JoinColumn(name="administrateur_id", nullable = false)
+    private Administrateur administrateur;
+}
+
