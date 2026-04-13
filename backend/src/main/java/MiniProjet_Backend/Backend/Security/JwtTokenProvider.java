@@ -22,6 +22,9 @@ public class JwtTokenProvider {
     @Value("${jwt.expiration:86400000}")
     private int jwtExpirationMs;
 
+    @Value("${jwt.refresh-expiration:604800000}") // 7 days
+    private int refreshTokenExpirationMs;
+
     /**
      * Generate JWT token from Authentication
      */
@@ -70,6 +73,25 @@ public class JwtTokenProvider {
                 .setSubject(email)
                 .claim("userId", userId)
                 .claim("userType", userType)
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    /**
+     * Generate refresh token - longer expiration for token refresh operations
+     */
+    public String generateRefreshToken(String email, Integer userId) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
+
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+
+        return Jwts.builder()
+                .setSubject(email)
+                .claim("userId", userId)
+                .claim("type", "REFRESH")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -156,6 +178,46 @@ public class JwtTokenProvider {
      */
     public Long getExpirationTime() {
         return (long) jwtExpirationMs;
+    }
+
+    /**
+     * Get userId from token
+     */
+    public Integer getUserIdFromToken(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            Object userIdObj = claims.get("userId");
+            if (userIdObj instanceof Number) {
+                return ((Number) userIdObj).intValue();
+            }
+            return null;
+        } catch (JwtException e) {
+            logger.error("Failed to get userId from token: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get userType/role from token
+     */
+    public String getUserTypeFromToken(String token) {
+        try {
+            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return (String) claims.get("userType");
+        } catch (JwtException e) {
+            logger.error("Failed to get userType from token: {}", e.getMessage());
+            return null;
+        }
     }
 }
 

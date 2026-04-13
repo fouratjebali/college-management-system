@@ -3,6 +3,7 @@ package MiniProjet_Backend.Backend.Service;
 import MiniProjet_Backend.Backend.DTO.LoginRequest;
 import MiniProjet_Backend.Backend.DTO.LoginResponse;
 import MiniProjet_Backend.Backend.DTO.RegisterRequest;
+import MiniProjet_Backend.Backend.DTO.AuthResponse;
 import MiniProjet_Backend.Backend.Model.User;
 import MiniProjet_Backend.Backend.Model.Etudiant;
 import MiniProjet_Backend.Backend.Model.Administrateur;
@@ -128,6 +129,107 @@ public class AuthService {
     }
 
     /**
+     * Get new access token from refresh token
+     */
+    public AuthResponse refreshAccessToken(String refreshToken) {
+        if (!tokenProvider.validateToken(refreshToken)) {
+            throw new RuntimeException("Invalid or expired refresh token");
+        }
+
+        String email = tokenProvider.getEmailFromToken(refreshToken);
+        Integer userId = tokenProvider.getUserIdFromToken(refreshToken);
+        String userType = tokenProvider.getUserTypeFromToken(refreshToken);
+
+        if (email == null || userId == null) {
+            throw new RuntimeException("Cannot refresh token - invalid claims");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!user.isActif()) {
+            throw new RuntimeException("User account is disabled");
+        }
+
+        String newAccessToken = tokenProvider.generateTokenWithClaims(
+                email,
+                userId,
+                userType
+        );
+
+        String newRefreshToken = tokenProvider.generateRefreshToken(email, userId);
+
+        AuthResponse.UserInfoDTO userInfo = new AuthResponse.UserInfoDTO(
+                userId,
+                email,
+                user.getNomComplet(),
+                convertUserTypeToRole(userType)
+        );
+
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .user(userInfo)
+                .build();
+    }
+
+    /**
+     * Get current user info from token
+     */
+    public AuthResponse.UserInfoDTO getCurrentUser(String token) {
+        if (!tokenProvider.validateToken(token)) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+
+        String email = tokenProvider.getEmailFromToken(token);
+        Integer userId = tokenProvider.getUserIdFromToken(token);
+        String userType = tokenProvider.getUserTypeFromToken(token);
+
+        if (email == null || userId == null) {
+            throw new RuntimeException("Cannot get user - invalid token claims");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return new AuthResponse.UserInfoDTO(
+                userId,
+                email,
+                user.getNomComplet(),
+                convertUserTypeToRole(userType)
+        );
+    }
+
+    /**
+     * Get new AuthResponse with both tokens
+     */
+    public AuthResponse getAuthResponse(User user, String userType) {
+        String token = tokenProvider.generateTokenWithClaims(
+                user.getEmail(),
+                user.getId(),
+                userType
+        );
+
+        String refreshToken = tokenProvider.generateRefreshToken(
+                user.getEmail(),
+                user.getId()
+        );
+
+        AuthResponse.UserInfoDTO userInfo = new AuthResponse.UserInfoDTO(
+                user.getId(),
+                user.getEmail(),
+                user.getNomComplet(),
+                convertUserTypeToRole(userType)
+        );
+
+        return AuthResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .user(userInfo)
+                .build();
+    }
+
+    /**
      * Determine user type based on instance
      */
     private String getUserType(User user) {
@@ -137,6 +239,20 @@ public class AuthService {
             return "PROFESSEUR";
         } else if (user instanceof Administrateur) {
             return "ADMINISTRATEUR";
+        }
+        return "USER";
+    }
+
+    /**
+     * Convert backend user type to frontend role format
+     */
+    private String convertUserTypeToRole(String userType) {
+        if ("ETUDIANT".equalsIgnoreCase(userType)) {
+            return "STUDENT";
+        } else if ("PROFESSEUR".equalsIgnoreCase(userType)) {
+            return "PROFESSOR";
+        } else if ("ADMINISTRATEUR".equalsIgnoreCase(userType)) {
+            return "ADMIN";
         }
         return "USER";
     }
@@ -153,6 +269,16 @@ public class AuthService {
      */
     public String getEmailFromToken(String token) {
         return tokenProvider.getEmailFromToken(token);
+    }
+
+    /**
+     * Generate refresh token for a user ID
+     */
+    public String generateRefreshToken(Integer userId) {
+        // This is a backup method for controller level generation
+        // Normally tokens are generated with user context
+        // For now, returning token provider method
+        return tokenProvider.generateRefreshToken("user@example.com", userId);
     }
 }
 
