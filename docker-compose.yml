@@ -13,7 +13,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/src/main/resources/db/init:/docker-entrypoint-initdb.d
     networks:
       - institut-network
     healthcheck:
@@ -44,11 +43,11 @@ services:
       - ./backend/uploads:/app/uploads
 
   # Angular Frontend (Development)
-  frontend-dev:
+  frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
-    container_name: institut-frontend-dev
+      dockerfile: Dockerfile
+    container_name: institut-frontend
     ports:
       - "4200:4200"
     volumes:
@@ -57,21 +56,6 @@ services:
     networks:
       - institut-network
     command: npm start
-
-  # Angular Frontend (Production - Nginx)
-  frontend-prod:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-    container_name: institut-frontend-prod
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - institut-network
-    profiles:
-      - production
 
 volumes:
   postgres_data:
