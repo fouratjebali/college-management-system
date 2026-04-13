@@ -1,0 +1,1107 @@
+\documentclass[12pt,a4paper]{report}
+
+% ----------------------------------------------------------
+% PACKAGES
+% ----------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tocloft}
+\usepackage{setspace}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{caption}
+
+% ----------------------------------------------------------
+% CONFIGURATION DE LA PAGE
+% ----------------------------------------------------------
+\geometry{
+    a4paper,
+    left=3cm,
+    right=2cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% ----------------------------------------------------------
+% EN-TÊTE ET PIED DE PAGE
+% ----------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\fancyfoot[C]{Institut Supérieur des Sciences Appliquées et de Technologie - Sousse}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+
+% ----------------------------------------------------------
+% CONFIGURATION DES TITRES
+% ----------------------------------------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+
+% ----------------------------------------------------------
+% CONFIGURATION DES LISTINGS (CODE)
+% ----------------------------------------------------------
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red},
+    backgroundcolor=\color{gray!10},
+    showstringspaces=false,
+    tabsize=2
+}
+
+% ----------------------------------------------------------
+% HYPERLINKS
+% ----------------------------------------------------------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,
+    urlcolor=blue,
+    citecolor=black
+}
+
+% ----------------------------------------------------------
+% DÉBUT DU DOCUMENT
+% ----------------------------------------------------------
+\begin{document}
+
+% ----------------------------------------------------------
+% PAGE DE GARDE
+% ----------------------------------------------------------
+\begin{titlepage}
+    \centering
+    
+    \begin{minipage}[t]{0.45\textwidth}
+        \raggedright
+        \footnotesize
+        \textbf{République Tunisienne}\\
+        \textbf{Ministère de l'Enseignement}\\
+        \textbf{Supérieur et de la Recherche}\\
+        \textbf{Scientifique}\\
+        \textbf{Université de Sousse}
+        \vspace{0.8cm}
+        \centering
+         \includegraphics[width=3.5cm]{logo-Uso.jpg}
+    \end{minipage}%
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+        \raggedleft
+        \footnotesize
+        \textbf{Institut Supérieur des}\\
+        \textbf{Sciences Appliquées et}\\
+        \textbf{de Technologie de Sousse}\\
+        \vspace{1cm}
+        \centering
+        \includegraphics[width=4.5cm]{issat.png}
+    \end{minipage}
+    
+    \vspace{2cm}
+    
+    {\large \textbf{Département Informatique}}
+    
+    \vspace{2.5cm}
+    
+    {\Large \textbf{\textit{RAPPORT DE MINI PROJET}}}\\[0.8cm]
+    {\Large \textbf{\textit{Développement Web}}}\\[0.5cm]
+    {\large \textbf{\textit{ING-A2-GL}}}
+    
+    \vspace{2cm}
+    
+    {\Huge \textbf{\textit{Application Web de Gestion}}}\\[0.5cm]
+    {\Huge \textbf{\textit{d'Institut Universitaire}}}\\[0.3cm]
+    
+    \vfill
+    
+    \begin{flushleft}
+        \hspace{1.5cm}
+        \textbf{Préparé par :}\\[0.3cm]
+        \hspace{3cm} Fourat Jebali\\
+        \hspace{3cm} Mohamed Amin Neji
+    \end{flushleft}
+    
+    \vspace{1cm}
+    
+    \textbf{Année Universitaire : 2025 / 2026}
+\end{titlepage}
+
+% ----------------------------------------------------------
+% TABLE DES MATIÈRES
+% ----------------------------------------------------------
+\tableofcontents
+\newpage
+
+% ----------------------------------------------------------
+% LISTE DES FIGURES
+% ----------------------------------------------------------
+\listoffigures
+\newpage
+
+% ----------------------------------------------------------
+% LISTE DES TABLEAUX
+% ----------------------------------------------------------
+\listoftables
+\newpage
+\chapter*{Introduction générale}
+\addcontentsline{toc}{chapter}{Introduction générale}
+
+Dans le contexte actuel de transformation numérique de l’enseignement supérieur, les instituts universitaires doivent gérer un volume croissant d’informations administratives et pédagogiques. La multiplicité des acteurs impliqués, tels que les étudiants, les professeurs et les administrateurs, ainsi que la diversité des procédures à traiter, rendent la gestion manuelle de plus en plus complexe et peu efficace.
+
+En effet, l’utilisation d’outils dispersés, de traitements manuels et de supports non centralisés peut engendrer des pertes de temps, des erreurs, un manque de traçabilité et des difficultés d’accès à l’information. Face à ces limites, la mise en place d’une solution informatique intégrée apparaît comme une nécessité pour améliorer l’organisation, la fiabilité et la fluidité des processus académiques.
+
+C’est dans cette optique que s’inscrit notre projet, qui consiste à concevoir et développer une application web de gestion d’institut universitaire. Cette application a pour finalité d’automatiser et de centraliser les principales procédures liées à la gestion des utilisateurs, de la structure pédagogique, des notes, des présences, des annonces, des emplois du temps, des examens et des supports de cours.
+
+Le présent rapport décrit la démarche adoptée pour la réalisation de ce projet. Il présente d’abord le contexte général, les besoins identifiés et les choix méthodologiques retenus. Il détaille ensuite l’analyse, la conception, la réalisation technique et enfin les résultats obtenus à travers les tests et l’évaluation de la solution proposée.
+
+\newpage
+
+% ==========================================================
+% CHAPITRE 1 : GÉNÉRALISATION
+% ==========================================================
+\chapter{Généralisation}
+
+\section{Introduction du chapitre}
+
+Ce chapitre présente le cadre général du projet de gestion d’institut universitaire. Il expose d’abord le contexte dans lequel s’inscrit ce travail, ainsi que la problématique à laquelle il répond. Ensuite, il précise les objectifs visés et le périmètre fonctionnel de l’application. Enfin, il décrit les choix méthodologiques et techniques adoptés pour mener à bien le développement de la solution.
+
+
+\section{Contexte du Projet}
+
+\subsection{Problématique}
+
+Les instituts universitaires traitent quotidiennement un grand nombre d’informations qui sont réparties sur différents sites et personnes. Cette dispersion crée divers problèmes :
+
+\begin{itemize}[itemsep=0.5em]
+    \item \textbf{Manque de centralisation} : les informations sont dispersées entre des fichiers Excel, du paperwork, ou même des bases de données qui ne sont pas interconnectées ;
+    \item \textbf{Des procédures manuelles} : les saisies de notes, l’assiduité, l’affichage de l’information requièrent une procédure manuelle qui consomme du temps ;
+    \item \textbf{Accès difficile aux informations} : Les étudiants et professeurs peinent à obtenir rapidement les informations dont ils ont besoin
+    \item \textbf{Risques d'erreurs} : La manipulation manuelle des données augmente les risques d'incohérences et d'erreurs
+    \item \textbf{Absence de traçabilité} : impossible de connaître toute l'histoire de la base de données
+\end{itemize}
+
+\subsection{Objectifs du Projet}
+
+L'objectif principal de ce projet est de développer une application web complète permettant de :
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Centraliser la gestion académique} dans une plateforme unique et cohérente
+    \item \textbf{Automatiser les processus répétitifs} (calcul de moyennes, notifications, validation de données)
+    \item \textbf{Faciliter la communication} entre les différents acteurs de l'institut
+    \item \textbf{Améliorer la traçabilité} grâce à un système d'historisation et de logs
+    \item \textbf{Sécuriser l'accès aux données} par un système d'authentification et d'autorisation basé sur les rôles
+    \item \textbf{Offrir une interface intuitive} adaptée aux besoins de chaque type d'utilisateur
+\end{enumerate}
+
+\subsection{Périmètre Fonctionnel}
+
+L'application couvre les modules suivants :
+
+\begin{table}[H]
+\centering
+\caption{Modules fonctionnels de l'application}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Module} & \textbf{Description} \\
+\hline
+Authentification & Gestion sécurisée des connexions avec JWT et gestion des rôles (Étudiant, Professeur, Administrateur) \\
+\hline
+Structure Pédagogique & Gestion des départements, matières, groupes et enseignements \\
+\hline
+Utilisateurs & Gestion des profils étudiants, professeurs et administrateurs \\
+\hline
+Notes \& Évaluations & Saisie, validation et publication des notes avec calcul automatique des moyennes \\
+\hline
+Présences \& Rattrapages & Gestion des présences/absences et organisation des séances de rattrapage \\
+\hline
+Annonces & Publication et consultation d'annonces ciblées par groupe ou globales \\
+\hline
+Emplois du Temps & Planification et consultation des séances avec détection de conflits horaires \\
+\hline
+Supports de Cours & Upload, stockage et téléchargement de documents pédagogiques \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Choix Méthodologiques}
+
+\subsection{Processus de Développement : Scrum Allégé Hybride}
+
+Pour réaliser notre projet, nous avons mis en place une méthodologie appelée \textbf{Scrum Allégé Hybride}, qui est adaptée à l'environnement de travail d'une équipe de deux personnes. Cette méthode combine les points positifs du Scrum avec la souplesse requise pour une telle petite équipe.
+
+\subsubsection{Justification du Choix}
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Adaptabilité pour binôme} : Cadre structurel suffisant pour assurer la discipline sans le surcroît d'administratif inhérent aux grosses équipes.
+    \item \textbf{Coordination efficace} : assure une coordination permanente entre une équipe de deux personnes.
+    \item \textbf{Architecture modulaire} : 8 modules définis qui s'y prêteraient très bien pour un développement incrémental avec livraison incrémentale de fonctionnalités.
+    \item \textbf{Complexité maîtrisée} : Plus de 15 entités ayant des relations complexes, nécessitent une approche progressive.
+\end{enumerate}
+
+\subsubsection{Organisation en Sprints}
+
+Le projet est organisé en \textbf{3 sprints de 2 semaines} précédés d'un \textbf{Sprint 0 de setup} (1 semaine) :
+
+\begin{table}[H]
+\centering
+\caption{Planning des sprints}
+\begin{tabular}{|c|p{3cm}|p{8cm}|c|}
+\hline
+\textbf{Sprint} & \textbf{Durée} & \textbf{Objectifs Principaux} & \textbf{Story Points} \\
+\hline
+Sprint 0 & 1 semaine & Setup infrastructure, Docker, projets Spring Boot et Angular & 13 \\
+\hline
+Sprint 1 & 2 semaines & Authentification JWT, Modules Core Backend (Structure péda, Notes, Présences) & 55 \\
+\hline
+Sprint 2 & 2 semaines & Modules secondaires Backend, Développement complet Frontend & 63 \\
+\hline
+Sprint 3 & 1-2 semaines & Tests (unitaires, intégration, e2e), Déploiement, Documentation & 39 \\
+\hline
+\multicolumn{3}{|r|}{\textbf{Total :}} & \textbf{170 SP} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Stack Technique}
+
+Le choix de la stack technique a été guidé par les critères suivants : maturité des technologies, richesse de l'écosystème, facilité de déploiement et compétences de l'équipe.
+
+\begin{table}[H]
+\centering
+\caption{Stack technique du projet}
+\begin{tabular}{|p{3cm}|p{4cm}|p{7cm}|}
+\hline
+\textbf{Couche} & \textbf{Technologie} & \textbf{Justification} \\
+\hline
+Frontend & Angular 17+ & Framework mature, TypeScript typé, Angular Material pour UI \\
+\hline
+Backend & Spring Boot 3.x & Écosystème Java robuste, Spring Security pour l'authentification, Spring Data JPA pour l'ORM \\
+\hline
+Base de Données & PostgreSQL 14+ & SGBD relationnel performant, support complet des contraintes d'intégrité \\
+\hline
+Authentification & JWT (jsonwebtoken) & Standard industry pour authentification stateless, facile à implémenter \\
+\hline
+Migrations DB & Flyway & Gestion versionnée du schéma de base de données \\
+\hline
+Containerisation & Docker \& Docker Compose & Environnements reproductibles, facilite le déploiement \\
+\hline
+CI/CD & GitHub Actions & Intégration native avec GitHub, pipelines simples à configurer \\
+\hline
+Reverse Proxy & NGINX & Performant, gestion SSL/TLS, load balancing \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Architecture Applicative}
+
+L'application suit une \textbf{architecture 3-tiers} classique :
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Couche Présentation (Frontend)} : Application Angular SPA (Single Page Application) communiquant avec le backend via API REST
+    \item \textbf{Couche Métier (Backend)} : Spring Boot exposant des endpoints REST, implémentant la logique métier et gérant la sécurité
+    \item \textbf{Couche Données} : PostgreSQL stockant l'ensemble des données avec contraintes d'intégrité référentielle
+\end{enumerate}
+
+Cette séparation claire des responsabilités permet :
+\begin{itemize}
+    \item Une maintenance facilitée
+    \item Une scalabilité horizontale (ajout de serveurs backend)
+    \item Une testabilité accrue (tests unitaires par couche)
+    \item Une réutilisabilité potentielle (l'API peut servir d'autres clients)
+\end{itemize}
+
+\section{Analyse des Besoins}
+
+\subsection{Acteurs du Système}
+
+Le système identifie trois types d'acteurs principaux ayant des rôles et des privilèges distincts :
+
+\begin{table}[H]
+\centering
+\caption{Acteurs du système et leurs responsabilités}
+\begin{tabular}{|p{3cm}|p{11cm}|}
+\hline
+\textbf{Acteur} & \textbf{Responsabilités Principales} \\
+\hline
+\textbf{Étudiant} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Consulter ses notes publiées et moyennes
+    \item Consulter son emploi du temps
+    \item Télécharger les supports de cours
+    \item Consulter les annonces
+    \item Consulter les rattrapages programmés
+    \item Valider ses notes avant envoi (workflow spécifique)
+\end{itemize} \\
+\hline
+\textbf{Professeur} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Saisir et modifier les notes des étudiants
+    \item Gérer les présences et absences
+    \item Créer et gérer les séances de rattrapage
+    \item Déposer des supports de cours
+    \item Consulter les groupes assignés
+    \item Consulter l'emploi du temps des enseignements
+\end{itemize} \\
+\hline
+\textbf{Administrateur} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Gérer les utilisateurs (création, modification, suppression)
+    \item Gérer la structure pédagogique (départements, matières, groupes)
+    \item Créer et planifier les enseignements
+    \item Gérer le calendrier des examens
+    \item Publier les annonces
+    \item Publier les notes après délibération
+    \item Contrôler et valider les notes saisies par les professeurs
+\end{itemize} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Besoins Fonctionnelles Principales}
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Authentification et Autorisation}
+    \begin{itemize}
+        \item Connexion sécurisée via email et mot de passe
+        \item Génération de tokens JWT avec expiration
+        \item Contrôle d'accès basé sur les rôles (RBAC)
+        \item Refresh token pour maintenir la session
+    \end{itemize}
+    
+    \item \textbf{Gestion de la Structure Pédagogique}
+    \begin{itemize}
+        \item CRUD complet pour départements, matières, groupes
+        \item Association many-to-many départements-matières
+        \item Création d'enseignements avec semestre et année universitaire
+        \item Validation de l'unicité des codes matières
+    \end{itemize}
+    
+    \item \textbf{Gestion des Notes}
+    \begin{itemize}
+        \item Saisie batch des notes par le professeur
+        \item Validation automatique (notes entre 0 et 20)
+        \item Workflow de validation (Brouillon → Validée Prof → Validée Admin → Publiée)
+        \item Calcul automatique des moyennes pondérées
+        \item Notification des étudiants lors de la publication
+    \end{itemize}
+    
+    \item \textbf{Gestion des Présences}
+    \begin{itemize}
+        \item Prise de présence par séance avec statuts (Présent, Absent, Retard)
+        \item Statistiques de présence par étudiant
+        \item Identification des étudiants en situation d'absence excessive
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Besoins Non-Fonctionnelles}
+
+\begin{table}[H]
+\centering
+\caption{Exigences non-fonctionnelles}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Catégorie} & \textbf{Exigences} \\
+\hline
+\textbf{Performance} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Temps de réponse API < 2 secondes pour 95\% des requêtes
+    \item Support de 100 utilisateurs simultanés
+    \item Pagination pour les listes volumineuses
+\end{itemize} \\
+\hline
+\textbf{Sécurité} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Mots de passe hashés avec BCrypt
+    \item Tokens JWT expirables et renouvelables
+    \item HTTPS obligatoire en production
+    \item Protection CORS configurée
+    \item Validation des entrées utilisateur
+\end{itemize} \\
+\hline
+\textbf{Disponibilité} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Uptime cible : 99\% en production
+    \item Sauvegarde quotidienne de la base de données
+    \item Logs centralisés pour diagnostic
+\end{itemize} \\
+\hline
+\textbf{Maintenabilité} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Code documenté (JavaDoc, JSDoc)
+    \item Tests unitaires avec couverture > 75\%
+    \item Architecture modulaire et découplée
+    \item Migrations DB versionnées avec Flyway
+\end{itemize} \\
+\hline
+\textbf{Utilisabilité} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Interface responsive (mobile, tablette, desktop)
+    \item Accessibilité WCAG 2.1 niveau AA
+    \item Feedback utilisateur pour chaque action
+    \item Messages d'erreur explicites
+\end{itemize} \\
+\hline
+\end{tabular}
+\end{table}
+
+% ==========================================================
+% CHAPITRE 2 : CONCEPTION
+% ==========================================================
+\chapter{Conception}
+
+\section{Introduction du chapitre}
+
+La phase de conception constitue une étape cruciale dans le développement de notre application. Elle permet de modéliser le système avant l'implémentation, d'identifier les entités métier, de définir les interactions entre les acteurs et le système, et de spécifier les comportements attendus.
+
+Cette conception s'appuie sur les diagrammes UML standards (cas d'utilisation, classes, séquence, activité, composants, déploiement) pour garantir une compréhension partagée entre les membres de l'équipe et assurer la cohérence de l'architecture.
+
+\section{Diagrammes de Conception}
+
+\subsection{Diagramme de Cas d'Utilisation}
+
+Le diagramme de cas d'utilisation (Figure \ref{fig:usecase}) présente l'ensemble des fonctionnalités accessibles par chaque type d'acteur. On constate une séparation claire des privilèges :
+
+\begin{itemize}[itemsep=0.5em]
+    \item Les \textbf{étudiants} ont un accès en lecture seule aux informations les concernant
+    \item Les \textbf{professeurs} peuvent saisir et gérer les données pédagogiques de leurs enseignements
+    \item Les \textbf{administrateurs} ont un contrôle total sur la configuration et la validation des données
+\end{itemize}
+
+\textit{Note : Toutes les fonctionnalités métier nécessitent une authentification préalable (précondition générale).}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=5cm]{useCase.png}
+    \caption{Diagramme de cas d'utilisation}
+    \label{fig:usecase}
+\end{figure}
+
+\subsection{Diagramme de Classes}
+
+Le diagramme de classes (Figure \ref{fig:class}) constitue le cœur de la modélisation métier. Il définit :
+
+\begin{itemize}[itemsep=0.5em]
+    \item \textbf{15 entités principales} représentant les concepts métier
+    \item \textbf{Héritage} : La classe \texttt{Utilisateur} est abstraite et héritée par \texttt{Etudiant}, \texttt{Professeur} et \texttt{Administrateur} (stratégie JOINED en JPA)
+    \item \textbf{Relations complexes} :
+    \begin{itemize}
+        \item Many-to-Many : Département $\leftrightarrow$ Matière, Groupe $\leftrightarrow$ Enseignement
+        \item One-to-Many : Enseignement $\rightarrow$ Évaluation, Évaluation $\rightarrow$ Note
+        \item One-to-One : Étudiant $\leftrightarrow$ Groupe
+    \end{itemize}
+    \item \textbf{Énumérations} : \texttt{TypeSeance} (COURS, TD, TP, RATTRAPAGE), \texttt{StatutPresence}, \texttt{TypeEvaluation}, \texttt{StatutNote}
+\end{itemize}
+
+\textbf{Points clés de conception :}
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Séparation Utilisateur/Rôles} : Évite la duplication et permet une gestion unifiée des credentials
+    \item \textbf{Note avec Statut} : Workflow de validation tracé (Brouillon → Validée Prof → Validée Admin → Publiée)
+    \item \textbf{Enseignement comme pivot} : Relie Matière, Professeur, Groupe, Séances et Évaluations
+    \item \textbf{Annonce ciblée} : Relation optionnelle avec Groupe pour annonces globales ou ciblées
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Class.png}
+    \caption{Diagramme de classes}
+    \label{fig:class}
+\end{figure}
+
+\subsection{Diagramme de Composants}
+
+Le diagramme de composants (Figure \ref{fig:component}) illustre l'architecture modulaire de l'application web :
+
+\begin{itemize}[itemsep=0.5em]
+    \item \textbf{Interface Web} : 3 espaces distincts (Administrateur, Étudiant, Professeur)
+    \item \textbf{8 modules métier} :
+    \begin{enumerate}
+        \item Module Structure pédagogique
+        \item Module Utilisateurs
+        \item Module Annonces
+        \item Module Notes et délibération
+        \item Module Emplois du temps
+        \item Module Authentification
+        \item Module Présences et rattrapages
+        \item Module Supports de cours
+    \end{enumerate}
+    \item \textbf{Persistance} : Base de données centralisée + Stockage local des fichiers
+\end{itemize}
+
+Cette architecture monolithique modulaire facilite :
+\begin{itemize}
+    \item La maintenance (modules indépendants)
+    \item L'évolution (ajout de nouveaux modules)
+    \item La testabilité (tests par module)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Component.png}
+    \caption{Diagramme de composants}
+    \label{fig:component}
+\end{figure}
+
+\subsection{Diagramme de Déploiement}
+
+Le diagramme de déploiement (Figure \ref{fig:deployment}) présente l'infrastructure de production prévue :
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Client Devices} : Navigateurs Web et applications mobiles accédant via HTTPS
+    \item \textbf{Load Balancer (NGINX)} : Répartition de charge et reverse proxy avec terminaison SSL/TLS
+    \item \textbf{Application Servers (2 instances)} : Conteneurs Spring Boot déployés pour haute disponibilité
+    \item \textbf{Database Server} : PostgreSQL primaire avec réplication asynchrone vers base secondaire
+    \item \textbf{Services auxiliaires} :
+    \begin{itemize}
+        \item Cache Server (Redis) pour améliorer les performances
+        \item File Storage Server (MinIO/S3) pour les supports de cours
+        \item Email Server (SMTP) pour les notifications
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Avantages de cette architecture :}
+\begin{itemize}
+    \item Scalabilité horizontale (ajout d'instances backend)
+    \item Résilience (réplication DB, load balancing)
+    \item Performance (cache Redis, CDN potentiel)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{deployement.png}
+    \caption{Diagramme de déploiement}
+    \label{fig:deployment}
+\end{figure}
+
+\subsection{Diagrammes de Séquence}
+
+Les diagrammes de séquence détaillent les interactions entre les composants du système pour des scénarios précis.
+
+\subsubsection{Séquence : Saisie de Notes par le Professeur}
+
+La Figure \ref{fig:seq-grade} illustre le workflow complet de saisie de notes :
+
+\begin{enumerate}[itemsep=0.3em]
+    \item Le professeur soumet une liste de notes via l'interface \texttt{GradingPage}
+    \item Le \texttt{GradeController} reçoit la requête et délègue au \texttt{GradeService}
+    \item Pour chaque note :
+    \begin{itemize}
+        \item Validation de la note (valeur entre 0 et 20)
+        \item Si valide : sauvegarde en base via \texttt{GradeRepo}
+        \item Si invalide : ajout à la liste d'erreurs
+    \end{itemize}
+    \item Calcul du GPA mis à jour pour chaque étudiant
+    \item Notification envoyée aux étudiants concernés via \texttt{NotificationService}
+    \item Réponse au professeur : succès complet ou succès partiel avec erreurs
+\end{enumerate}
+
+\textbf{Points clés :}
+\begin{itemize}
+    \item Traitement batch pour optimiser les performances
+    \item Validation métier avant persistance
+    \item Gestion gracieuse des erreurs (succès partiel)
+    \item Notification asynchrone
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{SEQUENCE DIAGRAM - Professor Grade Entry.png}
+    \caption{Diagramme de séquence : Saisie de notes par le professeur}
+    \label{fig:seq-grade}
+\end{figure}
+
+\subsubsection{Séquence : Inscription d'un Étudiant à un Cours}
+
+La Figure \ref{fig:seq-enrollment} détaille le processus d'inscription avec ses validations :
+
+\begin{enumerate}[itemsep=0.3em]
+    \item L'étudiant sélectionne un cours dans \texttt{EnrollmentPage}
+    \item Le \texttt{EnrollmentController} demande les détails du cours au \texttt{CourseService}
+    \item Le \texttt{CourseRepo} retourne les informations du cours
+    \item Le \texttt{EnrollmentService} effectue 3 validations :
+    \begin{enumerate}
+        \item Vérification que le cours n'est pas plein
+        \item Vérification que l'étudiant remplit les prérequis
+        \item Vérification que l'étudiant n'est pas déjà inscrit
+    \end{enumerate}
+    \item Si toutes les validations passent :
+    \begin{itemize}
+        \item Création de l'inscription dans \texttt{EnrollmentRepo}
+        \item Incrémentation du compteur d'inscrits dans \texttt{CourseRepo}
+    \end{itemize}
+    \item Sinon : message d'erreur explicite
+\end{enumerate}
+
+\textbf{Gestion des erreurs métier :}
+\begin{itemize}
+    \item "Course is full" : Cours complet
+    \item "Prerequisites not met" : Prérequis non satisfaits
+    \item "Already enrolled" : Déjà inscrit
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{Sequence.png}
+    \caption{Diagramme de séquence : Inscription d'un étudiant à un cours}
+    \label{fig:seq-enrollment}
+\end{figure}
+
+\subsection{Diagramme d'Activité : Processus de Création de Cours}
+
+Le diagramme d'activité (Figure \ref{fig:activity}) modélise le workflow administrateur de création d'un nouveau cours avec ses points de décision :
+
+\begin{enumerate}[itemsep=0.3em]
+    \item \textbf{Connexion de l'administrateur}
+    \item \textbf{Navigation} vers Gestion des Cours
+    \item \textbf{Clic} sur "Créer un Nouveau Cours"
+    \item \textbf{Saisie des détails} : nom, code, crédits, description, capacité
+    \item \textbf{Validation côté client} : Tous les champs requis sont-ils remplis ?
+    \begin{itemize}
+        \item Non → Affichage des erreurs de validation → Retour à la saisie
+        \item Oui → Soumission au serveur
+    \end{itemize}
+    \item \textbf{Validation serveur} : Le système valide les données
+    \item \textbf{Vérification unicité du code cours}
+    \begin{itemize}
+        \item Code existe déjà → Erreur "Le code cours doit être unique" → Fin
+        \item Code unique → Continuation
+    \end{itemize}
+    \item \textbf{Validation de la valeur des crédits}
+    \begin{itemize}
+        \item Crédits invalides (négatifs ou nuls) → Erreur "Les crédits doivent être positifs" → Fin
+        \item Crédits valides → Continuation
+    \end{itemize}
+    \item \textbf{Création de l'enregistrement cours} en base de données
+    \item \textbf{Processus parallèle en 3 branches} :
+    \begin{enumerate}
+        \item Assignation du département
+        \item Configuration du semestre et de l'année académique
+        \item Définition du statut du cours à "INACTIVE"
+    \end{enumerate}
+    \item \textbf{Sauvegarde en base de données}
+    \item \textbf{Génération de la confirmation de cours}
+    \item \textbf{Décision} : Assigner un professeur maintenant ?
+    \begin{itemize}
+        \item Oui → Sélection du professeur → Assignation au cours
+        \item Non → Cours créé sans professeur
+    \end{itemize}
+    \item \textbf{Affichage du message de succès}
+    \item \textbf{Envoi de notification au département}
+    \item \textbf{Fin du processus}
+\end{enumerate}
+
+\textbf{Points clés du workflow :}
+\begin{itemize}
+    \item Double validation (client + serveur) pour robustesse
+    \item Gestion des erreurs métier avec messages explicites
+    \item Parallélisation des opérations non dépendantes (performance)
+    \item Flexibilité : assignation du professeur optionnelle
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm]{ACTIVITY DIAGRAM - Course Creation Process.png}
+    \caption{Diagramme d'activité : Processus de création de cours}
+    \label{fig:activity}
+\end{figure}
+
+
+% ==========================================================
+% CHAPITRE 3 : SPRINT 1 - AUTHENTIFICATION & CORE BACKEND
+% ==========================================================
+\chapter{Sprint 0 : Mise en Place de l'Infrastructure}
+
+\section{Objectifs du Sprint 0}
+
+Le Sprint 0, d'une durée d'une semaine (5 jours), constitue la phase critique de \textbf{setup de l'infrastructure technique}. Les objectifs principaux sont :
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Initialiser l'infrastructure Git} : Dépôt centralisé avec stratégie de branchement Git Flow adaptée
+    \item \textbf{Configurer Docker et Docker Compose} : Environnement conteneurisé reproductible pour PostgreSQL, Spring Boot et Angular
+    \item \textbf{Scaffolder le projet Spring Boot} : Structure Maven avec dépendances (JWT, JPA, Security, Flyway)
+    \item \textbf{Scaffolder le projet Angular} : Structure moderne avec Material Design, routing, interceptors
+    \item \textbf{Concevoir et initialiser le schéma base de données} : 12+ tables avec contraintes, types enum, migrations versionnées
+    \item \textbf{Configurer les profils applicatifs} : dev, docker, production avec configurations appropriées
+    \item \textbf{Valider l'intégration} : S'assurer que tous les services communiquent correctement
+\end{enumerate}
+
+\section{Backlog Sélectionné pour Sprint 0}
+
+Le backlog du Sprint 0 comprend les user stories et tâches techniques suivantes :
+
+\begin{table}[H]
+\centering
+\caption{User Stories et Tâches - Sprint 0}
+\begin{tabular}{|p{0.5cm}|p{6cm}|p{2.5cm}|p{4cm}|}
+\hline
+\textbf{\#} & \textbf{Description} & \textbf{Points} & \textbf{Statut} \\
+\hline
+S0-1 & Initialiser Git Flow et repository GitHub & 2 & \textbf{✓ Complété} \\
+\hline
+S0-2 & Configurer docker-compose avec 3 services & 3 & \textbf{✓ Complété} \\
+\hline
+S0-3 & Scaffolder projet Spring Boot 4.0.5 & 3 & \textbf{✓ Complété} \\
+\hline
+S0-4 & Configurer dépendances Maven (JWT, JPA, Flyway) & 2 & \textbf{✓ Complété} \\
+\hline
+S0-5 & Créer structure de packages Java & 1 & \textbf{✓ Complété} \\
+\hline
+S0-6 & Configurer application.yml multi-profils & 1 & \textbf{✓ Complété} \\
+\hline
+S0-7 & Scaffolder projet Angular 20.3.0 & 2 & \textbf{✓ Complété} \\
+\hline
+S0-8 & Configurer Angular Material et proxy & 1 & \textbf{✓ Complété} \\
+\hline
+S0-9 & Concevoir schéma DB (modèle entités) & 2 & \textbf{✓ Complété} \\
+\hline
+S0-10 & Créer script SQL initial (12 tables) & 2 & \textbf{✓ Complété} \\
+\hline
+S0-11 & Configurer Flyway et migrations & 1 & \textbf{✓ Complété} \\
+\hline
+S0-12 & Tester docker-compose et intégration & 1 & \textbf{✓ Complété} \\
+\hline
+\multicolumn{3}{|r|}{\textbf{Total Story Points}} & \textbf{21 sp (réduit à 13)} \\
+\hline
+\end{tabular}
+\end{table}
+
+\textit{Note : 21 points ont été initialement planifiés, 8 points (S0-7, S0-8 pour Angular, partiellement repoussés) ont été optimisés et intégrés dans le temps, totalisant 13 points réalisés.}
+
+\section{Diagramme d'Architecture Sprint 0}
+
+Le diagramme ci-dessous illustre l'architecture physique et logique de l'infrastructure mise en place :
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{archDiag.png}
+    \caption{Architecture Infrastructure - Sprint 0 (Docker Compose avec services interconnectés)}
+    \label{fig:sprint0-arch}
+\end{figure}
+
+\section{Réalisations du Sprint 0}
+
+\subsection{Infrastructure Git et Versionning}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark Repository GitHub créé avec protection des branches main/develop
+    \item \checkmark Stratégie Git Flow mise en place avec documentation
+    \item \checkmark Fichiers \texttt{.gitignore}, \texttt{.gitattributes} configurés
+    \item \checkmark Branches initiales (main, develop) créées et protégées
+    \item \checkmark Documentation README.md avec instructions clone et setup
+\end{itemize}
+
+\subsection{Infrastructure Docker Compose}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark Service PostgreSQL 14 Alpine déployé avec healthcheck
+    \item \checkmark Service Spring Boot configurable multi-profils fonctionnel
+    \item \checkmark Service Angular dev server sur port 4200
+    \item \checkmark Réseau Docker Bridge personnalisé (institut-network) créé
+    \item \checkmark Volumes persistants pour données PostgreSQL et code
+    \item \checkmark Variables d'environnement configurées pour chaque service
+    \item \checkmark Dépendances inter-services gérées (backend attend que DB soit prête)
+\end{itemize}
+
+\subsection{Projet Spring Boot}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark Scaffolding Maven via Spring Initializr complété
+    \item \checkmark Dépendances principales intégrées (JPA, Security, JWT, Flyway)
+    \item \checkmark Structure de packages créée (controller, service, repository, model, config, security)
+    \item \checkmark Classe principale ManagementApplication.java implémentée
+    \item \checkmark Configuration multi-profils (default, docker, prod) mise en place
+    \item \checkmark Properties applicatives centralisées dans application.yml
+    \item \checkmark Dockerfile optimisé pour image légère (multi-stage build)
+\end{itemize}
+
+\subsection{Projet Angular}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark Scaffolding Angular CLI version 20.3.0 complété
+    \item \checkmark Dépendances Material Design v20.2.14 intégrées
+    \item \checkmark Structure modulaire créée (core, features, shared)
+    \item \checkmark Proxy configuration mise en place pour développement (proxy.conf.json)
+    \item \checkmark Routing structure définie pour modules (admin, student, professor)
+    \item \checkmark Dockerfile.dev pour development avec live-reload
+    \item \checkmark Dockerfile.prod pour build production (nginx)
+\end{itemize}
+
+\subsection{Schéma Base de Données}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark 12+ tables relationnelles créées avec contraintes
+    \item \checkmark 5 types enum PostgreSQL définis (role\_type, type\_seance, statut\_presence, type\_evaluation, statut\_note)
+    \item \checkmark Héritage utilisateur implémenté (stratégie JOINED)
+    \item \checkmark Contraintes d'intégrité référentielle définies (FK, ON DELETE CASCADE/SET NULL)
+    \item \checkmark Indexes préparés pour requêtes critiques
+    \item \checkmark Migration Flyway V1.0 initiale versionnée
+    \item \checkmark Script de seed data prêt pour données de test
+\end{itemize}
+
+\subsection{Validation et Tests Fondamentaux}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \checkmark Démarrage `docker-compose up -d` validé sans erreurs
+    \item \checkmark Connectivité inter-services vérifié (logs analysés)
+    \item \checkmark Migrationns Flyway exécutées automatiquement au démarrage
+    \item \checkmark Frontend accessible sur http://localhost:4200
+    \item \checkmark Backend accessible sur http://localhost:8080
+    \item \checkmark Base de données PostgreSQL ping-able du backend
+\end{itemize}
+
+\section{Livrables du Sprint 0}
+
+\begin{table}[H]
+\centering
+\caption{Livrables concrets du Sprint 0}
+\begin{tabular}{|p{5cm}|p{9.5cm}|}
+\hline
+\textbf{Livrable} & \textbf{Description / Emplacement} \\
+\hline
+\multirow{2}{*}{\textbf{Code Source}} & Repository GitHub : college-management-system \\
+& Branches : main (stable), develop (intégration) \\
+\hline
+\multirow{2}{*}{\textbf{Docker Compose}} & Fichier : \texttt{docker-compose.yml} \\
+& Services : PostgreSQL 14, Spring Boot, Angular dev \\
+\hline
+\multirow{3}{*}{\textbf{Backend Spring}} & Répertoire : \texttt{backend/} \\
+& Fichier pom.xml avec 10+ dépendances \\
+& Fichier application.yml multi-profils \\
+\hline
+\multirow{3}{*}{\textbf{Frontend Angular}} & Répertoire : \texttt{frontend/} \\
+& package.json avec dependencies (Angular, Material, RxJS) \\
+& proxy.conf.json et tsconfig.json configurés \\
+\hline
+\multirow{2}{*}{\textbf{Schéma Base de Données}} & Fichier : \texttt{src/main/resources/db/migration/V1\_0\_\_Init\_schema.sql} \\
+& 12 tables + 5 enums + contraintes \\
+\hline
+\multirow{2}{*}{\textbf{Dockerfiles}} & \texttt{backend/Dockerfile} (multi-stage Maven build) \\
+& \texttt{frontend/Dockerfile.prod} (nginx) \\
+\hline
+\multirow{2}{*}{\textbf{Documentation}} & README.md avec instructions setup \\
+& Commentaires configuration dans fichiers yaml/json \\
+\hline
+\textbf{Configuration Git} & .gitignore, .gitattributes, branch protection \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Artefacts Techniques Générés}
+
+\begin{itemize}[itemsep=0.3em]
+    \item \textbf{12 tables PostgreSQL} : users, administrateurs, professeurs, etudiants, departements, matieres, groupes, enseignements, seances, presences, evaluations, notes, annonces
+    \item \textbf{5 types ENUM} : role\_type, type\_seance, statut\_presence, type\_evaluation, statut\_note
+    \item \textbf{10+ dépendances Maven} correctement versionnées
+    \item \textbf{8+ packages Java} structurés pour scalabilité
+    \item \textbf{3 profils applicatifs} (dev, docker, prod) fonctionnels
+    \item \textbf{Fichiers de configuration} : docker-compose.yml, application.yml, proxy.conf.json, tsconfig.json, angular.json, pom.xml
+\end{itemize}
+
+\newpage
+
+\section{Difficultés Rencontrées}
+
+\subsection{Problèmes Techniques et Résolutions}
+
+\begin{table}[H]
+\centering
+\caption{Difficultés du Sprint 0, causes et solutions appliquées}
+\begin{tabular}{|p{2.5cm}|p{4.5cm}|p{7cm}|}
+\hline
+\textbf{Problème} & \textbf{Cause Racine} & \textbf{Résolution} \\
+\hline
+PostgreSQL startup delay & Container non prêt avant dépendant & Ajout healthcheck + depends\_on condition \\
+\hline
+Port 8080/4200 conflicts & Services en écoute sur ports & Modification ports dans docker-compose \\
+\hline
+Database credentials mismatch & Env vars inconsistants & Centralisation dans docker-compose.yml \\
+\hline
+CORS errors frontend-backend & Proxy mal configuré & Création proxy.conf.json avec pathRewrite \\
+\hline
+Maven build timeout & Téléchargement deps lent & Augmentation timeout maven-surefire-plugin \\
+\hline
+Node modules symlinks Windows & Limitation WSL/Docker & Configuration volume /app/node\_modules \\
+\hline
+Flyway baseline errors & Version baseline manquante & Conf : baseline-on-migrate: true \\
+\hline
+PostgreSQL extension manquante & UUID generation failure & Ajout CREATE EXTENSION uuid-ossp \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Estimation vs Réalité}
+
+\begin{itemize}[itemsep=0.3em]
+    \item \textbf{Estimation initiale} : 13 story points
+    \item \textbf{Réalisation effective} : 13 story points réalisés (100\%)
+    \item \textbf{Temps supplémentaire} : Configuration Docker (+2 heures) due à healthchecks
+    \item \textbf{Optimisations} : Parallélisation build Maven et npm (économie 1 heure)
+\end{itemize}
+
+\section{Retours de Revue (Sprint Review 0)}
+
+\subsection{Feedback de l'Équipe}
+
+\begin{enumerate}[itemsep=0.3em]
+    \item \textbf{Infrastructure stable} : Docker Compose offre une excellente reproductibilité. Déploiement sur nouveaux postes validé en $<$ 5 minutes.
+    \item \textbf{Dépendances bien choisies} : Spring Boot 4.0.5 et Angular 20.3.0 offrent un bon équilibre stabilité/modernité.
+    \item \textbf{Architecture modulaire} : Structure des packages Java et modules Angular prépare bien les développements futurs.
+    \item \textbf{Configuration DB complète} : Schéma anticipant bien les 8 modules fonctionnels prévus.
+    \item \textbf{Suggestion amélioration} : Ajouter un health-check endpoint Spring pour monitoring (/actuator/health)
+\end{enumerate}
+
+\subsection{Points de Satisfaction}
+
+\begin{itemize}[itemsep=0.3em]
+    \item ✓ Tous les story points réalisés selon planning
+    \item ✓ Zéro problème bloquant résistant après résolution
+    \item ✓ Documentation suffisante pour onboarding nouveau développeur
+    \item ✓ Environnement entièrement reproductible
+\end{itemize}
+
+\subsection{Points d'Amélioration Futurs}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajouter Spring Actuator pour monitoring infrastructure
+    \item Implémenter Swagger/OpenAPI pour documentation API
+    \item Configurer Sonar/code quality baseline
+    \item Ajouter GitHub Actions pour CI/CD automatisé
+\end{itemize}
+
+\section{Rétrospective Sprint 0}
+
+\subsection{Ce qui s'est Bien Passé}
+
+\begin{table}[H]
+\centering
+\caption{Points Positifs - Rétrospective Sprint 0}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Aspect} & \textbf{Détail} \\
+\hline
+Planning Réaliste & Estimation précis, 0 dépassement de délai \\
+\hline
+Communication d'équipe & 2 daily standups courts et efficaces (15 min) \\
+\hline
+Qualité Infrastructure & Configuration Docker professionnelle avec healthchecks \\
+\hline
+Documentation & README clair, configurations commentées \\
+\hline
+Scalabilité Préparée & Architecture anticipant bien les 7 modules futurs \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Ce qui Pourrait S'Améliorer}
+
+\begin{table}[H]
+\centering
+\caption{Points d'Amélioration - Rétrospective Sprint 0}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Aspect} & \textbf{Action d'Amélioration} \\
+\hline
+Testing Infrastructure & Ajouter tests d'intégration Docker (bats ou docker-compose ps) \\
+\hline
+Database Seeding & Script seed\_data.sql complet pour fixtures de test \\
+\hline
+Monitoring & Ajouter logging centralisé (logs visibles dans docker-compose logs) \\
+\hline
+CI/CD & Mettre en place GitHub Actions pour validations automatiques \\
+\hline
+Performance & Profiling initial de démarrage conteneurs \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Métriques de Vélocité}
+
+\begin{table}[H]
+\centering
+\caption{Métriques Sprint 0}
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Métrique} & \textbf{Valeur} \\
+\hline
+Durée Planning & 1 semaine (5 jours ouvrables) \\
+\hline
+Story Points Planifiés & 13 sp \\
+\hline
+Story Points Réalisés & 13 sp (100\%) \\
+\hline
+Vélocité Équipe & 13 sp / semaine \\
+\hline
+Temps Startup Local & $<$ 2 minutes (docker-compose up) \\
+\hline
+Nombre de Builds Réussis & 100\% (Maven + npm) \\
+\hline
+Code Quality & A (SonarQube baseline non applicable Sprint 0) \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Suite Prévue (Dépendances pour Sprint 1)}
+
+\subsection{Éléments Bloqués en Attente de Sprint 0}
+
+Les tâches suivantes de \textbf{Sprint 1} sont maintenant débloquées :
+
+\begin{itemize}[itemsep=0.4em]
+    \item \textbf{S1-1 : Implémentation JWT} - Frontend/Backend authentification : Dépend de Spring Security et configuration Docker (✓ Prêt)
+    \item \textbf{S1-2 : Module Structure Pédagogique} - CRUD Département/Matière : Dépend de schéma DB et ORM (✓ Prêt)
+    \item \textbf{S1-3 : Module Utilisateurs} - CRUD Étudiants/Professeurs : Dépend de héritage entités et JPA (✓ Prêt)
+    \item \textbf{S1-4 : Module Notes} - Gestion évaluations : Dépend de design schéma notes/évaluations (✓ Prêt)
+\end{itemize}
+
+\subsection{Tâches de Consolidation Recommandées Avant Sprint 1}
+
+\begin{enumerate}[itemsep=0.3em]
+    \item Validation complète de l'environnement Docker sur machine de l'autre développeur
+    \item Création de données de test (seed\_data.sql) pour 3 utilisateurs par rôle
+    \item Documentation API endpoints early (API-first design)
+    \item Plan de code review (qui review? critères?)
+\end{enumerate}
+
+\subsection{Prédictions pour Sprint 1}
+
+\textbf{Basé sur l'infrastructure Sprint 0, Sprint 1 devrait :}
+
+\begin{itemize}[itemsep=0.4em]
+    \item Implémenter 4 modules core (Auth, Structure, Utilisateurs, Notes)
+    \item Générer \textit{ca. 55 story points} selon le planning initial
+    \item Produire $\sim$ 15 entités JPA + 20+ endpoints REST
+    \item Créer les services métier (AuthService, UserService, GradeService, etc.)
+    \item Bénéficier directement de l'infrastructure solide établie en Sprint 0
+\end{itemize}
+
+\subsection{Risques Identifiés pour Sprints Futurs}
+
+\begin{itemize}[itemsep=0.3em]
+    \item \textbf{Complexité schéma DB} : Héritage utilisateurs + many-to-many departement-matière pourrait compliquer requêtes JPA
+    \item \textbf{Performance} : À surveiller avec données en croissance (indexing stratégique)
+    \item \textbf{Tests à chercher} : Sprint 1 doit incluire tests unitaires services + tests intégration controllers
+\end{itemize}
+
+\newpage
+\chapter{Sprint 1 : }
+
+
+\end{document}

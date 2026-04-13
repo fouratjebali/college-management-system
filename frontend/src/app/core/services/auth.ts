@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, throwError } from 'rxjs';
 import { map, tap, catchError } from 'rxjs/operators';
@@ -55,6 +55,9 @@ export class AuthApiService {
   providedIn: 'root'
 })
 export class AuthService {
+  private apiService = inject(AuthApiService);
+  private storageService = inject(StorageService);
+
   private authState$ = new BehaviorSubject<AuthState>({
     isAuthenticated: false,
     user: null,
@@ -68,10 +71,7 @@ export class AuthService {
   private readonly MAX_LOGIN_ATTEMPTS = 5;
   private readonly LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
-  constructor(
-    private apiService: AuthApiService,
-    private storageService: StorageService
-  ) {
+  constructor() {
     this.initializeAuthState();
   }
 
