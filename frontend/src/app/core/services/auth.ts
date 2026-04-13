@@ -4,7 +4,11 @@ import { AuthState, UserInfo, UserRole } from '../models/auth.model';
 
 /**
  * Service d'authentification Angular
- * Stub version - sera complété dans feature/auth-service
+ * Version 1.0 - Stub version, sera complété dans feature/auth-service
+ * Responsabilités:
+ * - Gérer l'état d'authentification (token, user, loading)
+ * - Fournir des méthodes pour vérifier l'authentification et les rôles
+ * - Gérer la déconnexion
  */
 @Injectable({
   providedIn: 'root'
@@ -70,6 +74,23 @@ export class AuthService {
       return role.includes(user.role);
     }
     return user.role === role;
+  }
+
+  /**
+   * Déconnexion de l'utilisateur
+   * Sera implémentée complètement dans feature/token-storage
+   */
+  logout(): void {
+    console.log('Déconnexion de l\'utilisateur');
+    // Nettoyer le state
+    this.updateAuthState({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      refreshToken: null,
+      error: null
+    });
+    // Le nettoyage du localStorage sera fait après implémentation du token storage
   }
 
   /**
