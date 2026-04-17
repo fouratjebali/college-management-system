@@ -1825,6 +1825,25 @@ La section evaluation combine calendrier et publication :
     \item Feedback utilisateur via un message d'etat centralise.
 \end{itemize}
 
+\subsection{Login Administrateur et Donnees Seedees}
+
+Apres validation de l'interface admin, un flux d'authentification specifique a ete ajoute pour tester l'espace administrateur de bout en bout :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout de la page Angular \texttt{/admin/login}.
+    \item Ajout de l'endpoint backend \texttt{POST /api/auth/admin/login}, reserve aux comptes administrateurs.
+    \item Ajout des autorites JWT afin de proteger les routes \texttt{/api/admin/**} avec le role \texttt{ADMIN}.
+    \item Ajout de l'endpoint \texttt{GET /api/admin/dashboard} pour charger les donnees du dashboard depuis le backend.
+    \item Ajout d'un seeder de developpement creant un administrateur, un professeur, un etudiant, une structure pedagogique et une evaluation de demo.
+\end{itemize}
+
+\textbf{Compte admin de test seed :}
+
+\begin{verbatim}
+Email    : admin@issatso.tn
+Password : Admin@12345
+\end{verbatim}
+
 \section{Interfaces Livrees}
 
 \begin{table}[H]
@@ -1842,6 +1861,8 @@ Gestion Utilisateurs & \texttt{/admin} / Utilisateurs & Creation compte, recherc
 \hline
 Examens \& Notes & \texttt{/admin} / Examens \& Notes & Planification examens et preparation publication notes \\
 \hline
+Login Admin & \texttt{/admin/login} & Authentification dediee administrateur avec JWT \\
+\hline
 \end{tabular}
 \end{table}
 
@@ -1855,6 +1876,15 @@ npm run build
 \end{verbatim}
 
 \textbf{Resultat :} build Angular termine avec succes. Le bundle genere contient un chunk lazy \texttt{admin-dashboard}, ce qui confirme que le routing admin et le chargement a la demande sont fonctionnels.
+
+\textbf{Validation backend complementaire executee :}
+
+\begin{verbatim}
+cd backend
+./mvnw test
+\end{verbatim}
+
+\textbf{Resultat :} 6 tests executes, 0 erreur, 0 echec.
 
 \begin{table}[H]
 \centering
