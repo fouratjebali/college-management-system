@@ -51,12 +51,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/login",
+                                "/api/auth/admin/login",
                                 "/api/auth/register",
                                 "/api/auth/validate",
                                 "/api/auth/logout",
                                 "/api/health",
                                 "/api/health/info"
                         ).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 );

@@ -83,19 +83,28 @@ public class JwtTokenProvider {
      * Generate refresh token - longer expiration for token refresh operations
      */
     public String generateRefreshToken(String email, Integer userId) {
+        return generateRefreshToken(email, userId, null);
+    }
+
+    public String generateRefreshToken(String email, Integer userId, String userType) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
 
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
 
-        return Jwts.builder()
+        JwtBuilder builder = Jwts.builder()
                 .setSubject(email)
                 .claim("userId", userId)
                 .claim("type", "REFRESH")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS512)
-                .compact();
+                .signWith(key, SignatureAlgorithm.HS512);
+
+        if (userType != null && !userType.isBlank()) {
+            builder.claim("userType", userType);
+        }
+
+        return builder.compact();
     }
 
     /**

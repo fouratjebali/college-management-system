@@ -32,19 +32,7 @@ public class AuthController {
         try {
             logger.info("Login request for email: {}", request.getEmail());
 
-            LoginResponse loginResponse = authService.login(request);
-            
-            // Convert LoginResponse to AuthResponse format
-            AuthResponse response = AuthResponse.builder()
-                    .token(loginResponse.getToken())
-                    .refreshToken(authService.generateRefreshToken(loginResponse.getUserId()))
-                    .user(new AuthResponse.UserInfoDTO(
-                            loginResponse.getUserId(),
-                            loginResponse.getEmail(),
-                            loginResponse.getNomComplet(),
-                            convertUserTypeToRole(loginResponse.getUserType())
-                    ))
-                    .build();
+            AuthResponse response = authService.loginWithResponse(request);
 
             logger.info("Login successful for email: {}", request.getEmail());
 
@@ -61,6 +49,23 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody LoginRequest request) {
+        try {
+            logger.info("Admin login request for email: {}", request.getEmail());
+            AuthResponse response = authService.adminLogin(request);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            logger.error("Admin login failed: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            logger.error("Unexpected error during admin login", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Admin login failed"));
+        }
+    }
+
     /**
      * Register endpoint - creates new user and returns JWT token
      */
@@ -70,8 +75,7 @@ public class AuthController {
             logger.info("Register request for email: {}", request.getEmail());
 
             LoginResponse loginResponse = authService.register(request);
-            
-            // Convert to AuthResponse format
+
             AuthResponse response = AuthResponse.builder()
                     .token(loginResponse.getToken())
                     .refreshToken(authService.generateRefreshToken(loginResponse.getUserId()))

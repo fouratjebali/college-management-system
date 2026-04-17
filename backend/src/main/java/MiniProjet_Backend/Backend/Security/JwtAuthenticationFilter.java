@@ -2,6 +2,7 @@ package MiniProjet_Backend.Backend.Security;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
@@ -14,6 +15,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -31,9 +33,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 String email = tokenProvider.getEmailFromToken(jwt);
+                String userType = tokenProvider.getUserTypeFromToken(jwt);
 
-                UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(email, null, null);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                buildAuthorities(userType)
+                        );
                 
                 authentication.setDetails(
                         new WebAuthenticationDetailsSource().buildDetails(request));
@@ -46,6 +53,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private List<SimpleGrantedAuthority> buildAuthorities(String userType) {
+        String role = switch (userType == null ? "" : userType.toUpperCase()) {
+            case "ADMINISTRATEUR", "ADMIN" -> "ADMIN";
+            case "PROFESSEUR", "PROFESSOR" -> "PROFESSOR";
+            case "ETUDIANT", "STUDENT" -> "STUDENT";
+            default -> "USER";
+        };
+
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
     }
 
     /**

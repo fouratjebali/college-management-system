@@ -45,23 +45,8 @@ public class AuthService {
      * Login user and return JWT token
      */
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
-
-        // Verify password
-        if (!passwordEncoder.matches(request.getPassword(), user.getMotDePasseHash())) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
-        // Check if user is active
-        if (!user.isActif()) {
-            throw new RuntimeException("User account is disabled");
-        }
-
-        // Determine user type
+        User user = authenticateUser(request);
         String userType = getUserType(user);
-
-        // Generate JWT token with custom claims
         String token = tokenProvider.generateTokenWithClaims(
                 user.getEmail(),
                 user.getId(),
@@ -71,6 +56,21 @@ public class AuthService {
         logger.info("User logged in successfully: {}", user.getEmail());
 
         return new LoginResponse(token, user.getId(), user.getEmail(), user.getNomComplet(), userType);
+    }
+
+    public AuthResponse loginWithResponse(LoginRequest request) {
+        User user = authenticateUser(request);
+        return getAuthResponse(user, getUserType(user));
+    }
+
+    public AuthResponse adminLogin(LoginRequest request) {
+        User user = authenticateUser(request);
+
+        if (!(user instanceof Administrateur)) {
+            throw new RuntimeException("Admin access only");
+        }
+
+        return getAuthResponse(user, "ADMINISTRATEUR");
     }
 
     /**
@@ -87,7 +87,7 @@ public class AuthService {
 
         // Create user based on type
         User user = null;
-        String userType = request.getUserType().toUpperCase();
+        String userType = normalizeUserType(request.getUserType());
 
         if ("ETUDIANT".equals(userType)) {
             Etudiant etudiant = new Etudiant();
@@ -95,8 +95,8 @@ public class AuthService {
             etudiant.setEmail(request.getEmail());
             etudiant.setMotDePasseHash(hashedPassword);
             etudiant.setActif(true);
-            etudiant.setMatricule(request.getMatricule());
-            etudiant.setNiveau(request.getNiveau());
+            etudiant.setMatricule(defaultIfBlank(request.getMatricule(), "ETU-" + System.currentTimeMillis()));
+            etudiant.setNiveau(defaultIfBlank(request.getNiveau(), "1ere annee"));
             user = etudiantRepository.save(etudiant);
         } else if ("PROFESSEUR".equals(userType)) {
             Professeur professeur = new Professeur();
@@ -104,6 +104,8 @@ public class AuthService {
             professeur.setEmail(request.getEmail());
             professeur.setMotDePasseHash(hashedPassword);
             professeur.setActif(true);
+            professeur.setMatriculePro(defaultIfBlank(request.getMatricule(), "PRO-" + System.currentTimeMillis()));
+            professeur.setGrade(defaultIfBlank(request.getNiveau(), "Enseignant"));
             user = professeurRepository.save(professeur);
         } else if ("ADMINISTRATEUR".equals(userType)) {
             Administrateur admin = new Administrateur();
@@ -111,6 +113,8 @@ public class AuthService {
             admin.setEmail(request.getEmail());
             admin.setMotDePasseHash(hashedPassword);
             admin.setActif(true);
+            admin.setMatriculeAdmin(defaultIfBlank(request.getMatricule(), "ADM-" + System.currentTimeMillis()));
+            admin.setFonction(defaultIfBlank(request.getNiveau(), "Administrateur"));
             user = administrateurRepository.save(admin);
         } else {
             throw new RuntimeException("Invalid user type: " + userType);
@@ -149,6 +153,10 @@ public class AuthService {
 
         if (!user.isActif()) {
             throw new RuntimeException("User account is disabled");
+        }
+
+        if (userType == null || userType.isBlank()) {
+            userType = getUserType(user);
         }
 
         String newAccessToken = tokenProvider.generateTokenWithClaims(
@@ -212,7 +220,8 @@ public class AuthService {
 
         String refreshToken = tokenProvider.generateRefreshToken(
                 user.getEmail(),
-                user.getId()
+                user.getId(),
+                userType
         );
 
         AuthResponse.UserInfoDTO userInfo = new AuthResponse.UserInfoDTO(
@@ -275,10 +284,42 @@ public class AuthService {
      * Generate refresh token for a user ID
      */
     public String generateRefreshToken(Integer userId) {
-        // This is a backup method for controller level generation
-        // Normally tokens are generated with user context
-        // For now, returning token provider method
-        return tokenProvider.generateRefreshToken("user@example.com", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        return tokenProvider.generateRefreshToken(user.getEmail(), user.getId(), getUserType(user));
+    }
+
+    private User authenticateUser(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getMotDePasseHash())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        if (!user.isActif()) {
+            throw new RuntimeException("User account is disabled");
+        }
+
+        return user;
+    }
+
+    private String normalizeUserType(String userType) {
+        if (userType == null) {
+            throw new RuntimeException("User type is required");
+        }
+
+        return switch (userType.trim().toUpperCase()) {
+            case "STUDENT", "ETUDIANT" -> "ETUDIANT";
+            case "PROFESSOR", "PROFESSEUR" -> "PROFESSEUR";
+            case "ADMIN", "ADMINISTRATEUR" -> "ADMINISTRATEUR";
+            default -> throw new RuntimeException("Invalid user type: " + userType);
+        };
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }
 
