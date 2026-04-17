@@ -7,6 +7,9 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { UserRole } from '../../../../core/models/auth.model';
+import { AuthService } from '../../../../core/services/auth';
 
 type AuthMode = 'login' | 'signup';
 
@@ -24,15 +27,18 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthPageComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   protected readonly mode = signal<AuthMode>('login');
   protected readonly feedbackMessage = signal('');
+  protected readonly isSubmitting = signal(false);
   protected readonly roles = [
     { value: 'STUDENT', label: 'Student' },
     { value: 'PROFESSOR', label: 'Professor' },
@@ -87,10 +93,22 @@ export class AuthPageComponent {
       return;
     }
 
-    const { email } = this.loginForm.getRawValue();
-    this.feedbackMessage.set(
-      `Login interface ready for ${email}. The next step will be connecting this form to your backend authentication API.`
-    );
+    const { email, password } = this.loginForm.getRawValue();
+    this.isSubmitting.set(true);
+    this.feedbackMessage.set('');
+
+    this.authService.login(email, password).subscribe({
+      next: (response) => {
+        this.isSubmitting.set(false);
+        this.router.navigate([this.dashboardForRole(response.user.role)]);
+      },
+      error: (error) => {
+        this.isSubmitting.set(false);
+        this.feedbackMessage.set(
+          error.error?.error || error.error?.message || 'Invalid email or password.'
+        );
+      },
+    });
   }
 
   protected submitSignup(): void {
@@ -125,5 +143,17 @@ export class AuthPageComponent {
       this.signupForm.hasError('passwordMismatch') &&
         (confirmPassword.touched || this.signupForm.controls.password.touched)
     );
+  }
+
+  private dashboardForRole(role: UserRole): string {
+    if (role === UserRole.ADMIN) {
+      return '/admin';
+    }
+
+    if (role === UserRole.PROFESSOR) {
+      return '/professor';
+    }
+
+    return '/student';
   }
 }

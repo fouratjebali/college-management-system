@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AdminDashboardApi } from '../../services/admin-dashboard-api';
 
 type AdminSection = 'overview' | 'structure' | 'users' | 'calendar';
 
@@ -48,6 +49,7 @@ interface ExamRow {
 })
 export class AdminDashboardComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly dashboardApi = inject(AdminDashboardApi);
 
   protected readonly activeSection = signal<AdminSection>('overview');
   protected readonly searchTerm = signal('');
@@ -76,12 +78,12 @@ export class AdminDashboardComponent {
     },
   ];
 
-  protected readonly stats: readonly StatCard[] = [
+  protected readonly stats = signal<readonly StatCard[]>([
     { label: 'Etudiants', value: '1 248', trend: '+12 ce mois', tone: 'light' },
     { label: 'Professeurs', value: '86', trend: '7 departements', tone: 'steel' },
     { label: 'Cours actifs', value: '142', trend: 'Semestre 2', tone: 'warm' },
     { label: 'Groupes', value: '34', trend: '4 niveaux', tone: 'sand' },
-  ];
+  ]);
 
   protected readonly activitySeries = [
     { label: 'Lun', value: 48 },
@@ -98,7 +100,7 @@ export class AdminDashboardComponent {
     'Publier les notes',
   ] as const;
 
-  protected readonly academicRows: readonly AcademicRow[] = [
+  protected readonly academicRows = signal<readonly AcademicRow[]>([
     {
       code: 'GI',
       title: 'Genie Informatique',
@@ -117,9 +119,9 @@ export class AdminDashboardComponent {
       meta: '6 groupes, 18 matieres',
       status: 'Audit',
     },
-  ];
+  ]);
 
-  protected readonly users: readonly UserRow[] = [
+  protected readonly users = signal<readonly UserRow[]>([
     {
       name: 'Amina Gharbi',
       email: 'amina.gharbi@issatso.tn',
@@ -144,9 +146,9 @@ export class AdminDashboardComponent {
       role: 'Professeur',
       status: 'Active',
     },
-  ];
+  ]);
 
-  protected readonly examRows: readonly ExamRow[] = [
+  protected readonly examRows = signal<readonly ExamRow[]>([
     {
       subject: 'Architecture Logicielle',
       group: 'GI-3A',
@@ -165,16 +167,16 @@ export class AdminDashboardComponent {
       date: '27 Avril 2026, 14:00',
       room: 'Bloc C / Salle 102',
     },
-  ];
+  ]);
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
 
     if (!query) {
-      return this.users;
+      return this.users();
     }
 
-    return this.users.filter((user) =>
+    return this.users().filter((user) =>
       [user.name, user.email, user.role, user.status].some((value) =>
         value.toLowerCase().includes(query)
       )
@@ -207,6 +209,27 @@ export class AdminDashboardComponent {
     group: ['', [Validators.required]],
     visibility: ['Etudiants concernes', [Validators.required]],
   });
+
+  constructor() {
+    this.loadDashboard();
+  }
+
+  private loadDashboard(): void {
+    this.dashboardApi.getDashboard().subscribe({
+      next: (dashboard) => {
+        this.stats.set(dashboard.stats);
+        this.academicRows.set(dashboard.academicRows);
+        this.users.set(dashboard.users);
+        this.examRows.set(dashboard.exams);
+        this.toastMessage.set('Donnees admin seed chargees depuis le backend.');
+      },
+      error: () => {
+        this.toastMessage.set(
+          'Backend indisponible ou session expiree: affichage des donnees UI temporaires.'
+        );
+      },
+    });
+  }
 
   protected setSection(section: AdminSection): void {
     this.activeSection.set(section);

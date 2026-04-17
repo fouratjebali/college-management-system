@@ -24,6 +24,10 @@ export class AuthApiService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, request);
   }
 
+  adminLogin(request: LoginRequest): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/admin/login`, request);
+  }
+
   /**
    * Envoie une requête de rafraîchissement du token
    */
@@ -152,6 +156,25 @@ export class AuthService {
         this.loginAttempts++;
         this.storageService.set('lastLoginAttempt', Date.now().toString());
         const errorMsg = error.error?.message || 'Erreur de connexion';
+        this.updateAuthState({
+          loading: false,
+          error: errorMsg,
+          isAuthenticated: false
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  adminLogin(email: string, password: string): Observable<AuthResponse> {
+    this.updateAuthState({ loading: true, error: null });
+
+    return this.apiService.adminLogin({ email, password }).pipe(
+      tap((response: AuthResponse) => {
+        this.handleAuthResponse(response);
+      }),
+      catchError((error) => {
+        const errorMsg = error.error?.error || error.error?.message || 'Acces admin refuse';
         this.updateAuthState({
           loading: false,
           error: errorMsg,

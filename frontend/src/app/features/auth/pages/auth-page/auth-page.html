@@ -83,7 +83,11 @@
             <a href="" (click)="$event.preventDefault()">Forgot password?</a>
           </div>
 
-          <button class="primary-button" type="submit">Sign In</button>
+          <a routerLink="/admin/login" class="admin-access-link">Admin secure access</a>
+
+          <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Signing In...' : 'Sign In' }}
+          </button>
         </form>
       } @else {
         <form class="auth-form" [formGroup]="signupForm" (ngSubmit)="submitSignup()">

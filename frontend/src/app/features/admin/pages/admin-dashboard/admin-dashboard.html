@@ -25,12 +25,6 @@
         </button>
       }
     </nav>
-
-    <div class="sidebar-card">
-      <span class="card-kicker">Sprint 2</span>
-      <strong>Frontend Admin</strong>
-      <p>Dashboard, CRUD UI, utilisateurs, examens et publication des notes.</p>
-    </div>
   </aside>
 
   <section class="workspace">
@@ -76,7 +70,7 @@
         </article>
 
         <section class="stats-grid" aria-label="Statistiques principales">
-          @for (stat of stats; track stat.label) {
+          @for (stat of stats(); track stat.label) {
             <article
               class="stat-card"
               [class.tone-light]="stat.tone === 'light'"
@@ -176,7 +170,7 @@
           </div>
 
           <div class="data-list">
-            @for (row of academicRows; track row.code) {
+            @for (row of academicRows(); track row.code) {
               <div class="data-row">
                 <span class="code-pill">{{ row.code }}</span>
                 <div>
@@ -251,7 +245,7 @@
               <div class="user-row">
                 <div class="avatar">{{ user.name.charAt(0) }}</div>
                 <div>
-                  <strong>{{ user.name }}</strong>
+                  <strong>{{ user.name }}</strong>-
                   <small>{{ user.email }}</small>
                 </div>
                 <span>{{ user.role }}</span>
@@ -341,7 +335,7 @@
           </div>
 
           <div class="timeline">
-            @for (exam of examRows; track exam.subject) {
+            @for (exam of examRows(); track exam.subject) {
               <div class="timeline-item">
                 <span class="timeline-dot"></span>
                 <div>

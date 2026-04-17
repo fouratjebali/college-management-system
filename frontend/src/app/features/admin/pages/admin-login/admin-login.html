@@ -1,0 +1,72 @@
+<main class="admin-login-page">
+  <a routerLink="/" class="back-link" aria-label="Retour au login principal">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M10.79 5.29a1 1 0 0 1 0 1.41L6.5 11H20a1 1 0 1 1 0 2H6.5l4.29 4.29a1 1 0 1 1-1.41 1.41l-6-6a1 1 0 0 1 0-1.41l6-6a1 1 0 0 1 1.41 0Z"
+      />
+    </svg>
+    Main login
+  </a>
+
+  <section class="login-shell">
+    <article class="login-panel">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <div>
+          <strong>ISSATSO+</strong>
+          <span>Admin Secure Access</span>
+        </div>
+      </div>
+
+      <div class="intro">
+        <span class="eyebrow">Administration</span>
+        <h1>Connexion admin</h1>
+        <p>
+          Acces reserve aux administrateurs. Le backend verifie le role avant de livrer le
+          dashboard.
+        </p>
+      </div>
+
+      <form [formGroup]="adminLoginForm" (ngSubmit)="submitAdminLogin()">
+        <label>
+          Email administrateur
+          <input type="email" formControlName="email" placeholder="admin@issatso.tn" />
+        </label>
+
+        <label>
+          Mot de passe
+          <input type="password" formControlName="password" placeholder="Admin password" />
+        </label>
+
+        @if (feedbackMessage(); as message) {
+          <p class="feedback">{{ message }}</p>
+        }
+
+        <button class="primary-button" type="submit" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Verification...' : 'Entrer dans Admin' }}
+        </button>
+      </form>
+    </article>
+
+    <aside class="seed-card">
+      <span class="eyebrow">Seed data</span>
+      <h2>Compte de test</h2>
+      <p>Ce compte est cree automatiquement au demarrage du backend en mode dev.</p>
+
+      <div class="credential-row">
+        <span>Email</span>
+        <strong>{{ seedEmail }}</strong>
+      </div>
+      <div class="credential-row">
+        <span>Password</span>
+        <strong>{{ seedPassword }}</strong>
+      </div>
+
+      <div class="flow-list">
+        <span>1. Backend actif sur 8080</span>
+        <span>2. Login admin via JWT</span>
+        <span>3. Dashboard charge depuis /api/admin/dashboard</span>
+      </div>
+    </aside>
+  </section>
+</main>
