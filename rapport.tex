@@ -1715,4 +1715,262 @@ Documentation & Rapport Scrum mis a jour & \textbf{\checkmark Valide} \\
 
 Cette premiere etape du Sprint 2 livre le socle backend necessaire aux modules fonctionnels avances. Les annonces ciblees, les emplois du temps avec detection de conflits et les supports de cours avec upload/download sont maintenant disponibles. L'etape se termine avec une suite Maven valide et une documentation Scrum mise a jour, ce qui permet de lancer l'etape suivante : le frontend de l'espace administrateur.
 
+\section{Sprint Goal -- Etape 2 Frontend Admin}
+
+\begin{center}
+\fcolorbox{black}{gray!10}{
+\begin{minipage}{0.85\textwidth}
+\centering
+\vspace{0.4cm}
+\textbf{Objectif de l'etape 2 du Sprint 2 :}\\[0.3cm]
+\textit{<< Realiser une interface administrateur moderne, responsive et coherente avec la palette visuelle du login, permettant de piloter le dashboard, la structure pedagogique, les utilisateurs, les examens et la publication des notes. >>}
+\vspace{0.4cm}
+\end{minipage}
+}
+\end{center}
+
+\textbf{Critere de succes :} l'application Angular compile, la route \texttt{/admin} charge un espace administrateur complet, et les ecrans sont prets a etre connectes aux endpoints backend livres dans l'etape 1.
+
+\section{Definition of Done -- Sprint 2 Frontend Admin}
+
+Les criteres specifiques de validation pour cette etape frontend sont :
+
+\begin{itemize}[itemsep=0.4em]
+    \item La page admin est accessible via une route Angular dediee \texttt{/admin}.
+    \item Le module admin est charge en lazy loading afin de limiter le bundle initial.
+    \item La palette validee est appliquee : \texttt{\#222831}, \texttt{\#393E46}, \texttt{\#948979}, \texttt{\#DFD0B8}, avec texte blanc.
+    \item Le dashboard affiche les statistiques principales et des raccourcis d'action.
+    \item Les interfaces de gestion structure, utilisateurs, examens et publication notes sont presentes.
+    \item Les formulaires utilisent \texttt{ReactiveFormsModule} avec validation cote frontend.
+    \item Le design est responsive pour desktop, tablette et mobile.
+    \item La commande \texttt{npm run build} se termine sans erreur.
+\end{itemize}
+
+\section{Backlog Sprint 2 -- Etape 2 Frontend Admin}
+
+\begin{table}[H]
+\centering
+\caption{User Stories -- Sprint 2 Frontend Admin}
+\begin{tabular}{|p{1.2cm}|p{7.4cm}|p{1.8cm}|p{2.6cm}|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{SP} & \textbf{Statut} \\
+\hline
+S2-F1 & En tant qu'administrateur, je veux consulter un dashboard avec statistiques et raccourcis, afin de superviser rapidement l'activite academique. & 3 & \textbf{\checkmark Termine} \\
+\hline
+S2-F2 & En tant qu'administrateur, je veux une interface de gestion departements, matieres et groupes, afin de preparer la structure pedagogique. & 8 & \textbf{\checkmark Termine} \\
+\hline
+S2-F3 & En tant qu'administrateur, je veux gerer les utilisateurs par role et statut, afin de preparer la creation et la maintenance des comptes. & 5 & \textbf{\checkmark Termine} \\
+\hline
+S2-F4 & En tant qu'administrateur, je veux planifier les examens et preparer la publication des notes, afin de centraliser les operations d'evaluation. & 5 & \textbf{\checkmark Termine} \\
+\hline
+\textbf{Total} & & \textbf{21} & \textbf{Livre} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Implementation Technique -- Frontend Admin}
+
+\subsection{Routing et Architecture Angular}
+
+L'espace administrateur a ete integre comme un module fonctionnel charge a la demande :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout de la route \texttt{/admin} dans \texttt{app.routes.ts}.
+    \item Chargement lazy du module \texttt{AdminModule}.
+    \item Ajout d'une route enfant vers le composant standalone \texttt{AdminDashboardComponent}.
+    \item Ajout de \texttt{provideHttpClient()} dans la configuration Angular pour preparer l'integration API.
+\end{itemize}
+
+\subsection{Dashboard Administrateur}
+
+Le dashboard admin fournit une vue d'ensemble moderne et utilisable immediatement :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Hero section pour presenter l'objectif de pilotage.
+    \item Cartes statistiques : etudiants, professeurs, cours actifs et groupes.
+    \item Graphique CSS d'activite hebdomadaire, leger et compatible sans dependance supplementaire.
+    \item Actions rapides pour acceder aux modules structure, utilisateurs, examens et notes.
+\end{itemize}
+
+\subsection{Gestion Structure Pedagogique}
+
+L'interface structure regroupe les besoins du backlog pour les departements, matieres et groupes :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Formulaire reactif avec choix du type d'entite.
+    \item Champs nom, code et responsable.
+    \item Validation frontend des champs obligatoires.
+    \item Liste visuelle des departements existants avec statut.
+\end{itemize}
+
+\subsection{Gestion Utilisateurs}
+
+La section utilisateurs prepare l'administration des comptes :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Formulaire de creation de compte avec nom, email, role et statut.
+    \item Validation email et champs requis.
+    \item Liste utilisateurs avec recherche instantanee.
+    \item Badges de statut et action de reset preparee pour branchement backend.
+\end{itemize}
+
+\subsection{Examens et Publication Notes}
+
+La section evaluation combine calendrier et publication :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Formulaire de planification d'examen.
+    \item Formulaire de publication des notes avec visibilite.
+    \item Timeline des examens a venir.
+    \item Feedback utilisateur via un message d'etat centralise.
+\end{itemize}
+
+\section{Interfaces Livrees}
+
+\begin{table}[H]
+\centering
+\caption{Interfaces frontend livrees -- Sprint 2 Admin}
+\begin{tabular}{|p{4cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Interface} & \textbf{Route / Section} & \textbf{Objectif} \\
+\hline
+Dashboard Admin & \texttt{/admin} / Dashboard & Statistiques, graphique et actions rapides \\
+\hline
+Gestion Structure & \texttt{/admin} / Structure & Departements, matieres, groupes et validation formulaire \\
+\hline
+Gestion Utilisateurs & \texttt{/admin} / Utilisateurs & Creation compte, recherche, roles et statuts \\
+\hline
+Examens \& Notes & \texttt{/admin} / Examens \& Notes & Planification examens et preparation publication notes \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Tests et Validation Frontend}
+
+\textbf{Commande de validation executee :}
+
+\begin{verbatim}
+cd frontend
+npm run build
+\end{verbatim}
+
+\textbf{Resultat :} build Angular termine avec succes. Le bundle genere contient un chunk lazy \texttt{admin-dashboard}, ce qui confirme que le routing admin et le chargement a la demande sont fonctionnels.
+
+\begin{table}[H]
+\centering
+\caption{Validation de l'etape frontend admin}
+\begin{tabular}{|p{5cm}|p{5.5cm}|p{2.5cm}|}
+\hline
+\textbf{Element} & \textbf{Critere de validation} & \textbf{Statut} \\
+\hline
+Route admin & \texttt{/admin} charge le module admin & \textbf{\checkmark OK} \\
+\hline
+Compilation Angular & \texttt{npm run build} sans erreur & \textbf{\checkmark OK} \\
+\hline
+Palette UI & Couleurs Sprint 1 appliquees avec texte blanc & \textbf{\checkmark OK} \\
+\hline
+Responsive design & Layout adapte desktop/tablette/mobile & \textbf{\checkmark OK} \\
+\hline
+Formulaires & Validations Reactive Forms presentes & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Burndown Chart -- Sprint 2 Frontend Admin}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=12cm, height=7cm,
+    xlabel={Jours de l'etape frontend admin},
+    ylabel={Story Points Restants},
+    xmin=0, xmax=5,
+    ymin=0, ymax=22,
+    xtick={0,1,2,3,4,5},
+    xticklabels={J0,J1,J2,J3,J4,J5},
+    ytick={0,5,10,15,20},
+    grid=both,
+    grid style={line width=0.2pt, draw=gray!30},
+    major grid style={line width=0.4pt, draw=gray!60},
+    legend style={at={(0.98,0.95)}, anchor=north east, font=\small},
+]
+\addplot[dashed, color=gray, line width=1.2pt, mark=none]
+    coordinates {(0,21) (1,16.8) (2,12.6) (3,8.4) (4,4.2) (5,0)};
+\addlegendentry{Burndown ideal}
+
+\addplot[solid, color=blue!60!black, line width=1.8pt, mark=*, mark size=3pt]
+    coordinates {(0,21) (1,17) (2,12) (3,7) (4,3) (5,0)};
+\addlegendentry{Burndown reel}
+\end{axis}
+\end{tikzpicture}
+\caption{Burndown Chart -- Sprint 2 Frontend Admin (21 Story Points)}
+\label{fig:burndown-s2-admin}
+\end{figure}
+
+\section{Organisation GitHub -- Etape 2}
+
+Le travail frontend admin a ete isole sur la branche :
+
+\begin{verbatim}
+sprint2/admin-frontend-step2
+\end{verbatim}
+
+La strategie de commits retenue est :
+
+\begin{itemize}[itemsep=0.3em]
+    \item un commit pour l'implementation de l'espace admin Angular ;
+    \item un commit pour la validation frontend et la documentation Scrum ;
+    \item push de la branche distante pour revue avant integration dans \texttt{dev}.
+\end{itemize}
+
+\section{Sprint Review -- Etape 2}
+
+\begin{table}[H]
+\centering
+\caption{Review de l'etape frontend admin}
+\begin{tabular}{|p{5cm}|p{5cm}|p{3cm}|}
+\hline
+\textbf{Element} & \textbf{Observation} & \textbf{Decision} \\
+\hline
+Dashboard & L'admin dispose d'une vue globale moderne et coherente avec le login & \textbf{Accepte} \\
+\hline
+Structure pedagogique & Les formulaires et listes sont prets pour branchement API & \textbf{Accepte} \\
+\hline
+Utilisateurs & La recherche et les validations frontend sont operationnelles & \textbf{Accepte} \\
+\hline
+Examens et notes & Le flux de planification/publication est represente & \textbf{Accepte} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Retrospective -- Etape 2}
+
+\subsection{Keep -- Ce que nous gardons}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Reutiliser la palette validee du login pour garder une identite visuelle coherente.
+    \item Construire l'interface avec des composants standalone et lazy loading.
+    \item Valider rapidement avec \texttt{npm run build} apres les changements UI.
+\end{itemize}
+
+\subsection{Drop -- Ce que nous arretons}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Laisser les modules Angular vides sans route exploitable.
+    \item Melanger les changements frontend et backend dans le meme commit.
+\end{itemize}
+
+\subsection{Try -- Ce que nous experimentons ensuite}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Brancher progressivement les formulaires admin aux endpoints REST.
+    \item Ajouter des composants partages pour tables, formulaires et badges.
+    \item Ajouter des tests de composants Angular pour les sections critiques.
+\end{itemize}
+
+\section{Conclusion Sprint 2 -- Etape 2}
+
+Cette deuxieme etape du Sprint 2 livre l'espace administrateur cote frontend. L'application dispose maintenant d'une route \texttt{/admin}, d'un dashboard moderne, de sections de gestion structure/utilisateurs/examens/notes, d'une palette coherente avec le login et d'une validation Angular reussie. L'etape suivante pourra se concentrer sur les espaces professeur et etudiant, puis sur le branchement complet des workflows.
+
 \end{document}
