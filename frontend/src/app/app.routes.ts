@@ -15,6 +15,12 @@ export const routes: Routes = [
     redirectTo: '',
   },
   {
+    path: 'admin',
+    title: 'Admin Workspace',
+    loadChildren: () =>
+      import('./features/admin/admin-module').then((module) => module.AdminModule),
+  },
+  {
     path: '**',
     redirectTo: '',
   },

@@ -1,0 +1,358 @@
+<main class="admin-page">
+  <aside class="sidebar" aria-label="Navigation administrateur">
+    <div class="brand-block">
+      <span class="brand-mark"></span>
+      <div>
+        <strong>ISSATSO+</strong>
+        <span>Admin Control</span>
+      </div>
+    </div>
+
+    <nav class="nav-stack">
+      @for (item of navItems; track item.id) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="activeSection() === item.id"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          (click)="setSection(item.id)"
+        >
+          <span class="nav-dot"></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
+      }
+    </nav>
+
+    <div class="sidebar-card">
+      <span class="card-kicker">Sprint 2</span>
+      <strong>Frontend Admin</strong>
+      <p>Dashboard, CRUD UI, utilisateurs, examens et publication des notes.</p>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">College Management System</span>
+        <h1>Espace Administrateur</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="search-box">
+          <span>Search</span>
+          <input
+            type="search"
+            placeholder="Utilisateur, role, statut..."
+            [value]="searchTerm()"
+            (input)="updateSearch($event)"
+          />
+        </label>
+        <button type="button" class="ghost-button">Logout</button>
+      </div>
+    </header>
+
+    <p class="toast" role="status">{{ toastMessage() }}</p>
+
+    @if (activeSection() === 'overview') {
+      <section class="content-grid overview-grid">
+        <article class="hero-card">
+          <span class="eyebrow">Pilotage academique</span>
+          <h2>Une vue claire pour gerer la plateforme sans friction.</h2>
+          <p>
+            Cette interface centralise les indicateurs, les raccourcis et les actions
+            administratives principales de Sprint 2.
+          </p>
+          <div class="hero-actions">
+            <button type="button" class="primary-button" (click)="setSection('structure')">
+              Ajouter une structure
+            </button>
+            <button type="button" class="secondary-button" (click)="setSection('calendar')">
+              Planifier un examen
+            </button>
+          </div>
+        </article>
+
+        <section class="stats-grid" aria-label="Statistiques principales">
+          @for (stat of stats; track stat.label) {
+            <article
+              class="stat-card"
+              [class.tone-light]="stat.tone === 'light'"
+              [class.tone-warm]="stat.tone === 'warm'"
+              [class.tone-steel]="stat.tone === 'steel'"
+              [class.tone-sand]="stat.tone === 'sand'"
+            >
+              <span>{{ stat.label }}</span>
+              <strong>{{ stat.value }}</strong>
+              <small>{{ stat.trend }}</small>
+            </article>
+          }
+        </section>
+
+        <article class="panel chart-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Activite</span>
+            <h3>Utilisation hebdomadaire</h3>
+          </div>
+          <div class="bar-chart" aria-label="Graphique activite hebdomadaire">
+            @for (point of activitySeries; track point.label) {
+              <div class="bar-column">
+                <span class="bar" [style.height.%]="point.value"></span>
+                <small>{{ point.label }}</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel quick-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Actions rapides</span>
+            <h3>Operations frequentes</h3>
+          </div>
+          <div class="quick-list">
+            @for (action of quickActions; track action) {
+              <button type="button" (click)="activateQuickAction(action)">
+                <span>{{ action }}</span>
+                <strong>Open</strong>
+              </button>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'structure') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Structure pedagogique</span>
+            <h2>Creer ou preparer une entite</h2>
+            <p>Formulaire frontend pour departements, matieres et groupes.</p>
+          </div>
+
+          <form [formGroup]="structureForm" (ngSubmit)="submitStructure()">
+            <label>
+              Type
+              <select formControlName="entity">
+                <option>Departement</option>
+                <option>Matiere</option>
+                <option>Groupe</option>
+              </select>
+            </label>
+
+            <label>
+              Nom
+              <input type="text" formControlName="name" placeholder="Genie Informatique" />
+              @if (hasControlError(structureForm, 'name')) {
+                <small class="field-error">Nom requis, 3 caracteres minimum.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Code
+                <input type="text" formControlName="code" placeholder="GI" />
+                @if (hasControlError(structureForm, 'code')) {
+                  <small class="field-error">Code requis.</small>
+                }
+              </label>
+              <label>
+                Responsable
+                <input type="text" formControlName="owner" placeholder="Chef departement" />
+                @if (hasControlError(structureForm, 'owner')) {
+                  <small class="field-error">Responsable requis.</small>
+                }
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Enregistrer la structure</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Vue rapide</span>
+            <h2>Departements existants</h2>
+          </div>
+
+          <div class="data-list">
+            @for (row of academicRows; track row.code) {
+              <div class="data-row">
+                <span class="code-pill">{{ row.code }}</span>
+                <div>
+                  <strong>{{ row.title }}</strong>
+                  <small>{{ row.meta }}</small>
+                </div>
+                <span class="status-pill">{{ row.status }}</span>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'users') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Gestion utilisateurs</span>
+            <h2>Creer un compte</h2>
+            <p>Role, statut et validation email prepares cote frontend.</p>
+          </div>
+
+          <form [formGroup]="userForm" (ngSubmit)="submitUser()">
+            <label>
+              Nom complet
+              <input type="text" formControlName="fullName" placeholder="Nom Prenom" />
+              @if (hasControlError(userForm, 'fullName')) {
+                <small class="field-error">Nom complet requis.</small>
+              }
+            </label>
+
+            <label>
+              Email
+              <input type="email" formControlName="email" placeholder="user@issatso.tn" />
+              @if (hasControlError(userForm, 'email')) {
+                <small class="field-error">Email valide requis.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Role
+                <select formControlName="role">
+                  <option>Administrateur</option>
+                  <option>Professeur</option>
+                  <option>Etudiant</option>
+                </select>
+              </label>
+              <label>
+                Statut
+                <select formControlName="status">
+                  <option>Active</option>
+                  <option>Pending</option>
+                </select>
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Preparer le compte</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel wide-table">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annuaire</span>
+              <h2>Utilisateurs</h2>
+            </div>
+            <span class="counter">{{ filteredUsers().length }} resultats</span>
+          </div>
+
+          <div class="user-table">
+            @for (user of filteredUsers(); track user.email) {
+              <div class="user-row">
+                <div class="avatar">{{ user.name.charAt(0) }}</div>
+                <div>
+                  <strong>{{ user.name }}</strong>
+                  <small>{{ user.email }}</small>
+                </div>
+                <span>{{ user.role }}</span>
+                <span class="status-pill" [class.pending]="user.status === 'Pending'">
+                  {{ user.status }}
+                </span>
+                <button type="button" class="mini-button">Reset</button>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    } @else {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Calendrier examens</span>
+            <h2>Planifier une evaluation</h2>
+          </div>
+
+          <form [formGroup]="examForm" (ngSubmit)="submitExam()">
+            <label>
+              Matiere
+              <input type="text" formControlName="subject" placeholder="Architecture Logicielle" />
+              @if (hasControlError(examForm, 'subject')) {
+                <small class="field-error">Matiere requise.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Groupe
+                <input type="text" formControlName="group" placeholder="GI-3A" />
+              </label>
+              <label>
+                Date
+                <input type="datetime-local" formControlName="date" />
+              </label>
+            </div>
+
+            <label>
+              Salle
+              <input type="text" formControlName="room" placeholder="Bloc B / Salle 204" />
+            </label>
+
+            <button class="primary-button" type="submit">Ajouter au calendrier</button>
+          </form>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Publication notes</span>
+            <h2>Preparer une publication</h2>
+          </div>
+
+          <form [formGroup]="gradeForm" (ngSubmit)="publishGrades()">
+            <label>
+              Evaluation
+              <input type="text" formControlName="evaluation" placeholder="DS Architecture" />
+              @if (hasControlError(gradeForm, 'evaluation')) {
+                <small class="field-error">Evaluation requise.</small>
+              }
+            </label>
+
+            <label>
+              Groupe
+              <input type="text" formControlName="group" placeholder="GI-3A" />
+            </label>
+
+            <label>
+              Visibilite
+              <select formControlName="visibility">
+                <option>Etudiants concernes</option>
+                <option>Professeurs responsables</option>
+                <option>Administration seulement</option>
+              </select>
+            </label>
+
+            <button class="secondary-button" type="submit">Publier les notes</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading">
+            <span class="eyebrow">Planning</span>
+            <h2>Examens a venir</h2>
+          </div>
+
+          <div class="timeline">
+            @for (exam of examRows; track exam.subject) {
+              <div class="timeline-item">
+                <span class="timeline-dot"></span>
+                <div>
+                  <strong>{{ exam.subject }}</strong>
+                  <small>{{ exam.group }} - {{ exam.date }} - {{ exam.room }}</small>
+                </div>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    }
+  </section>
+</main>
