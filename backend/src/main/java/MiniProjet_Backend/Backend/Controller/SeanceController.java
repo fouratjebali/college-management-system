@@ -3,6 +3,8 @@ package MiniProjet_Backend.Backend.Controller;
 import MiniProjet_Backend.Backend.Model.Seance;
 import MiniProjet_Backend.Backend.Service.SeanceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -17,6 +19,11 @@ public class SeanceController {
     @GetMapping
     public ResponseEntity<List<Seance>> getAllSeances() {
         return ResponseEntity.ok(seanceService.getAllSeances());
+    }
+
+    @GetMapping("/paged")
+    public ResponseEntity<Page<Seance>> getAllSeancesPaged(Pageable pageable) {
+        return ResponseEntity.ok(seanceService.getAllSeances(pageable));
     }
 
     @GetMapping("/{id}")
@@ -34,6 +41,13 @@ public class SeanceController {
     @GetMapping("/groupe/{groupeId}")
     public ResponseEntity<List<Seance>> getSeancesByGroupe(@PathVariable Integer groupeId) {
         return ResponseEntity.ok(seanceService.getSeancesByGroupe(groupeId));
+    }
+
+    @GetMapping("/groupe/{groupeId}/paged")
+    public ResponseEntity<Page<Seance>> getSeancesByGroupePaged(
+            @PathVariable Integer groupeId,
+            Pageable pageable) {
+        return ResponseEntity.ok(seanceService.getSeancesByGroupe(groupeId, pageable));
     }
 
     @PostMapping

@@ -31,8 +31,21 @@ public class Annonce {
     @Column(nullable = false)
     private Boolean cibleGlobale;
 
+    @Column(length = 30)
+    private String cibleRole;
+
     @ManyToOne
     @JoinColumn(name="administrateur_id", nullable = false)
     private Administrateur administrateur;
+
+    @PrePersist
+    void beforeCreate() {
+        if (datePublication == null) {
+            datePublication = LocalDateTime.now();
+        }
+        if (cibleGlobale == null) {
+            cibleGlobale = Boolean.TRUE;
+        }
+    }
 }
 

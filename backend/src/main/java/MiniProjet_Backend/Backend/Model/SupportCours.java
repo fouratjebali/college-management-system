@@ -23,10 +23,26 @@ public class SupportCours {
     private String cheminFichier;
 
     @Column(nullable = false)
+    private String nomFichierOriginal;
+
+    @Column(nullable = false)
+    private String typeFichier;
+
+    @Column(nullable = false)
+    private Long tailleOctets;
+
+    @Column(nullable = false)
     private LocalDateTime dateDepot;
 
     @ManyToOne
     @JoinColumn(name="enseignement_id", nullable = false)
     private Enseignement enseignement;
+
+    @PrePersist
+    void beforeCreate() {
+        if (dateDepot == null) {
+            dateDepot = LocalDateTime.now();
+        }
+    }
 }
 
