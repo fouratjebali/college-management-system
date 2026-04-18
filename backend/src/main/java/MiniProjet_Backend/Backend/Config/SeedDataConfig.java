@@ -264,7 +264,17 @@ public class SeedDataConfig {
             String paddedIndex = String.format("%02d", index);
             String email = "student." + slug + "." + paddedIndex + "@issatso.tn";
 
-            if (userRepository.findByEmail(email).isPresent()) {
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user instanceof Etudiant existingStudent) {
+                existingStudent.setNomComplet(buildStudentName(group.getLibelle(), index));
+                existingStudent.setMatricule(slug.toUpperCase() + "-" + paddedIndex);
+                existingStudent.setNiveau(group.getNiveau());
+                existingStudent.setGroupe(group);
+                etudiantRepository.save(existingStudent);
+                continue;
+            }
+
+            if (user != null) {
                 continue;
             }
 
@@ -283,16 +293,30 @@ public class SeedDataConfig {
     private String buildStudentName(String groupLabel, int index) {
         List<String> firstNames = List.of(
                 "Amine", "Sarra", "Youssef", "Meriem", "Karim",
-                "Ines", "Omar", "Nour", "Aziz", "Rania"
+                "Ines", "Omar", "Nour", "Aziz", "Rania",
+                "Malek", "Aya", "Mehdi", "Lina", "Sami",
+                "Hiba", "Fares", "Eya", "Walid", "Salma",
+                "Anis", "Molka", "Taha", "Yosra", "Bilel",
+                "Amani", "Skander", "Nesrine", "Houssem", "Rim",
+                "Iheb", "Marwa", "Rayen", "Sirine", "Ghassen",
+                "Hadil", "Khalil", "Emna", "Seif", "Ons"
         );
         List<String> lastNames = List.of(
                 "Ben Ali", "Mansouri", "Trabelsi", "Gharbi", "Jebali",
-                "Saidi", "Mejri", "Kacem", "Ayari", "Haddad"
+                "Saidi", "Mejri", "Kacem", "Ayari", "Haddad",
+                "Bouzid", "Cherif", "Zouari", "Mbarek", "Lahmar",
+                "Brahmi", "Nafti", "Dridi", "Mokhtar", "Ferchichi",
+                "Hamdi", "Ksouri", "Bennour", "Rezgui", "Tlili",
+                "Mahfoudh", "Baccar", "Jaziri", "Ammar", "Chaabane",
+                "Dhaouadi", "Kallel", "Sellami", "Riahi", "Zribi",
+                "Guesmi", "Nasri", "Abidi", "Belhadj", "Chtourou"
         );
 
-        String firstName = firstNames.get((index - 1) % firstNames.size());
-        String lastName = lastNames.get((index - 1) % lastNames.size());
-        return firstName + " " + lastName + " " + groupLabel + "-" + String.format("%02d", index);
+        int groupOffset = Math.abs(groupLabel.hashCode());
+        int firstNameIndex = (groupOffset + index - 1) % firstNames.size();
+        int lastNameIndex = ((groupOffset / firstNames.size()) + (index * 3) - 3) % lastNames.size();
+
+        return firstNames.get(firstNameIndex) + " " + lastNames.get(lastNameIndex);
     }
 
     private void seedProfessorWeeklySchedule(
