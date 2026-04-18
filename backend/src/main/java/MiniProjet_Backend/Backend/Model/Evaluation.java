@@ -3,7 +3,9 @@ package MiniProjet_Backend.Backend.Model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -31,9 +33,13 @@ public class Evaluation {
 
     @ManyToOne
     @JoinColumn(name="seance_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Seance seance;
 
     @OneToMany(mappedBy = "evaluation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<Note> notes;
 }
 

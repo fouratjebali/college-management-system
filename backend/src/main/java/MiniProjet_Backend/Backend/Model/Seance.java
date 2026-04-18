@@ -3,7 +3,9 @@ package MiniProjet_Backend.Backend.Model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import java.time.LocalTime;
 import java.util.Set;
 
@@ -37,16 +39,24 @@ public class Seance {
 
     @ManyToOne
     @JoinColumn(name="enseignement_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Enseignement enseignement;
 
     @ManyToOne
     @JoinColumn(name="groupe_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Groupe groupe;
 
     @OneToMany(mappedBy = "seance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<Presence> presences;
 
     @OneToMany(mappedBy = "seance", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Set<Evaluation> evaluations;
 }
 

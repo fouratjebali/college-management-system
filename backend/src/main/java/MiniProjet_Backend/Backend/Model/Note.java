@@ -3,7 +3,9 @@ package MiniProjet_Backend.Backend.Model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name="note")
@@ -26,10 +28,14 @@ public class Note {
 
     @ManyToOne
     @JoinColumn(name="evaluation_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Evaluation evaluation;
 
     @ManyToOne
     @JoinColumn(name="etudiant_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Etudiant etudiant;
 }
 

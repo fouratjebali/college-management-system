@@ -3,7 +3,9 @@ package MiniProjet_Backend.Backend.Model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,10 +26,14 @@ public class Presence {
 
     @ManyToOne
     @JoinColumn(name="etudiant_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Etudiant etudiant;
 
     @ManyToOne
     @JoinColumn(name="seance_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Seance seance;
 }
 

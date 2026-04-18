@@ -3,7 +3,9 @@ package MiniProjet_Backend.Backend.Model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,6 +38,8 @@ public class SupportCours {
 
     @ManyToOne
     @JoinColumn(name="enseignement_id", nullable = false)
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Enseignement enseignement;
 
     @PrePersist

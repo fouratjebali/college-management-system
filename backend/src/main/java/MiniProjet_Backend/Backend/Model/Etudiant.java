@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name="etudiant")
@@ -21,6 +22,8 @@ public class Etudiant extends User {
 
     @ManyToOne
     @JoinColumn(name="groupe_id")
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     private Groupe groupe;
 }
 
