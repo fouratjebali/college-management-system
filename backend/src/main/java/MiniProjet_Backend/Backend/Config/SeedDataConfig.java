@@ -9,6 +9,7 @@ import MiniProjet_Backend.Backend.Model.Groupe;
 import MiniProjet_Backend.Backend.Model.Matiere;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.Seance;
+import MiniProjet_Backend.Backend.Model.User;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
 import MiniProjet_Backend.Backend.Repository.EnseignementRepository;
 import MiniProjet_Backend.Backend.Repository.EtudiantRepository;
@@ -32,6 +33,10 @@ import java.util.List;
 @Configuration
 @Profile("!test")
 public class SeedDataConfig {
+    private static final String UNIVERSITY_YEAR = "2025-2026";
+    private static final String PROFESSOR_EMAIL = "prof.demo@issatso.tn";
+    private static final String STUDENT_PASSWORD = "Student@12345";
+
     @Value("${app.seed.admin.email:admin@issatso.tn}")
     private String adminEmail;
 
@@ -59,14 +64,20 @@ public class SeedDataConfig {
                     groupeRepository
             );
             Professeur professeur = seedProfessor(passwordEncoder, userRepository, professeurRepository);
-            seedStudent(passwordEncoder, userRepository, etudiantRepository, academicData.groupe());
-            seedEvaluationFlow(
+            seedStudents(
+                    passwordEncoder,
+                    userRepository,
+                    etudiantRepository,
+                    academicData.gi3a(),
+                    academicData.groups()
+            );
+            seedProfessorWeeklySchedule(
                     enseignementRepository,
                     seanceRepository,
                     evaluationRepository,
                     professeur,
-                    academicData.matiere(),
-                    academicData.groupe()
+                    academicData.subjects(),
+                    academicData.groups()
             );
         };
     }
@@ -91,52 +102,77 @@ public class SeedDataConfig {
             MatiereRepository matiereRepository,
             GroupeRepository groupeRepository
     ) {
-        if (departementRepository.count() == 0) {
-            List.of("Genie Informatique", "Genie Electrique", "Maintenance Industrielle")
-                    .forEach(name -> {
-                        Departement departement = new Departement();
-                        departement.setNom(name);
-                        departementRepository.save(departement);
-                    });
-        }
+        List.of("Genie Informatique", "Genie Electrique", "Maintenance Industrielle")
+                .forEach(name -> ensureDepartment(departementRepository, name));
 
-        Departement departement = departementRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No departement available for seed data"));
+        Departement informatique = departementRepository.findByNom("Genie Informatique")
+                .orElseThrow(() -> new IllegalStateException("Genie Informatique department missing"));
 
-        if (matiereRepository.count() == 0) {
-            Matiere architecture = new Matiere();
-            architecture.setCode("ARCH-LOG");
-            architecture.setLibelle("Architecture Logicielle");
-            architecture.setCoefficient(2.0F);
-            architecture.setDepartement(departement);
-            matiereRepository.save(architecture);
+        List<Matiere> subjects = List.of(
+                ensureSubject(matiereRepository, informatique, "ARCH-LOG", "Architecture Logicielle", 2.0F),
+                ensureSubject(matiereRepository, informatique, "BD-2", "Bases de Donnees", 2.0F),
+                ensureSubject(matiereRepository, informatique, "WEB-ANG", "Developpement Web Angular", 1.5F),
+                ensureSubject(matiereRepository, informatique, "SPRING-API", "APIs REST Spring Boot", 2.0F),
+                ensureSubject(matiereRepository, informatique, "DEVOPS", "DevOps et Docker", 1.5F)
+        );
 
-            Matiere databases = new Matiere();
-            databases.setCode("BD-2");
-            databases.setLibelle("Bases de Donnees");
-            databases.setCoefficient(2.0F);
-            databases.setDepartement(departement);
-            matiereRepository.save(databases);
-        }
+        Groupe gi3a = ensureGroup(groupeRepository, informatique, "GI-3A", "3eme annee");
+        List<Groupe> groups = List.of(
+                gi3a,
+                ensureGroup(groupeRepository, informatique, "GI-1A", "1ere annee"),
+                ensureGroup(groupeRepository, informatique, "GI-1B", "1ere annee"),
+                ensureGroup(groupeRepository, informatique, "GI-2A", "2eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-2B", "2eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-3B", "3eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-3C", "3eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-4A", "4eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-4B", "4eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-5A", "5eme annee"),
+                ensureGroup(groupeRepository, informatique, "GI-5B", "5eme annee")
+        );
 
-        if (groupeRepository.count() == 0) {
+        return new SeedAcademicData(subjects, groups, gi3a);
+    }
+
+    private Departement ensureDepartment(DepartementRepository departementRepository, String name) {
+        return departementRepository.findByNom(name).orElseGet(() -> {
+            Departement departement = new Departement();
+            departement.setNom(name);
+            return departementRepository.save(departement);
+        });
+    }
+
+    private Matiere ensureSubject(
+            MatiereRepository matiereRepository,
+            Departement departement,
+            String code,
+            String label,
+            Float coefficient
+    ) {
+        return matiereRepository.findByCode(code).orElseGet(() -> {
+            Matiere matiere = new Matiere();
+            matiere.setCode(code);
+            matiere.setLibelle(label);
+            matiere.setCoefficient(coefficient);
+            matiere.setDepartement(departement);
+            return matiereRepository.save(matiere);
+        });
+    }
+
+    private Groupe ensureGroup(
+            GroupeRepository groupeRepository,
+            Departement departement,
+            String label,
+            String level
+    ) {
+        return groupeRepository.findByLibelle(label).orElseGet(() -> {
             Groupe groupe = new Groupe();
-            groupe.setLibelle("GI-3A");
-            groupe.setNiveau("3eme annee");
-            groupe.setAnneeUniversitaire("2025-2026");
+            groupe.setLibelle(label);
+            groupe.setNiveau(level);
+            groupe.setAnneeUniversitaire(UNIVERSITY_YEAR);
             groupe.setDepartement(departement);
-            groupeRepository.save(groupe);
-        }
-
-        Matiere matiere = matiereRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No matiere available for seed data"));
-        Groupe groupe = groupeRepository.findAll().stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("No groupe available for seed data"));
-
-        return new SeedAcademicData(matiere, groupe);
+            return groupeRepository.save(groupe);
+        });
     }
 
     private Professeur seedProfessor(
@@ -144,12 +180,12 @@ public class SeedDataConfig {
             UserRepository userRepository,
             ProfesseurRepository professeurRepository
     ) {
-        return userRepository.findByEmail("prof.demo@issatso.tn")
+        return userRepository.findByEmail(PROFESSOR_EMAIL)
                 .map(user -> (Professeur) user)
                 .orElseGet(() -> {
                     Professeur professeur = new Professeur();
                     professeur.setNomComplet("Nour Ben Ali");
-                    professeur.setEmail("prof.demo@issatso.tn");
+                    professeur.setEmail(PROFESSOR_EMAIL);
                     professeur.setMotDePasseHash(passwordEncoder.encode("Prof@12345"));
                     professeur.setActif(true);
                     professeur.setMatriculePro("PRO-0001");
@@ -158,66 +194,219 @@ public class SeedDataConfig {
                 });
     }
 
-    private void seedStudent(
+    private void seedStudents(
             PasswordEncoder passwordEncoder,
             UserRepository userRepository,
             EtudiantRepository etudiantRepository,
-            Groupe groupe
+            Groupe gi3a,
+            List<Groupe> groups
     ) {
-        if (userRepository.findByEmail("student.demo@issatso.tn").isPresent()) {
+        seedDemoStudent(passwordEncoder, userRepository, etudiantRepository, gi3a);
+        seedGeneratedStudentsForGroup(
+                passwordEncoder,
+                userRepository,
+                etudiantRepository,
+                gi3a,
+                19
+        );
+
+        groups.stream()
+                .filter(group -> !"GI-3A".equals(group.getLibelle()))
+                .forEach(group -> seedGeneratedStudentsForGroup(
+                        passwordEncoder,
+                        userRepository,
+                        etudiantRepository,
+                        group,
+                        20
+                ));
+    }
+
+    private void seedDemoStudent(
+            PasswordEncoder passwordEncoder,
+            UserRepository userRepository,
+            EtudiantRepository etudiantRepository,
+            Groupe group
+    ) {
+        User user = userRepository.findByEmail("student.demo@issatso.tn").orElse(null);
+
+        if (user instanceof Etudiant existingStudent) {
+            existingStudent.setGroupe(group);
+            existingStudent.setNiveau(group.getNiveau());
+            etudiantRepository.save(existingStudent);
+            return;
+        }
+
+        if (user != null) {
             return;
         }
 
         Etudiant etudiant = new Etudiant();
         etudiant.setNomComplet("Yassine Mansouri");
         etudiant.setEmail("student.demo@issatso.tn");
-        etudiant.setMotDePasseHash(passwordEncoder.encode("Student@12345"));
+        etudiant.setMotDePasseHash(passwordEncoder.encode(STUDENT_PASSWORD));
         etudiant.setActif(true);
         etudiant.setMatricule("ETU-0001");
-        etudiant.setNiveau("3eme annee");
-        etudiant.setGroupe(groupe);
+        etudiant.setNiveau(group.getNiveau());
+        etudiant.setGroupe(group);
         etudiantRepository.save(etudiant);
     }
 
-    private void seedEvaluationFlow(
+    private void seedGeneratedStudentsForGroup(
+            PasswordEncoder passwordEncoder,
+            UserRepository userRepository,
+            EtudiantRepository etudiantRepository,
+            Groupe group,
+            int count
+    ) {
+        String slug = group.getLibelle().toLowerCase().replaceAll("[^a-z0-9]", "");
+
+        for (int index = 1; index <= count; index++) {
+            String paddedIndex = String.format("%02d", index);
+            String email = "student." + slug + "." + paddedIndex + "@issatso.tn";
+
+            if (userRepository.findByEmail(email).isPresent()) {
+                continue;
+            }
+
+            Etudiant etudiant = new Etudiant();
+            etudiant.setNomComplet(buildStudentName(group.getLibelle(), index));
+            etudiant.setEmail(email);
+            etudiant.setMotDePasseHash(passwordEncoder.encode(STUDENT_PASSWORD));
+            etudiant.setActif(true);
+            etudiant.setMatricule(slug.toUpperCase() + "-" + paddedIndex);
+            etudiant.setNiveau(group.getNiveau());
+            etudiant.setGroupe(group);
+            etudiantRepository.save(etudiant);
+        }
+    }
+
+    private String buildStudentName(String groupLabel, int index) {
+        List<String> firstNames = List.of(
+                "Amine", "Sarra", "Youssef", "Meriem", "Karim",
+                "Ines", "Omar", "Nour", "Aziz", "Rania"
+        );
+        List<String> lastNames = List.of(
+                "Ben Ali", "Mansouri", "Trabelsi", "Gharbi", "Jebali",
+                "Saidi", "Mejri", "Kacem", "Ayari", "Haddad"
+        );
+
+        String firstName = firstNames.get((index - 1) % firstNames.size());
+        String lastName = lastNames.get((index - 1) % lastNames.size());
+        return firstName + " " + lastName + " " + groupLabel + "-" + String.format("%02d", index);
+    }
+
+    private void seedProfessorWeeklySchedule(
             EnseignementRepository enseignementRepository,
             SeanceRepository seanceRepository,
             EvaluationRepository evaluationRepository,
             Professeur professeur,
-            Matiere matiere,
-            Groupe groupe
+            List<Matiere> subjects,
+            List<Groupe> groups
     ) {
-        if (evaluationRepository.count() > 0) {
+        List<Enseignement> teachings = subjects.stream()
+                .map(subject -> ensureTeaching(enseignementRepository, professeur, subject))
+                .toList();
+        List<String> days = List.of("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi");
+        List<TimeSlot> slots = List.of(
+                new TimeSlot(LocalTime.of(8, 30), LocalTime.of(10, 0), "Cours"),
+                new TimeSlot(LocalTime.of(10, 15), LocalTime.of(11, 45), "TD"),
+                new TimeSlot(LocalTime.of(13, 30), LocalTime.of(15, 0), "TP"),
+                new TimeSlot(LocalTime.of(15, 15), LocalTime.of(16, 45), "Cours")
+        );
+
+        int scheduleIndex = 0;
+        for (String day : days) {
+            for (TimeSlot slot : slots) {
+                Enseignement teaching = teachings.get(scheduleIndex % teachings.size());
+                Groupe group = groups.get(scheduleIndex % groups.size());
+                Seance seance = ensureSession(
+                        seanceRepository,
+                        teaching,
+                        group,
+                        day,
+                        slot,
+                        "Bloc " + (char) ('A' + (scheduleIndex % 4)),
+                        "Salle " + (101 + scheduleIndex)
+                );
+                ensureEvaluation(evaluationRepository, seance, scheduleIndex);
+                scheduleIndex++;
+            }
+        }
+    }
+
+    private Enseignement ensureTeaching(
+            EnseignementRepository enseignementRepository,
+            Professeur professeur,
+            Matiere subject
+    ) {
+        return enseignementRepository.findByProfesseurId(professeur.getId()).stream()
+                .filter(enseignement -> enseignement.getMatiere().getId().equals(subject.getId()))
+                .findFirst()
+                .orElseGet(() -> {
+                    Enseignement enseignement = new Enseignement();
+                    enseignement.setMatiere(subject);
+                    enseignement.setProfesseur(professeur);
+                    enseignement.setSemestre(2);
+                    enseignement.setAnneeUniversitaire(UNIVERSITY_YEAR);
+                    return enseignementRepository.save(enseignement);
+                });
+    }
+
+    private Seance ensureSession(
+            SeanceRepository seanceRepository,
+            Enseignement teaching,
+            Groupe group,
+            String day,
+            TimeSlot slot,
+            String building,
+            String room
+    ) {
+        return seanceRepository.findByEnseignementId(teaching.getId()).stream()
+                .filter(seance -> seance.getGroupe().getId().equals(group.getId()))
+                .filter(seance -> seance.getJoursemaine().equalsIgnoreCase(day))
+                .filter(seance -> seance.getHeureDebut().equals(slot.start()))
+                .findFirst()
+                .orElseGet(() -> {
+                    Seance seance = new Seance();
+                    seance.setTypeSeance(slot.type());
+                    seance.setJoursemaine(day);
+                    seance.setHeureDebut(slot.start());
+                    seance.setHeureFin(slot.end());
+                    seance.setSalle(room);
+                    seance.setBatiment(building);
+                    seance.setEnseignement(teaching);
+                    seance.setGroupe(group);
+                    return seanceRepository.save(seance);
+                });
+    }
+
+    private void ensureEvaluation(
+            EvaluationRepository evaluationRepository,
+            Seance seance,
+            int scheduleIndex
+    ) {
+        if (!evaluationRepository.findBySeanceId(seance.getId()).isEmpty()) {
             return;
         }
 
-        Enseignement enseignement = new Enseignement();
-        enseignement.setMatiere(matiere);
-        enseignement.setProfesseur(professeur);
-        enseignement.setSemestre(2);
-        enseignement.setAnneeUniversitaire("2025-2026");
-        enseignement = enseignementRepository.save(enseignement);
-
-        Seance seance = new Seance();
-        seance.setTypeSeance("Cours");
-        seance.setJoursemaine("Mardi");
-        seance.setHeureDebut(LocalTime.of(9, 0));
-        seance.setHeureFin(LocalTime.of(10, 30));
-        seance.setSalle("Salle 204");
-        seance.setBatiment("Bloc B");
-        seance.setEnseignement(enseignement);
-        seance.setGroupe(groupe);
-        seance = seanceRepository.save(seance);
-
         Evaluation evaluation = new Evaluation();
-        evaluation.setLibelle("DS Architecture Logicielle");
+        evaluation.setLibelle("DS " + seance.getEnseignement().getMatiere().getLibelle()
+                + " - " + seance.getGroupe().getLibelle());
         evaluation.setTypeEvaluation("Devoir Surveille");
-        evaluation.setDateEvaluation(LocalDateTime.now().plusDays(7).withHour(9).withMinute(0));
+        evaluation.setDateEvaluation(LocalDateTime.now()
+                .plusDays(7L + scheduleIndex)
+                .withHour(seance.getHeureDebut().getHour())
+                .withMinute(seance.getHeureDebut().getMinute())
+                .withSecond(0)
+                .withNano(0));
         evaluation.setCoefficient(1.0F);
         evaluation.setSeance(seance);
         evaluationRepository.save(evaluation);
     }
 
-    private record SeedAcademicData(Matiere matiere, Groupe groupe) {
+    private record SeedAcademicData(List<Matiere> subjects, List<Groupe> groups, Groupe gi3a) {
+    }
+
+    private record TimeSlot(LocalTime start, LocalTime end, String type) {
     }
 }
