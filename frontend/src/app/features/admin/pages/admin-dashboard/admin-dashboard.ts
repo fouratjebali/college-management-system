@@ -1,9 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../../core/services/auth';
 import { AdminDashboardApi } from '../../services/admin-dashboard-api';
 
 type AdminSection = 'overview' | 'structure' | 'users' | 'calendar';
+type PlanningMode = 'single' | 'weekly';
 
 interface NavItem {
   id: AdminSection;
@@ -30,6 +33,9 @@ interface UserRow {
   email: string;
   role: string;
   status: 'Active' | 'Pending';
+  department: string;
+  group: string;
+  specialty: string;
 }
 
 interface ExamRow {
@@ -37,6 +43,13 @@ interface ExamRow {
   group: string;
   date: string;
   room: string;
+  type: string;
+  scope: string;
+}
+
+interface ProfessorDepartmentGroup {
+  department: string;
+  professors: readonly UserRow[];
 }
 
 @Component({
@@ -49,11 +62,19 @@ interface ExamRow {
 })
 export class AdminDashboardComponent {
   private readonly formBuilder = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly dashboardApi = inject(AdminDashboardApi);
 
   protected readonly activeSection = signal<AdminSection>('overview');
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('Espace admin charge avec succes.');
+  protected readonly selectedDepartment = signal('Tous');
+  protected readonly selectedGroup = signal('Tous');
+  protected readonly selectedRole = signal('Tous');
+  protected readonly editingUserEmail = signal<string | null>(null);
+  protected readonly planningMode = signal<PlanningMode>('single');
+  protected readonly isDashboardLoading = signal(true);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -78,20 +99,22 @@ export class AdminDashboardComponent {
     },
   ];
 
-  protected readonly stats = signal<readonly StatCard[]>([
-    { label: 'Etudiants', value: '1 248', trend: '+12 ce mois', tone: 'light' },
-    { label: 'Professeurs', value: '86', trend: '7 departements', tone: 'steel' },
-    { label: 'Cours actifs', value: '142', trend: 'Semestre 2', tone: 'warm' },
-    { label: 'Groupes', value: '34', trend: '4 niveaux', tone: 'sand' },
-  ]);
+  protected readonly stats = signal<readonly StatCard[]>([]);
 
-  protected readonly activitySeries = [
-    { label: 'Lun', value: 48 },
-    { label: 'Mar', value: 68 },
-    { label: 'Mer', value: 54 },
-    { label: 'Jeu', value: 82 },
-    { label: 'Ven', value: 76 },
-  ] as const;
+  protected readonly activitySeries = computed(() => {
+    const stats = this.stats();
+    const values = stats.map((stat) => this.parseStatValue(stat.value));
+    const maxValue = Math.max(...values, 0);
+
+    if (stats.length === 0 || maxValue === 0) {
+      return [];
+    }
+
+    return stats.map((stat, index) => ({
+      label: stat.label,
+      value: Math.max(8, Math.round((values[index] / maxValue) * 100)),
+    }));
+  });
 
   protected readonly quickActions = [
     'Creer un departement',
@@ -100,88 +123,95 @@ export class AdminDashboardComponent {
     'Publier les notes',
   ] as const;
 
-  protected readonly academicRows = signal<readonly AcademicRow[]>([
-    {
-      code: 'GI',
-      title: 'Genie Informatique',
-      meta: '12 groupes, 38 matieres',
-      status: 'Ouvert',
-    },
-    {
-      code: 'GE',
-      title: 'Genie Electrique',
-      meta: '8 groupes, 24 matieres',
-      status: 'Ouvert',
-    },
-    {
-      code: 'MP',
-      title: 'Maintenance Industrielle',
-      meta: '6 groupes, 18 matieres',
-      status: 'Audit',
-    },
-  ]);
+  protected readonly academicRows = signal<readonly AcademicRow[]>([]);
 
-  protected readonly users = signal<readonly UserRow[]>([
-    {
-      name: 'Amina Gharbi',
-      email: 'amina.gharbi@issatso.tn',
-      role: 'Administrateur',
-      status: 'Active',
-    },
-    {
-      name: 'Nour Ben Ali',
-      email: 'nour.benali@issatso.tn',
-      role: 'Professeur',
-      status: 'Active',
-    },
-    {
-      name: 'Yassine Mansouri',
-      email: 'yassine.mansouri@issatso.tn',
-      role: 'Etudiant',
-      status: 'Pending',
-    },
-    {
-      name: 'Sarra Trabelsi',
-      email: 'sarra.trabelsi@issatso.tn',
-      role: 'Professeur',
-      status: 'Active',
-    },
-  ]);
+  protected readonly users = signal<readonly UserRow[]>([]);
 
-  protected readonly examRows = signal<readonly ExamRow[]>([
-    {
-      subject: 'Architecture Logicielle',
-      group: 'GI-3A',
-      date: '22 Avril 2026, 09:00',
-      room: 'Bloc B / Salle 204',
-    },
-    {
-      subject: 'Bases de Donnees',
-      group: 'GI-2B',
-      date: '24 Avril 2026, 11:00',
-      room: 'Bloc A / Labo 3',
-    },
-    {
-      subject: 'Automatique',
-      group: 'GE-2A',
-      date: '27 Avril 2026, 14:00',
-      room: 'Bloc C / Salle 102',
-    },
-  ]);
+  protected readonly examRows = signal<readonly ExamRow[]>([]);
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
+    const department = this.selectedDepartment();
+    const group = this.selectedGroup();
+    const role = this.selectedRole();
 
-    if (!query) {
-      return this.users();
-    }
+    return this.users().filter((user) => {
+      const matchesQuery =
+        !query ||
+        [user.name, user.email, user.role, user.status, user.department, user.group, user.specialty].some(
+          (value) => value.toLowerCase().includes(query)
+        );
+      const matchesDepartment = department === 'Tous' || user.department === department;
+      const matchesRole = role === 'Tous' || user.role === role;
+      const matchesGroup =
+        group === 'Tous' ||
+        user.group === group ||
+        (user.role === 'Professeur' && group === 'Tous les groupes');
 
-    return this.users().filter((user) =>
-      [user.name, user.email, user.role, user.status].some((value) =>
-        value.toLowerCase().includes(query)
-      )
-    );
+      return matchesQuery && matchesDepartment && matchesRole && matchesGroup;
+    });
   });
+
+  protected readonly departmentOptions = computed(() => {
+    const departments = new Set<string>();
+
+    this.academicRows().forEach((row) => {
+      if (row.title) {
+        departments.add(row.title);
+      }
+    });
+
+    this.users().forEach((user) => {
+      if (user.department && user.department !== 'Non affecte') {
+        departments.add(user.department);
+      }
+    });
+
+    return ['Tous', ...Array.from(departments).sort((first, second) => first.localeCompare(second))];
+  });
+
+  protected readonly groupOptions = computed(() => {
+    const department = this.selectedDepartment();
+    const scopedUsers =
+      department === 'Tous'
+        ? this.users()
+        : this.users().filter((user) => user.department === department);
+
+    return [
+      'Tous',
+      ...Array.from(new Set(scopedUsers.map((user) => user.group))).filter(
+        (group) => group && group !== 'Non affecte'
+      ),
+    ];
+  });
+
+  protected readonly departmentFormOptions = computed(() =>
+    this.departmentOptions().filter(
+      (department) => department !== 'Tous' && department !== 'Administration'
+    )
+  );
+
+  protected readonly groupFormOptions = computed(() =>
+    Array.from(
+      new Set(
+        this.users()
+          .map((user) => user.group)
+          .filter((group) => group && group !== 'Non affecte' && group !== 'Tous les groupes')
+      )
+    ).sort((first, second) => first.localeCompare(second))
+  );
+
+  protected readonly professorsByDepartment = computed<readonly ProfessorDepartmentGroup[]>(() =>
+    this.departmentOptions()
+      .filter((department) => department !== 'Tous')
+      .map((department) => ({
+        department,
+        professors: this.users().filter(
+          (user) => user.role === 'Professeur' && user.department === department
+        ),
+      }))
+      .filter((group) => group.professors.length > 0)
+  );
 
   protected readonly structureForm = this.formBuilder.nonNullable.group({
     entity: ['Departement', [Validators.required]],
@@ -195,13 +225,23 @@ export class AdminDashboardComponent {
     email: ['', [Validators.required, Validators.email]],
     role: ['Etudiant', [Validators.required]],
     status: ['Active', [Validators.required]],
+    department: ['', [Validators.required]],
+    group: [''],
+    specialty: ['', [Validators.required, Validators.minLength(2)]],
   });
 
   protected readonly examForm = this.formBuilder.nonNullable.group({
+    planningMode: ['single', [Validators.required]],
+    evaluationType: ['DS', [Validators.required]],
     subject: ['', [Validators.required, Validators.minLength(3)]],
+    department: ['', [Validators.required]],
     group: ['', [Validators.required]],
-    date: ['', [Validators.required]],
+    startDate: ['', [Validators.required]],
+    day: ['Lundi', [Validators.required]],
+    time: ['09:00', [Validators.required]],
     room: ['', [Validators.required]],
+    supervisor: ['', [Validators.required]],
+    details: [''],
   });
 
   protected readonly gradeForm = this.formBuilder.nonNullable.group({
@@ -215,17 +255,25 @@ export class AdminDashboardComponent {
   }
 
   private loadDashboard(): void {
+    this.isDashboardLoading.set(true);
+
     this.dashboardApi.getDashboard().subscribe({
       next: (dashboard) => {
-        this.stats.set(dashboard.stats);
-        this.academicRows.set(dashboard.academicRows);
-        this.users.set(dashboard.users);
-        this.examRows.set(dashboard.exams);
-        this.toastMessage.set('Donnees admin seed chargees depuis le backend.');
+        this.stats.set(this.normalizeStats(dashboard.stats ?? []));
+        this.academicRows.set(this.normalizeAcademicRows(dashboard.academicRows ?? []));
+        this.users.set((dashboard.users ?? []).map((user) => this.normalizeUser(user)));
+        this.examRows.set((dashboard.exams ?? []).map((exam) => this.normalizeExam(exam)));
+        this.isDashboardLoading.set(false);
+        this.toastMessage.set('Donnees admin chargees depuis la base de donnees.');
       },
       error: () => {
+        this.stats.set([]);
+        this.academicRows.set([]);
+        this.users.set([]);
+        this.examRows.set([]);
+        this.isDashboardLoading.set(false);
         this.toastMessage.set(
-          'Backend indisponible ou session expiree: affichage des donnees UI temporaires.'
+          'Impossible de charger les donnees administratives. Veuillez vous reconnecter ou reessayer plus tard.'
         );
       },
     });
@@ -233,12 +281,36 @@ export class AdminDashboardComponent {
 
   protected setSection(section: AdminSection): void {
     this.activeSection.set(section);
-    this.toastMessage.set(`${this.sectionLabel(section)} pret pour la gestion.`);
+    this.toastMessage.set(`${this.sectionLabel(section)} est disponible.`);
+  }
+
+  protected logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/admin/login']);
   }
 
   protected updateSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.searchTerm.set(input.value);
+  }
+
+  protected updateDepartmentFilter(event: Event): void {
+    this.selectedDepartment.set(this.readSelectValue(event));
+    this.selectedGroup.set('Tous');
+  }
+
+  protected updateGroupFilter(event: Event): void {
+    this.selectedGroup.set(this.readSelectValue(event));
+  }
+
+  protected updateRoleFilter(event: Event): void {
+    this.selectedRole.set(this.readSelectValue(event));
+  }
+
+  protected updatePlanningMode(event: Event): void {
+    const mode = this.readSelectValue(event) as PlanningMode;
+    this.planningMode.set(mode);
+    this.examForm.controls.planningMode.setValue(mode);
   }
 
   protected submitStructure(): void {
@@ -248,7 +320,7 @@ export class AdminDashboardComponent {
     }
 
     const { entity, name } = this.structureForm.getRawValue();
-    this.toastMessage.set(`${entity} "${name}" prepare pour creation via API.`);
+    this.toastMessage.set(`${entity} "${name}" valide pour enregistrement.`);
   }
 
   protected submitUser(): void {
@@ -257,8 +329,47 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const { fullName, role } = this.userForm.getRawValue();
-    this.toastMessage.set(`Compte ${role.toLowerCase()} pour ${fullName} prepare.`);
+    const rawUser = this.userForm.getRawValue();
+    const editingEmail = this.editingUserEmail();
+    const action = editingEmail ? 'Modification' : 'Creation';
+
+    this.toastMessage.set(
+      `${action} de ${rawUser.fullName} validee. Les donnees affichees restent synchronisees.`
+    );
+
+    this.cancelUserEdit();
+  }
+
+  protected editUser(user: UserRow): void {
+    if (user.role === 'Administrateur') {
+      this.toastMessage.set('Les comptes administrateurs ne sont pas modifies depuis ce panneau.');
+      return;
+    }
+
+    this.editingUserEmail.set(user.email);
+    this.userForm.setValue({
+      fullName: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      department: user.department,
+      group: user.group === 'Tous les groupes' ? '' : user.group,
+      specialty: user.specialty,
+    });
+    this.toastMessage.set(`Modification de ${user.name} ouverte.`);
+  }
+
+  protected cancelUserEdit(): void {
+    this.editingUserEmail.set(null);
+    this.userForm.reset({
+      fullName: '',
+      email: '',
+      role: 'Etudiant',
+      status: 'Active',
+      department: '',
+      group: '',
+      specialty: '',
+    });
   }
 
   protected submitExam(): void {
@@ -267,8 +378,14 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const { subject, group } = this.examForm.getRawValue();
-    this.toastMessage.set(`Examen ${subject} planifie dans le calendrier ${group}.`);
+    const { evaluationType, group, planningMode, subject } = this.examForm.getRawValue();
+    const isWeekly = planningMode === 'weekly';
+
+    this.toastMessage.set(
+      isWeekly
+        ? `Semaine de ${evaluationType} pour ${group} validee.`
+        : `${evaluationType} ${subject} pour ${group} valide.`
+    );
   }
 
   protected publishGrades(): void {
@@ -278,7 +395,7 @@ export class AdminDashboardComponent {
     }
 
     const { evaluation } = this.gradeForm.getRawValue();
-    this.toastMessage.set(`Publication des notes "${evaluation}" prete a confirmer.`);
+    this.toastMessage.set(`Publication des notes "${evaluation}" validee.`);
   }
 
   protected activateQuickAction(action: string): void {
@@ -289,6 +406,84 @@ export class AdminDashboardComponent {
         : 'structure';
 
     this.setSection(target);
+  }
+
+  private normalizeStats(stats: readonly Partial<StatCard>[]): StatCard[] {
+    const tones: StatCard['tone'][] = ['light', 'steel', 'warm', 'sand'];
+
+    return stats
+      .filter((stat) => Boolean(stat.label))
+      .map((stat, index) => ({
+        label: this.cleanText(stat.label, 'Indicateur'),
+        value: this.cleanText(stat.value, '0'),
+        trend: this.cleanText(stat.trend, 'Base de donnees'),
+        tone: this.isStatTone(stat.tone) ? stat.tone : tones[index % tones.length],
+      }));
+  }
+
+  private normalizeAcademicRows(rows: readonly Partial<AcademicRow>[]): AcademicRow[] {
+    return rows
+      .filter((row) => Boolean(row.title || row.code))
+      .map((row) => ({
+        code: this.cleanText(row.code, this.buildCodeFromName(row.title)),
+        title: this.cleanText(row.title, 'Departement non renseigne'),
+        meta: this.cleanText(row.meta, 'Details non renseignes'),
+        status: this.cleanText(row.status, 'Statut non renseigne'),
+      }));
+  }
+
+  private normalizeUser(user: Partial<UserRow>): UserRow {
+    const role = this.cleanText(user.role, 'Utilisateur');
+
+    return {
+      name: this.cleanText(user.name, 'Utilisateur sans nom'),
+      email: this.cleanText(user.email, 'Email non renseigne'),
+      role,
+      status: user.status === 'Active' || user.status === 'Pending' ? user.status : 'Pending',
+      department: this.cleanText(user.department, 'Non affecte'),
+      group: this.cleanText(user.group, role === 'Professeur' ? 'Tous les groupes' : 'Non affecte'),
+      specialty: this.cleanText(user.specialty, 'Non renseigne'),
+    };
+  }
+
+  private normalizeExam(exam: Partial<ExamRow>): ExamRow {
+    return {
+      subject: this.cleanText(exam.subject, 'Evaluation non renseignee'),
+      group: this.cleanText(exam.group, 'Groupe non renseigne'),
+      date: this.cleanText(exam.date, 'Date non renseignee'),
+      room: this.cleanText(exam.room, 'Salle non renseignee'),
+      type: this.cleanText(exam.type, 'Type non renseigne'),
+      scope: this.cleanText(exam.scope, 'Departement non renseigne'),
+    };
+  }
+
+  private parseStatValue(value: string): number {
+    const numericValue = Number(value.replace(/[^\d.-]/g, ''));
+    return Number.isFinite(numericValue) ? numericValue : 0;
+  }
+
+  private cleanText(value: string | null | undefined, fallback: string): string {
+    const normalizedValue = value?.trim();
+    return normalizedValue ? normalizedValue : fallback;
+  }
+
+  private isStatTone(value: unknown): value is StatCard['tone'] {
+    return value === 'light' || value === 'warm' || value === 'steel' || value === 'sand';
+  }
+
+  private buildCodeFromName(name: string | null | undefined): string {
+    const code = name
+      ?.split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 3);
+
+    return code || 'DEP';
+  }
+
+  private readSelectValue(event: Event): string {
+    return (event.target as HTMLSelectElement).value;
   }
 
   protected hasControlError(

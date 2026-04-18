@@ -30,7 +30,7 @@
       <form [formGroup]="adminLoginForm" (ngSubmit)="submitAdminLogin()">
         <label>
           Email administrateur
-          <input type="email" formControlName="email" placeholder="admin@issatso.tn" />
+          <input type="email" formControlName="email" placeholder="votre.email@issatso.tn" />
         </label>
 
         <label>
@@ -48,24 +48,18 @@
       </form>
     </article>
 
-    <aside class="seed-card">
-      <span class="eyebrow">Seed data</span>
-      <h2>Compte de test</h2>
-      <p>Ce compte est cree automatiquement au demarrage du backend en mode dev.</p>
+    <aside class="access-card">
+      <span class="eyebrow">Acces securise</span>
+      <h2>Administration centralisee</h2>
+      <p>
+        Connectez-vous avec vos identifiants administrateur pour piloter les utilisateurs,
+        la structure pedagogique et le calendrier des evaluations.
+      </p>
 
-      <div class="credential-row">
-        <span>Email</span>
-        <strong>{{ seedEmail }}</strong>
-      </div>
-      <div class="credential-row">
-        <span>Password</span>
-        <strong>{{ seedPassword }}</strong>
-      </div>
-
-      <div class="flow-list">
-        <span>1. Backend actif sur 8080</span>
-        <span>2. Login admin via JWT</span>
-        <span>3. Dashboard charge depuis /api/admin/dashboard</span>
+      <div class="security-list">
+        <span>Authentification securisee</span>
+        <span>Controle strict du role administrateur</span>
+        <span>Tableau de bord alimente par les donnees institutionnelles</span>
       </div>
     </aside>
   </section>

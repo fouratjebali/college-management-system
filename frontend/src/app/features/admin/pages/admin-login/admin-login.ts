@@ -21,12 +21,10 @@ export class AdminLoginComponent {
 
   protected readonly feedbackMessage = signal('');
   protected readonly isSubmitting = signal(false);
-  protected readonly seedEmail = 'admin@issatso.tn';
-  protected readonly seedPassword = 'Admin@12345';
 
   protected readonly adminLoginForm = this.formBuilder.nonNullable.group({
-    email: [this.seedEmail, [Validators.required, Validators.email]],
-    password: [this.seedPassword, [Validators.required, Validators.minLength(6)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   protected submitAdminLogin(): void {
@@ -53,10 +51,16 @@ export class AdminLoginComponent {
       },
       error: (error) => {
         this.isSubmitting.set(false);
-        this.feedbackMessage.set(
-          error.error?.error || error.error?.message || 'Connexion admin refusee.'
-        );
+        this.feedbackMessage.set(this.resolveLoginError(error));
       },
     });
+  }
+
+  private resolveLoginError(error: { status?: number; error?: { error?: string; message?: string } }): string {
+    if (error.status === 0) {
+      return 'Service momentanement indisponible. Veuillez reessayer dans quelques instants.';
+    }
+
+    return error.error?.error || error.error?.message || 'Connexion admin refusee.';
   }
 }

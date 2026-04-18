@@ -44,7 +44,7 @@
             (input)="updateSearch($event)"
           />
         </label>
-        <button type="button" class="ghost-button">Logout</button>
+        <button type="button" class="ghost-button" (click)="logout()">Logout</button>
       </div>
     </header>
 
@@ -56,8 +56,8 @@
           <span class="eyebrow">Pilotage academique</span>
           <h2>Une vue claire pour gerer la plateforme sans friction.</h2>
           <p>
-            Cette interface centralise les indicateurs, les raccourcis et les actions
-            administratives principales de Sprint 2.
+            Cette interface centralise les indicateurs, les listes et les actions essentielles
+            pour le pilotage academique.
           </p>
           <div class="hero-actions">
             <button type="button" class="primary-button" (click)="setSection('structure')">
@@ -70,34 +70,46 @@
         </article>
 
         <section class="stats-grid" aria-label="Statistiques principales">
-          @for (stat of stats(); track stat.label) {
-            <article
-              class="stat-card"
-              [class.tone-light]="stat.tone === 'light'"
-              [class.tone-warm]="stat.tone === 'warm'"
-              [class.tone-steel]="stat.tone === 'steel'"
-              [class.tone-sand]="stat.tone === 'sand'"
-            >
-              <span>{{ stat.label }}</span>
-              <strong>{{ stat.value }}</strong>
-              <small>{{ stat.trend }}</small>
+          @if (stats().length > 0) {
+            @for (stat of stats(); track stat.label) {
+              <article
+                class="stat-card"
+                [class.tone-light]="stat.tone === 'light'"
+                [class.tone-warm]="stat.tone === 'warm'"
+                [class.tone-steel]="stat.tone === 'steel'"
+                [class.tone-sand]="stat.tone === 'sand'"
+              >
+                <span>{{ stat.label }}</span>
+                <strong>{{ stat.value }}</strong>
+                <small>{{ stat.trend }}</small>
+              </article>
+            }
+          } @else {
+            <article class="empty-state grid-empty">
+              {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique trouvee dans la base.' }}
             </article>
           }
         </section>
 
         <article class="panel chart-panel">
           <div class="panel-heading">
-            <span class="eyebrow">Activite</span>
-            <h3>Utilisation hebdomadaire</h3>
+            <span class="eyebrow">Base de donnees</span>
+            <h3>Repartition des donnees</h3>
           </div>
-          <div class="bar-chart" aria-label="Graphique activite hebdomadaire">
-            @for (point of activitySeries; track point.label) {
-              <div class="bar-column">
-                <span class="bar" [style.height.%]="point.value"></span>
-                <small>{{ point.label }}</small>
-              </div>
-            }
-          </div>
+          @if (activitySeries().length > 0) {
+            <div class="bar-chart" aria-label="Graphique de repartition des donnees">
+              @for (point of activitySeries(); track point.label) {
+                <div class="bar-column">
+                  <span class="bar" [style.height.%]="point.value"></span>
+                  <small>{{ point.label }}</small>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="empty-state">
+              {{ isDashboardLoading() ? 'Chargement du graphique...' : 'Graphique indisponible sans statistiques en base.' }}
+            </p>
+          }
         </article>
 
         <article class="panel quick-panel">
@@ -120,8 +132,8 @@
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Structure pedagogique</span>
-            <h2>Creer ou preparer une entite</h2>
-            <p>Formulaire frontend pour departements, matieres et groupes.</p>
+            <h2>Gerer une entite</h2>
+            <p>La liste de droite affiche uniquement les departements existants en base.</p>
           </div>
 
           <form [formGroup]="structureForm" (ngSubmit)="submitStructure()">
@@ -170,26 +182,72 @@
           </div>
 
           <div class="data-list">
-            @for (row of academicRows(); track row.code) {
-              <div class="data-row">
-                <span class="code-pill">{{ row.code }}</span>
-                <div>
-                  <strong>{{ row.title }}</strong>
-                  <small>{{ row.meta }}</small>
+            @if (academicRows().length > 0) {
+              @for (row of academicRows(); track row.code) {
+                <div class="data-row">
+                  <span class="code-pill">{{ row.code }}</span>
+                  <div>
+                    <strong>{{ row.title }}</strong>
+                    <small>{{ row.meta }}</small>
+                  </div>
+                  <span class="status-pill">{{ row.status }}</span>
                 </div>
-                <span class="status-pill">{{ row.status }}</span>
-              </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des departements...' : 'Aucun departement trouve dans la base.' }}
+              </p>
             }
           </div>
         </article>
       </section>
     } @else if (activeSection() === 'users') {
-      <section class="content-grid two-columns">
+      <section class="content-grid users-layout">
+        <article class="panel filters-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Organisation utilisateurs</span>
+              <h2>Filtrer par departement, groupe et role</h2>
+            </div>
+            <span class="counter">{{ filteredUsers().length }} resultats</span>
+          </div>
+
+          <div class="filter-grid">
+            <label>
+              Departement
+              <select [value]="selectedDepartment()" (change)="updateDepartmentFilter($event)">
+                @for (department of departmentOptions(); track department) {
+                  <option [value]="department">{{ department }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Groupe
+              <select [value]="selectedGroup()" (change)="updateGroupFilter($event)">
+                @for (group of groupOptions(); track group) {
+                  <option [value]="group">{{ group }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Role
+              <select [value]="selectedRole()" (change)="updateRoleFilter($event)">
+                <option>Tous</option>
+                <option>Etudiant</option>
+                <option>Professeur</option>
+                <option>Administrateur</option>
+              </select>
+            </label>
+          </div>
+        </article>
+
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Gestion utilisateurs</span>
-            <h2>Creer un compte</h2>
-            <p>Role, statut et validation email prepares cote frontend.</p>
+            <h2>{{ editingUserEmail() ? 'Modifier un utilisateur' : 'Creer un compte' }}</h2>
+            <p>Les informations affichees restent synchronisees avec les donnees institutionnelles.</p>
           </div>
 
           <form [formGroup]="userForm" (ngSubmit)="submitUser()">
@@ -213,7 +271,6 @@
               <label>
                 Role
                 <select formControlName="role">
-                  <option>Administrateur</option>
                   <option>Professeur</option>
                   <option>Etudiant</option>
                 </select>
@@ -227,7 +284,50 @@
               </label>
             </div>
 
-            <button class="primary-button" type="submit">Preparer le compte</button>
+            <div class="field-row">
+              <label>
+                Departement
+                <select formControlName="department">
+                  <option value="" disabled>Choisir un departement</option>
+                  @for (department of departmentFormOptions(); track department) {
+                    <option [value]="department">{{ department }}</option>
+                  }
+                </select>
+              </label>
+
+              <label>
+                Groupe
+                <select formControlName="group">
+                  <option value="" disabled>Choisir un groupe</option>
+                  @for (group of groupFormOptions(); track group) {
+                    <option [value]="group">{{ group }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Specialite / Niveau
+              <input
+                type="text"
+                formControlName="specialty"
+                placeholder="Architecture, 3eme annee, TP reseaux..."
+              />
+              @if (hasControlError(userForm, 'specialty')) {
+                <small class="field-error">Specialite ou niveau requis.</small>
+              }
+            </label>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">
+                {{ editingUserEmail() ? 'Enregistrer les modifications' : 'Valider le compte' }}
+              </button>
+              @if (editingUserEmail()) {
+                <button class="secondary-button" type="button" (click)="cancelUserEdit()">
+                  Annuler
+                </button>
+              }
+            </div>
           </form>
         </article>
 
@@ -237,23 +337,61 @@
               <span class="eyebrow">Annuaire</span>
               <h2>Utilisateurs</h2>
             </div>
-            <span class="counter">{{ filteredUsers().length }} resultats</span>
+            <span class="counter">{{ selectedDepartment() }} / {{ selectedGroup() }}</span>
           </div>
 
           <div class="user-table">
-            @for (user of filteredUsers(); track user.email) {
-              <div class="user-row">
-                <div class="avatar">{{ user.name.charAt(0) }}</div>
-                <div>
-                  <strong>{{ user.name }}</strong>-
-                  <small>{{ user.email }}</small>
+            @if (filteredUsers().length > 0) {
+              @for (user of filteredUsers(); track user.email) {
+                <div class="user-row">
+                  <div class="avatar">{{ user.name.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ user.name }}</strong>
+                    <small>{{ user.email }}</small>
+                    <small class="user-meta">
+                      {{ user.department }} - {{ user.group }} - {{ user.specialty }}
+                    </small>
+                  </div>
+                  <span>{{ user.role }}</span>
+                  <span class="status-pill" [class.pending]="user.status === 'Pending'">
+                    {{ user.status }}
+                  </span>
+                  <div class="row-actions">
+                    @if (user.role !== 'Administrateur') {
+                      <button type="button" class="mini-button" (click)="editUser(user)">Modifier</button>
+                    }
+                  </div>
                 </div>
-                <span>{{ user.role }}</span>
-                <span class="status-pill" [class.pending]="user.status === 'Pending'">
-                  {{ user.status }}
-                </span>
-                <button type="button" class="mini-button">Reset</button>
-              </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des utilisateurs...' : 'Aucun utilisateur ne correspond aux donnees en base.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel full-span professor-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Professeurs par departement</span>
+            <h2>Vue organisee pour l'administration</h2>
+          </div>
+
+          <div class="professor-grid">
+            @if (professorsByDepartment().length > 0) {
+              @for (departmentGroup of professorsByDepartment(); track departmentGroup.department) {
+                <div class="professor-card">
+                  <strong>{{ departmentGroup.department }}</strong>
+                  <span>{{ departmentGroup.professors.length }} professeur(s)</span>
+                  @for (professor of departmentGroup.professors; track professor.email) {
+                    <small>{{ professor.name }} - {{ professor.specialty }}</small>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des professeurs...' : 'Aucun professeur affecte par departement dans la base.' }}
+              </p>
             }
           </div>
         </article>
@@ -263,13 +401,33 @@
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Calendrier examens</span>
-            <h2>Planifier une evaluation</h2>
+            <h2>Planifier une evaluation ou une semaine complete</h2>
           </div>
 
           <form [formGroup]="examForm" (ngSubmit)="submitExam()">
+            <div class="field-row">
+              <label>
+                Mode
+                <select formControlName="planningMode" (change)="updatePlanningMode($event)">
+                  <option value="single">Un seul devoir</option>
+                  <option value="weekly">Toute la semaine</option>
+                </select>
+              </label>
+
+              <label>
+                Type
+                <select formControlName="evaluationType">
+                  <option>Examen</option>
+                  <option>DS</option>
+                  <option>TP</option>
+                  <option>Rattrapage</option>
+                </select>
+              </label>
+            </div>
+
             <label>
-              Matiere
-              <input type="text" formControlName="subject" placeholder="Architecture Logicielle" />
+              Matiere ou theme
+              <input type="text" formControlName="subject" placeholder="Architecture Logicielle, TP reseaux..." />
               @if (hasControlError(examForm, 'subject')) {
                 <small class="field-error">Matiere requise.</small>
               }
@@ -277,12 +435,60 @@
 
             <div class="field-row">
               <label>
-                Groupe
-                <input type="text" formControlName="group" placeholder="GI-3A" />
+                Departement
+                <select formControlName="department">
+                  <option value="" disabled>Choisir un departement</option>
+                  @for (department of departmentFormOptions(); track department) {
+                    <option [value]="department">{{ department }}</option>
+                  }
+                </select>
               </label>
+
               <label>
-                Date
-                <input type="datetime-local" formControlName="date" />
+                Groupe
+                <select formControlName="group">
+                  <option value="" disabled>Choisir un groupe</option>
+                  @for (group of groupFormOptions(); track group) {
+                    <option [value]="group">{{ group }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              @if (planningMode() === 'single') {
+                <label>
+                  Jour
+                  <select formControlName="day">
+                    <option>Lundi</option>
+                    <option>Mardi</option>
+                    <option>Mercredi</option>
+                    <option>Jeudi</option>
+                    <option>Vendredi</option>
+                    <option>Samedi</option>
+                  </select>
+                </label>
+              } @else {
+                <div class="helper-card">
+                  La semaine sera creee automatiquement du lundi au vendredi.
+                </div>
+              }
+
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Heure
+                <input type="time" formControlName="time" />
+              </label>
+
+              <label>
+                Surveillant / Professeur
+                <input type="text" formControlName="supervisor" placeholder="Professeur surveillant" />
               </label>
             </div>
 
@@ -291,14 +497,21 @@
               <input type="text" formControlName="room" placeholder="Bloc B / Salle 204" />
             </label>
 
-            <button class="primary-button" type="submit">Ajouter au calendrier</button>
+            <label>
+              Notes internes
+              <input type="text" formControlName="details" placeholder="Oral, TP machine, salle speciale..." />
+            </label>
+
+            <button class="primary-button" type="submit">
+              {{ planningMode() === 'weekly' ? 'Planifier la semaine' : 'Planifier le devoir' }}
+            </button>
           </form>
         </article>
 
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Publication notes</span>
-            <h2>Preparer une publication</h2>
+            <h2>Publier les notes</h2>
           </div>
 
           <form [formGroup]="gradeForm" (ngSubmit)="publishGrades()">
@@ -312,7 +525,12 @@
 
             <label>
               Groupe
-              <input type="text" formControlName="group" placeholder="GI-3A" />
+              <select formControlName="group">
+                <option value="" disabled>Choisir un groupe</option>
+                @for (group of groupFormOptions(); track group) {
+                  <option [value]="group">{{ group }}</option>
+                }
+              </select>
             </label>
 
             <label>
@@ -335,14 +553,21 @@
           </div>
 
           <div class="timeline">
-            @for (exam of examRows(); track exam.subject) {
-              <div class="timeline-item">
-                <span class="timeline-dot"></span>
-                <div>
-                  <strong>{{ exam.subject }}</strong>
-                  <small>{{ exam.group }} - {{ exam.date }} - {{ exam.room }}</small>
+            @if (examRows().length > 0) {
+              @for (exam of examRows(); track exam.subject) {
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>{{ exam.subject }}</strong>
+                    <small>{{ exam.type }} - {{ exam.scope }} - {{ exam.group }}</small>
+                    <small>{{ exam.date }} - {{ exam.room }}</small>
+                  </div>
                 </div>
-              </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des evaluations...' : 'Aucune evaluation planifiee dans la base.' }}
+              </p>
             }
           </div>
         </article>

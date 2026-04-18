@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -37,6 +35,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     networks:
       - institut-network
     volumes:
@@ -50,9 +54,14 @@ services:
     container_name: institut-frontend
     ports:
       - "4200:4200"
+    environment:
+      API_PROXY_TARGET: http://backend:8080
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
     networks:
       - institut-network
     command: npm start

@@ -3,11 +3,13 @@ package MiniProjet_Backend.Backend.Service;
 import MiniProjet_Backend.Backend.DTO.AdminDashboardResponseDTO;
 import MiniProjet_Backend.Backend.Model.Administrateur;
 import MiniProjet_Backend.Backend.Model.Departement;
+import MiniProjet_Backend.Backend.Model.Enseignement;
 import MiniProjet_Backend.Backend.Model.Etudiant;
 import MiniProjet_Backend.Backend.Model.Evaluation;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.User;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
+import MiniProjet_Backend.Backend.Repository.EnseignementRepository;
 import MiniProjet_Backend.Backend.Repository.EtudiantRepository;
 import MiniProjet_Backend.Backend.Repository.EvaluationRepository;
 import MiniProjet_Backend.Backend.Repository.GroupeRepository;
@@ -29,6 +31,7 @@ public class AdminDashboardService {
     private final EtudiantRepository etudiantRepository;
     private final ProfesseurRepository professeurRepository;
     private final DepartementRepository departementRepository;
+    private final EnseignementRepository enseignementRepository;
     private final MatiereRepository matiereRepository;
     private final GroupeRepository groupeRepository;
     private final EvaluationRepository evaluationRepository;
@@ -38,6 +41,7 @@ public class AdminDashboardService {
             EtudiantRepository etudiantRepository,
             ProfesseurRepository professeurRepository,
             DepartementRepository departementRepository,
+            EnseignementRepository enseignementRepository,
             MatiereRepository matiereRepository,
             GroupeRepository groupeRepository,
             EvaluationRepository evaluationRepository
@@ -46,6 +50,7 @@ public class AdminDashboardService {
         this.etudiantRepository = etudiantRepository;
         this.professeurRepository = professeurRepository;
         this.departementRepository = departementRepository;
+        this.enseignementRepository = enseignementRepository;
         this.matiereRepository = matiereRepository;
         this.groupeRepository = groupeRepository;
         this.evaluationRepository = evaluationRepository;
@@ -103,6 +108,9 @@ public class AdminDashboardService {
                         .email(user.getEmail())
                         .role(resolveRole(user))
                         .status(user.isActif() ? "Active" : "Pending")
+                        .department(resolveDepartment(user))
+                        .group(resolveGroup(user))
+                        .specialty(resolveSpecialty(user))
                         .build())
                 .toList();
     }
@@ -115,8 +123,19 @@ public class AdminDashboardService {
                         .group(evaluation.getSeance().getGroupe().getLibelle())
                         .date(evaluation.getDateEvaluation().format(EXAM_FORMATTER))
                         .room(evaluation.getSeance().getBatiment() + " / " + evaluation.getSeance().getSalle())
+                        .type(evaluation.getTypeEvaluation())
+                        .scope(resolveEvaluationScope(evaluation))
                         .build())
                 .toList();
+    }
+
+    private String resolveEvaluationScope(Evaluation evaluation) {
+        if (evaluation.getSeance() == null || evaluation.getSeance().getGroupe() == null) {
+            return "Non affecte";
+        }
+
+        Departement departement = evaluation.getSeance().getGroupe().getDepartement();
+        return departement == null ? "Non affecte" : departement.getNom();
     }
 
     private String resolveRole(User user) {
@@ -130,6 +149,53 @@ public class AdminDashboardService {
             return "Etudiant";
         }
         return "Utilisateur";
+    }
+
+    private String resolveDepartment(User user) {
+        if (user instanceof Etudiant etudiant && etudiant.getGroupe() != null) {
+            return etudiant.getGroupe().getDepartement().getNom();
+        }
+        if (user instanceof Professeur professeur) {
+            return enseignementRepository.findByProfesseurId(professeur.getId()).stream()
+                    .findFirst()
+                    .map(this::resolveEnseignementDepartment)
+                    .orElse("Non affecte");
+        }
+        if (user instanceof Administrateur) {
+            return "Administration";
+        }
+        return "Non affecte";
+    }
+
+    private String resolveEnseignementDepartment(Enseignement enseignement) {
+        if (enseignement.getMatiere() == null || enseignement.getMatiere().getDepartement() == null) {
+            return "Non affecte";
+        }
+
+        return enseignement.getMatiere().getDepartement().getNom();
+    }
+
+    private String resolveGroup(User user) {
+        if (user instanceof Etudiant etudiant && etudiant.getGroupe() != null) {
+            return etudiant.getGroupe().getLibelle();
+        }
+        if (user instanceof Professeur) {
+            return "Tous les groupes";
+        }
+        return "Non affecte";
+    }
+
+    private String resolveSpecialty(User user) {
+        if (user instanceof Professeur professeur) {
+            return professeur.getGrade();
+        }
+        if (user instanceof Etudiant etudiant) {
+            return etudiant.getNiveau();
+        }
+        if (user instanceof Administrateur administrateur) {
+            return administrateur.getFonction();
+        }
+        return "Profil general";
     }
 
     private String buildDepartmentCode(String name) {

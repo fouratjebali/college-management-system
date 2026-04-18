@@ -53,7 +53,7 @@
 }
 
 .login-panel,
-.seed-card {
+.access-card {
   border: 1px solid var(--login-border);
   border-radius: 30px;
   background: var(--login-panel);
@@ -85,9 +85,8 @@
 
 .brand span,
 .intro p,
-.seed-card p,
-.credential-row span,
-.flow-list span {
+.access-card p,
+.security-list span {
   color: var(--login-soft);
 }
 
@@ -176,7 +175,7 @@ input:focus {
   opacity: 0.7;
 }
 
-.seed-card {
+.access-card {
   padding: 1.4rem;
   align-self: stretch;
   display: grid;
@@ -187,29 +186,35 @@ input:focus {
     rgba(57, 62, 70, 0.78);
 }
 
-.seed-card h2 {
+.access-card h2 {
   font-size: clamp(1.7rem, 3vw, 2.8rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
 }
 
-.credential-row,
-.flow-list {
+.security-list {
   border: 1px solid rgba(223, 208, 184, 0.12);
   border-radius: 18px;
   background: rgba(34, 40, 49, 0.48);
-}
-
-.credential-row {
-  display: grid;
-  gap: 0.35rem;
-  padding: 0.85rem;
-}
-
-.flow-list {
   display: grid;
   gap: 0.55rem;
   padding: 1rem;
+}
+
+.security-list span {
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.security-list span::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--login-sand);
 }
 
 @media (max-width: 850px) {

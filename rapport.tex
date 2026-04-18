@@ -875,7 +875,7 @@ Le graphique ci-dessous illustre la progression de la consommation des story poi
     \item  Contraintes d'intégrité référentielle définies (FK, ON DELETE CASCADE/SET NULL)
     \item  Indexes préparés pour requêtes critiques
     \item  Migration Flyway V1.0 initiale versionnée
-    \item  Script de seed data prêt pour données de test
+    \item  Jeu de données initial prêt pour la validation fonctionnelle
 \end{itemize}
 
 \subsection{Validation et Tests Fondamentaux}
@@ -1058,7 +1058,7 @@ Merge direct sur develop sans review & Introduit des régressions silencieuses, 
 \hline
 GitHub Actions CI & Valider automatiquement le build Maven + Angular à chaque push sur develop \\
 \hline
-Script seed\_data.sql complet & Accélérer les tests manuels en Sprint 1 avec des données réalistes pré-chargées \\
+Script d'initialisation complet & Accélérer les validations manuelles en Sprint 1 avec des données réalistes pré-chargées \\
 \hline
 Spring Actuator + /health endpoint & Permettre un monitoring infrastructure simple sans outil externe \\
 \hline
@@ -1097,7 +1097,7 @@ User Stories Acceptées en Review & 12/12 (100\%) \\
 
 Sprint 0 a établi avec succès une fondation permettant le démarrage immédiat du développement métier. Le Sprint Goal a été entièrement atteint : l'environnement Docker est fonctionnel, reproductible en moins de 5 minutes, et toutes les User Stories ont passé leurs critères d'acceptation lors de la Sprint Review.
 
-Les actions issues de la rétrospective (GitHub Actions, seed data, Swagger) seront implémentées en début de Sprint 1 pour renforcer la qualité du processus de développement.
+Les actions issues de la rétrospective (GitHub Actions, données initiales, Swagger) seront implémentées en début de Sprint 1 pour renforcer la qualité du processus de développement.
 
 \newpage
 % ==========================================================
@@ -1808,9 +1808,12 @@ L'interface structure regroupe les besoins du backlog pour les departements, mat
 La section utilisateurs prepare l'administration des comptes :
 
 \begin{itemize}[itemsep=0.3em]
-    \item Formulaire de creation de compte avec nom, email, role et statut.
+    \item Formulaire de creation et de modification pour les professeurs et les etudiants.
     \item Validation email et champs requis.
     \item Liste utilisateurs avec recherche instantanee.
+    \item Filtres par departement, groupe et role pour retrouver rapidement les utilisateurs.
+    \item Organisation des etudiants par departement et groupe.
+    \item Organisation des professeurs par departement avec affichage de leur specialite.
     \item Badges de statut et action de reset preparee pour branchement backend.
 \end{itemize}
 
@@ -1819,30 +1822,26 @@ La section utilisateurs prepare l'administration des comptes :
 La section evaluation combine calendrier et publication :
 
 \begin{itemize}[itemsep=0.3em]
-    \item Formulaire de planification d'examen.
+    \item Formulaire de planification d'examen, DS, DS Francais oral, TP ou rattrapage.
+    \item Mode de planification d'un seul devoir pour un groupe precis.
+    \item Mode de planification d'une semaine complete du lundi au vendredi.
+    \item Selection du departement, du groupe, du jour, de l'heure, de la salle et du surveillant.
     \item Formulaire de publication des notes avec visibilite.
     \item Timeline des examens a venir.
     \item Feedback utilisateur via un message d'etat centralise.
 \end{itemize}
 
-\subsection{Login Administrateur et Donnees Seedees}
+\subsection{Login Administrateur et Donnees Initiales}
 
-Apres validation de l'interface admin, un flux d'authentification specifique a ete ajoute pour tester l'espace administrateur de bout en bout :
+Apres validation de l'interface admin, un flux d'authentification specifique a ete ajoute pour securiser l'espace administrateur de bout en bout :
 
 \begin{itemize}[itemsep=0.3em]
     \item Ajout de la page Angular \texttt{/admin/login}.
     \item Ajout de l'endpoint backend \texttt{POST /api/auth/admin/login}, reserve aux comptes administrateurs.
     \item Ajout des autorites JWT afin de proteger les routes \texttt{/api/admin/**} avec le role \texttt{ADMIN}.
     \item Ajout de l'endpoint \texttt{GET /api/admin/dashboard} pour charger les donnees du dashboard depuis le backend.
-    \item Ajout d'un seeder de developpement creant un administrateur, un professeur, un etudiant, une structure pedagogique et une evaluation de demo.
+    \item Initialisation d'un jeu de donnees de validation couvrant les profils administrateur, professeur, etudiant, structure pedagogique et evaluation.
 \end{itemize}
-
-\textbf{Compte admin de test seed :}
-
-\begin{verbatim}
-Email    : admin@issatso.tn
-Password : Admin@12345
-\end{verbatim}
 
 \section{Interfaces Livrees}
 
@@ -1857,9 +1856,9 @@ Dashboard Admin & \texttt{/admin} / Dashboard & Statistiques, graphique et actio
 \hline
 Gestion Structure & \texttt{/admin} / Structure & Departements, matieres, groupes et validation formulaire \\
 \hline
-Gestion Utilisateurs & \texttt{/admin} / Utilisateurs & Creation compte, recherche, roles et statuts \\
+Gestion Utilisateurs & \texttt{/admin} / Utilisateurs & Filtres departement/groupe/role, modification professeurs et etudiants \\
 \hline
-Examens \& Notes & \texttt{/admin} / Examens \& Notes & Planification examens et preparation publication notes \\
+Examens \& Notes & \texttt{/admin} / Examens \& Notes & Planification d'un devoir unique ou d'une semaine d'evaluations \\
 \hline
 Login Admin & \texttt{/admin/login} & Authentification dediee administrateur avec JWT \\
 \hline

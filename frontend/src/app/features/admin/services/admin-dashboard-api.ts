@@ -21,6 +21,9 @@ export interface AdminUserRow {
   email: string;
   role: string;
   status: 'Active' | 'Pending';
+  department: string;
+  group: string;
+  specialty: string;
 }
 
 export interface AdminExamRow {
@@ -28,6 +31,8 @@ export interface AdminExamRow {
   group: string;
   date: string;
   room: string;
+  type: string;
+  scope: string;
 }
 
 export interface AdminDashboardResponse {

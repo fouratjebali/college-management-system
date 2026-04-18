@@ -48,6 +48,9 @@ public class AdminDashboardResponseDTO {
         private String email;
         private String role;
         private String status;
+        private String department;
+        private String group;
+        private String specialty;
     }
 
     @Data
@@ -59,5 +62,7 @@ public class AdminDashboardResponseDTO {
         private String group;
         private String date;
         private String room;
+        private String type;
+        private String scope;
     }
 }

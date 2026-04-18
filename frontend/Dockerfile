@@ -2,6 +2,8 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+ENV API_PROXY_TARGET=http://backend:8080
+
 # Copy package files
 COPY package*.json ./
 
