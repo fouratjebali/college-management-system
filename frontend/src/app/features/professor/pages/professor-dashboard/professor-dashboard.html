@@ -60,6 +60,9 @@
             actions principales de suivi academique.
           </p>
           <div class="hero-actions">
+            <button type="button" class="secondary-button" (click)="setSection('schedule')">
+              Voir emploi du temps
+            </button>
             <button type="button" class="primary-button" (click)="setSection('grades')">
               Saisir des notes
             </button>
@@ -189,21 +192,81 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'schedule') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Planning hebdomadaire</span>
+              <h2>Emploi du temps du professeur</h2>
+              <p>Les seances sont organisees par jour avec horaire, salle, matiere et groupe.</p>
+            </div>
+            <span class="counter">{{ sessions().length }} seances</span>
+          </div>
+
+          <div class="schedule-board">
+            @if (scheduleDayGroups().length > 0) {
+              @for (dayGroup of scheduleDayGroups(); track dayGroup.day) {
+                <section class="schedule-day" [attr.aria-label]="'Emploi du temps ' + dayGroup.day">
+                  <div class="schedule-day-heading">
+                    <strong>{{ dayGroup.day }}</strong>
+                    <span>{{ dayGroup.sessions.length }} seance(s)</span>
+                  </div>
+
+                  <div class="schedule-table">
+                    <div class="schedule-row schedule-header">
+                      <span>Horaire</span>
+                      <span>Matiere</span>
+                      <span>Type</span>
+                      <span>Groupe</span>
+                      <span>Salle</span>
+                    </div>
+
+                    @for (session of dayGroup.sessions; track session.id) {
+                      <div class="schedule-row">
+                        <strong>{{ session.start }} - {{ session.end }}</strong>
+                        <span>{{ session.subject }}</span>
+                        <span class="status-pill">{{ session.type }}</span>
+                        <span>{{ session.group }}</span>
+                        <span>{{ session.room }}</span>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement de l emploi du temps...' : 'Aucune seance planifiee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
     } @else if (activeSection() === 'grades') {
       <section class="content-grid two-columns">
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Saisie des notes</span>
-            <h2>Choisir une evaluation</h2>
+            <h2>Choisir un groupe et une evaluation</h2>
             <p>Les notes sont preparees dans le tableau puis envoyees en batch.</p>
           </div>
 
           <form [formGroup]="gradeForm" (ngSubmit)="submitGrades()">
             <label>
+              Groupe
+              <select formControlName="groupId" (change)="updateGradeGroup($event)">
+                <option [value]="0" disabled>Choisir un groupe</option>
+                @for (group of groups(); track group.id) {
+                  <option [value]="group.id">{{ group.label }} - {{ group.level }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
               Evaluation
               <select formControlName="evaluationId" (change)="updateEvaluation($event)">
                 <option [value]="0" disabled>Choisir une evaluation</option>
-                @for (evaluation of evaluations(); track evaluation.id) {
+                @for (evaluation of gradeEvaluations(); track evaluation.id) {
                   <option [value]="evaluation.id">
                     {{ evaluation.label }} - {{ evaluation.group }}
                   </option>
@@ -286,18 +349,28 @@
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Gestion presences</span>
-            <h2>Selectionner une seance</h2>
+            <h2>Selectionner un groupe et une seance</h2>
             <p>Chaque etudiant peut etre marque present, absent ou en retard.</p>
           </div>
 
           <form [formGroup]="attendanceForm" (ngSubmit)="submitAttendance()">
             <label>
+              Groupe
+              <select formControlName="groupId" (change)="updateAttendanceGroup($event)">
+                <option [value]="0" disabled>Choisir un groupe</option>
+                @for (group of groups(); track group.id) {
+                  <option [value]="group.id">{{ group.label }} - {{ group.level }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
               Seance
               <select formControlName="sessionId" (change)="updateSession($event)">
                 <option [value]="0" disabled>Choisir une seance</option>
-                @for (session of sessions(); track session.id) {
+                @for (session of attendanceSessions(); track session.id) {
                   <option [value]="session.id">
-                    {{ session.subject }} - {{ session.group }} - {{ session.day }}
+                    {{ session.day }} {{ session.start }} - {{ session.subject }}
                   </option>
                 }
               </select>

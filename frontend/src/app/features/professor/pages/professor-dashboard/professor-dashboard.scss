@@ -381,7 +381,8 @@ button {
 .data-list,
 .timeline,
 .grade-table,
-.attendance-list {
+.attendance-list,
+.schedule-board {
   display: grid;
   gap: 12px;
 }
@@ -541,6 +542,54 @@ label {
   grid-template-columns: auto 1fr minmax(160px, 0.35fr);
 }
 
+.schedule-day {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.38);
+}
+
+.schedule-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.schedule-day-heading strong {
+  font-size: 1.2rem;
+}
+
+.schedule-day-heading span {
+  color: var(--admin-soft);
+  font-weight: 800;
+}
+
+.schedule-table {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(220px, 1.3fr) minmax(92px, 0.45fr) minmax(90px, 0.45fr) minmax(150px, 0.65fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(57, 62, 70, 0.56);
+}
+
+.schedule-header {
+  background: rgba(223, 208, 184, 0.1);
+  color: var(--admin-sand);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .file-picker input {
   display: none;
 }
@@ -610,5 +659,13 @@ label {
   .professor-grid,
   .attendance-row {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-row {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-header {
+    display: none;
   }
 }

@@ -20,7 +20,7 @@ import {
   SaveGradePayload,
 } from '../../services/professor-dashboard-api';
 
-type ProfessorSection = 'overview' | 'grades' | 'attendance' | 'materials';
+type ProfessorSection = 'overview' | 'schedule' | 'grades' | 'attendance' | 'materials';
 
 interface NavItem {
   id: ProfessorSection;
@@ -32,6 +32,11 @@ interface GradeDraft {
   value: string;
   status: string;
   remark: string;
+}
+
+interface ScheduleDayGroup {
+  day: string;
+  sessions: readonly ProfessorSessionRow[];
 }
 
 @Component({
@@ -52,7 +57,9 @@ export class ProfessorDashboardComponent {
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('Espace professeur charge avec succes.');
   protected readonly isDashboardLoading = signal(true);
+  protected readonly selectedGradeGroupId = signal<number | null>(null);
   protected readonly selectedEvaluationId = signal<number | null>(null);
+  protected readonly selectedAttendanceGroupId = signal<number | null>(null);
   protected readonly selectedSessionId = signal<number | null>(null);
   protected readonly selectedMaterialTeachingId = signal<number | null>(null);
   protected readonly selectedFileName = signal('');
@@ -77,6 +84,11 @@ export class ProfessorDashboardComponent {
       description: 'Enseignements, groupes et seances',
     },
     {
+      id: 'schedule',
+      label: 'Emploi du temps',
+      description: 'Jours, horaires, salles et groupes',
+    },
+    {
       id: 'grades',
       label: 'Saisie notes',
       description: 'Evaluations et envoi batch',
@@ -96,15 +108,18 @@ export class ProfessorDashboardComponent {
   protected readonly quickActions = [
     'Saisir des notes',
     'Faire appel',
+    'Voir emploi du temps',
     'Creer un rattrapage',
     'Ajouter un support',
   ] as const;
 
   protected readonly gradeForm = this.formBuilder.nonNullable.group({
+    groupId: [0, [Validators.required, Validators.min(1)]],
     evaluationId: [0, [Validators.required, Validators.min(1)]],
   });
 
   protected readonly attendanceForm = this.formBuilder.nonNullable.group({
+    groupId: [0, [Validators.required, Validators.min(1)]],
     sessionId: [0, [Validators.required, Validators.min(1)]],
   });
 
@@ -172,24 +187,49 @@ export class ProfessorDashboardComponent {
     );
   });
 
-  protected readonly gradeStudents = computed(() => {
-    const evaluation = this.selectedEvaluation();
+  protected readonly gradeEvaluations = computed(() => {
+    const groupId = this.selectedGradeGroupId();
 
-    if (!evaluation) {
+    return this.evaluations().filter((evaluation) => !groupId || evaluation.groupId === groupId);
+  });
+
+  protected readonly attendanceSessions = computed(() => {
+    const groupId = this.selectedAttendanceGroupId();
+
+    return this.sessions().filter((session) => !groupId || session.groupId === groupId);
+  });
+
+  protected readonly gradeStudents = computed(() => {
+    const groupId = this.selectedGradeGroupId();
+
+    if (!groupId) {
       return [];
     }
 
-    return this.students().filter((student) => student.groupId === evaluation.groupId);
+    return this.students().filter((student) => student.groupId === groupId);
   });
 
   protected readonly attendanceStudents = computed(() => {
-    const session = this.selectedSession();
+    const groupId = this.selectedAttendanceGroupId();
 
-    if (!session) {
+    if (!groupId) {
       return [];
     }
 
-    return this.students().filter((student) => student.groupId === session.groupId);
+    return this.students().filter((student) => student.groupId === groupId);
+  });
+
+  protected readonly scheduleDayGroups = computed<readonly ScheduleDayGroup[]>(() => {
+    const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+    return dayOrder
+      .map((day) => ({
+        day,
+        sessions: this.sessions()
+          .filter((session) => session.day.toLowerCase() === day.toLowerCase())
+          .sort((first, second) => first.start.localeCompare(second.start)),
+      }))
+      .filter((group) => group.sessions.length > 0);
   });
 
   protected readonly materialsForTeaching = computed(() => {
@@ -251,7 +291,9 @@ export class ProfessorDashboardComponent {
       ? 'grades'
       : action.includes('appel')
         ? 'attendance'
-        : 'materials';
+        : action.includes('emploi')
+          ? 'schedule'
+          : 'materials';
 
     this.setSection(target);
   }
@@ -265,8 +307,18 @@ export class ProfessorDashboardComponent {
     this.searchTerm.set((event.target as HTMLInputElement).value);
   }
 
+  protected updateGradeGroup(event: Event): void {
+    const groupId = Number((event.target as HTMLSelectElement).value);
+    this.selectGradeGroup(groupId);
+  }
+
   protected updateEvaluation(event: Event): void {
     this.selectEvaluation(Number((event.target as HTMLSelectElement).value));
+  }
+
+  protected updateAttendanceGroup(event: Event): void {
+    const groupId = Number((event.target as HTMLSelectElement).value);
+    this.selectAttendanceGroup(groupId);
   }
 
   protected updateSession(event: Event): void {
@@ -321,8 +373,8 @@ export class ProfessorDashboardComponent {
   protected submitGrades(): void {
     const evaluation = this.selectedEvaluation();
 
-    if (!evaluation || this.gradeStudents().length === 0) {
-      this.toastMessage.set('Selectionnez une evaluation avec des etudiants.');
+    if (!this.selectedGradeGroupId() || !evaluation || this.gradeStudents().length === 0) {
+      this.toastMessage.set('Selectionnez un groupe et une evaluation avec des etudiants.');
       return;
     }
 
@@ -364,8 +416,8 @@ export class ProfessorDashboardComponent {
   protected submitAttendance(): void {
     const session = this.selectedSession();
 
-    if (!session || this.attendanceStudents().length === 0) {
-      this.toastMessage.set('Selectionnez une seance avec des etudiants.');
+    if (!this.selectedAttendanceGroupId() || !session || this.attendanceStudents().length === 0) {
+      this.toastMessage.set('Selectionnez un groupe et une seance avec des etudiants.');
       return;
     }
 
@@ -478,8 +530,6 @@ export class ProfessorDashboardComponent {
   private prepareDefaultSelections(): void {
     const firstTeaching = this.teachings()[0];
     const firstGroup = this.groups()[0];
-    const firstEvaluation = this.evaluations()[0];
-    const firstSession = this.sessions()[0];
 
     if (firstTeaching) {
       this.makeupForm.controls.teachingId.setValue(firstTeaching.id);
@@ -489,23 +539,31 @@ export class ProfessorDashboardComponent {
 
     if (firstGroup) {
       this.makeupForm.controls.groupId.setValue(firstGroup.id);
+      this.selectGradeGroup(firstGroup.id);
+      this.selectAttendanceGroup(firstGroup.id);
     }
+  }
 
-    if (firstEvaluation) {
-      this.gradeForm.controls.evaluationId.setValue(firstEvaluation.id);
-      this.selectEvaluation(firstEvaluation.id);
-    }
+  private selectGradeGroup(groupId: number): void {
+    this.selectedGradeGroupId.set(groupId > 0 ? groupId : null);
+    this.gradeForm.controls.groupId.setValue(groupId);
 
-    if (firstSession) {
-      this.attendanceForm.controls.sessionId.setValue(firstSession.id);
-      this.selectSession(firstSession.id);
-    }
+    const firstEvaluation = this.evaluations().find((evaluation) => evaluation.groupId === groupId);
+    this.selectEvaluation(firstEvaluation?.id ?? 0);
   }
 
   private selectEvaluation(evaluationId: number): void {
     this.selectedEvaluationId.set(evaluationId > 0 ? evaluationId : null);
     this.gradeForm.controls.evaluationId.setValue(evaluationId);
     this.seedGradeDrafts(evaluationId);
+  }
+
+  private selectAttendanceGroup(groupId: number): void {
+    this.selectedAttendanceGroupId.set(groupId > 0 ? groupId : null);
+    this.attendanceForm.controls.groupId.setValue(groupId);
+
+    const firstSession = this.sessions().find((session) => session.groupId === groupId);
+    this.selectSession(firstSession?.id ?? 0);
   }
 
   private selectSession(sessionId: number): void {
