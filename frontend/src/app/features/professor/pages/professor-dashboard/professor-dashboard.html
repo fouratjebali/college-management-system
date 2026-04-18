@@ -1,0 +1,499 @@
+<main class="professor-page">
+  <aside class="sidebar" aria-label="Navigation professeur">
+    <div class="brand-block">
+      <span class="brand-mark"></span>
+      <div>
+        <strong>ISSATSO+</strong>
+        <span>Professor Space</span>
+      </div>
+    </div>
+
+    <nav class="nav-stack">
+      @for (item of navItems; track item.id) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="activeSection() === item.id"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          (click)="setSection(item.id)"
+        >
+          <span class="nav-dot"></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">College Management System</span>
+        <h1>Espace Professeur</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="search-box">
+          <span>Search</span>
+          <input
+            type="search"
+            placeholder="Cours, groupe, seance..."
+            [value]="searchTerm()"
+            (input)="updateSearch($event)"
+          />
+        </label>
+        <button type="button" class="ghost-button" (click)="logout()">Logout</button>
+      </div>
+    </header>
+
+    <p class="toast" role="status">{{ toastMessage() }}</p>
+
+    @if (activeSection() === 'overview') {
+      <section class="content-grid overview-grid">
+        <article class="hero-card">
+          <span class="eyebrow">Pilotage pedagogique</span>
+          <h2>Suivre les cours, groupes et prochaines seances au meme endroit.</h2>
+          <p>
+            Le professeur accede rapidement aux enseignements assignes, a ses groupes et aux
+            actions principales de suivi academique.
+          </p>
+          <div class="hero-actions">
+            <button type="button" class="primary-button" (click)="setSection('grades')">
+              Saisir des notes
+            </button>
+            <button type="button" class="secondary-button" (click)="setSection('attendance')">
+              Gerer les presences
+            </button>
+          </div>
+        </article>
+
+        <section class="stats-grid" aria-label="Statistiques professeur">
+          @if (stats().length > 0) {
+            @for (stat of stats(); track stat.label) {
+              <article
+                class="stat-card"
+                [class.tone-light]="stat.tone === 'light'"
+                [class.tone-warm]="stat.tone === 'warm'"
+                [class.tone-steel]="stat.tone === 'steel'"
+                [class.tone-sand]="stat.tone === 'sand'"
+              >
+                <span>{{ stat.label }}</span>
+                <strong>{{ stat.value }}</strong>
+                <small>{{ stat.trend }}</small>
+              </article>
+            }
+          } @else {
+            <article class="empty-state grid-empty">
+              {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique disponible.' }}
+            </article>
+          }
+        </section>
+
+        <article class="panel table-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Enseignements</span>
+              <h2>Modules assignes</h2>
+            </div>
+            <span class="counter">{{ filteredTeachings().length }} cours</span>
+          </div>
+
+          <div class="data-list">
+            @if (filteredTeachings().length > 0) {
+              @for (teaching of filteredTeachings(); track teaching.id) {
+                <div class="data-row">
+                  <span class="code-pill">{{ teaching.code }}</span>
+                  <div>
+                    <strong>{{ teaching.title }}</strong>
+                    <small>
+                      {{ teaching.department }} - {{ teaching.semester }} - {{ teaching.year }}
+                    </small>
+                  </div>
+                  <span class="status-pill">Coef {{ teaching.coefficient }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des enseignements...' : 'Aucun enseignement assigne.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel quick-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Actions rapides</span>
+            <h3>Operations frequentes</h3>
+          </div>
+          <div class="quick-list">
+            @for (action of quickActions; track action) {
+              <button type="button" (click)="activateQuickAction(action)">
+                <span>{{ action }}</span>
+                <strong>Open</strong>
+              </button>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Groupes</span>
+              <h2>Groupes suivis</h2>
+            </div>
+            <span class="counter">{{ filteredGroups().length }} groupes</span>
+          </div>
+
+          <div class="professor-grid">
+            @if (filteredGroups().length > 0) {
+              @for (group of filteredGroups(); track group.id) {
+                <div class="professor-card">
+                  <strong>{{ group.label }}</strong>
+                  <span>{{ group.studentCount }} etudiant(s)</span>
+                  <small>{{ group.department }} - {{ group.level }} - {{ group.year }}</small>
+                </div>
+              }
+            } @else {
+              <p class="empty-state grid-empty">
+                {{ isDashboardLoading() ? 'Chargement des groupes...' : 'Aucun groupe rattache aux seances.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Planning</span>
+            <h2>Prochaines seances</h2>
+          </div>
+
+          <div class="timeline">
+            @if (upcomingSessions().length > 0) {
+              @for (session of upcomingSessions(); track session.id) {
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>{{ session.subject }}</strong>
+                    <small>{{ session.type }} - {{ session.group }} - {{ session.room }}</small>
+                    <small>{{ session.day }} de {{ session.start }} a {{ session.end }}</small>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des seances...' : 'Aucune seance planifiee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'grades') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Saisie des notes</span>
+            <h2>Choisir une evaluation</h2>
+            <p>Les notes sont preparees dans le tableau puis envoyees en batch.</p>
+          </div>
+
+          <form [formGroup]="gradeForm" (ngSubmit)="submitGrades()">
+            <label>
+              Evaluation
+              <select formControlName="evaluationId" (change)="updateEvaluation($event)">
+                <option [value]="0" disabled>Choisir une evaluation</option>
+                @for (evaluation of evaluations(); track evaluation.id) {
+                  <option [value]="evaluation.id">
+                    {{ evaluation.label }} - {{ evaluation.group }}
+                  </option>
+                }
+              </select>
+            </label>
+
+            @if (selectedEvaluation(); as evaluation) {
+              <div class="helper-card">
+                {{ evaluation.subject }} - {{ evaluation.type }} - {{ evaluation.date }} - coefficient
+                {{ evaluation.coefficient }}
+              </div>
+            }
+
+            <button class="primary-button" type="submit">Envoyer les notes</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel wide-table">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Liste etudiants</span>
+              <h2>Tableau de saisie</h2>
+            </div>
+            <span class="counter">{{ gradeStudents().length }} etudiants</span>
+          </div>
+
+          <div class="grade-table">
+            @if (gradeStudents().length > 0) {
+              @for (student of gradeStudents(); track student.id) {
+                <div class="grade-row">
+                  <div class="avatar">{{ student.name.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ student.name }}</strong>
+                    <small>{{ student.matricule }} - {{ student.group }}</small>
+                  </div>
+                  <label>
+                    Note
+                    <input
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.25"
+                      [value]="getGradeDraft(student.id).value"
+                      (input)="updateGradeValue(student.id, $event)"
+                    />
+                  </label>
+                  <label>
+                    Statut
+                    <select
+                      [value]="getGradeDraft(student.id).status"
+                      (change)="updateGradeStatus(student.id, $event)"
+                    >
+                      <option>Brouillon</option>
+                      <option>Validee</option>
+                      <option>Absence</option>
+                    </select>
+                  </label>
+                  <label>
+                    Remarque
+                    <input
+                      type="text"
+                      [value]="getGradeDraft(student.id).remark"
+                      placeholder="Optionnel"
+                      (input)="updateGradeRemark(student.id, $event)"
+                    />
+                  </label>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des etudiants...' : 'Aucun etudiant pour cette evaluation.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'attendance') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Gestion presences</span>
+            <h2>Selectionner une seance</h2>
+            <p>Chaque etudiant peut etre marque present, absent ou en retard.</p>
+          </div>
+
+          <form [formGroup]="attendanceForm" (ngSubmit)="submitAttendance()">
+            <label>
+              Seance
+              <select formControlName="sessionId" (change)="updateSession($event)">
+                <option [value]="0" disabled>Choisir une seance</option>
+                @for (session of sessions(); track session.id) {
+                  <option [value]="session.id">
+                    {{ session.subject }} - {{ session.group }} - {{ session.day }}
+                  </option>
+                }
+              </select>
+            </label>
+
+            @if (selectedSession(); as session) {
+              <div class="helper-card">
+                {{ session.type }} - {{ session.room }} - {{ session.start }} a {{ session.end }}
+              </div>
+            }
+
+            <button class="primary-button" type="submit">Sauvegarder l'appel</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel wide-table">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Appel</span>
+              <h2>Statuts des etudiants</h2>
+            </div>
+            <span class="counter">{{ attendanceStudents().length }} etudiants</span>
+          </div>
+
+          <div class="attendance-list">
+            @if (attendanceStudents().length > 0) {
+              @for (student of attendanceStudents(); track student.id) {
+                <div class="attendance-row">
+                  <div class="avatar">{{ student.name.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ student.name }}</strong>
+                    <small>{{ student.matricule }} - {{ student.level }}</small>
+                  </div>
+                  <select
+                    [value]="getAttendanceStatus(student.id)"
+                    (change)="updateAttendanceStatus(student.id, $event)"
+                  >
+                    <option>Present</option>
+                    <option>Absent</option>
+                    <option>Retard</option>
+                  </select>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des etudiants...' : 'Aucun etudiant pour cette seance.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Rattrapages</span>
+            <h2>Creer une seance</h2>
+          </div>
+
+          <form [formGroup]="makeupForm" (ngSubmit)="submitMakeupSession()">
+            <label>
+              Enseignement
+              <select formControlName="teachingId">
+                <option [value]="0" disabled>Choisir un enseignement</option>
+                @for (teaching of teachings(); track teaching.id) {
+                  <option [value]="teaching.id">{{ teaching.title }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Groupe
+              <select formControlName="groupId">
+                <option [value]="0" disabled>Choisir un groupe</option>
+                @for (group of groups(); track group.id) {
+                  <option [value]="group.id">{{ group.label }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="field-row">
+              <label>
+                Type
+                <select formControlName="typeSeance">
+                  <option>Rattrapage</option>
+                  <option>Cours</option>
+                  <option>TP</option>
+                  <option>TD</option>
+                </select>
+              </label>
+              <label>
+                Jour
+                <select formControlName="day">
+                  <option>Lundi</option>
+                  <option>Mardi</option>
+                  <option>Mercredi</option>
+                  <option>Jeudi</option>
+                  <option>Vendredi</option>
+                  <option>Samedi</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Debut
+                <input type="time" formControlName="start" />
+              </label>
+              <label>
+                Fin
+                <input type="time" formControlName="end" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Batiment
+                <input type="text" formControlName="batiment" placeholder="Bloc B" />
+              </label>
+              <label>
+                Salle
+                <input type="text" formControlName="salle" placeholder="Salle 204" />
+                @if (hasControlError(makeupForm, 'salle')) {
+                  <small class="field-error">Salle requise.</small>
+                }
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Creer le rattrapage</button>
+          </form>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Supports de cours</span>
+            <h2>Uploader un fichier</h2>
+          </div>
+
+          <form [formGroup]="materialForm" (ngSubmit)="submitMaterial()">
+            <label>
+              Enseignement
+              <select formControlName="teachingId" (change)="updateMaterialTeaching($event)">
+                <option [value]="0" disabled>Choisir un enseignement</option>
+                @for (teaching of teachings(); track teaching.id) {
+                  <option [value]="teaching.id">{{ teaching.title }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Titre
+              <input type="text" formControlName="title" placeholder="Chapitre 4 - Services REST" />
+              @if (hasControlError(materialForm, 'title')) {
+                <small class="field-error">Titre requis.</small>
+              }
+            </label>
+
+            <label class="file-picker">
+              Fichier
+              <input type="file" (change)="selectMaterialFile($event)" />
+              <span>{{ selectedFileName() || 'PDF, PPTX, DOCX...' }}</span>
+            </label>
+
+            <button class="secondary-button" type="submit">Uploader le support</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Bibliotheque</span>
+              <h2>Supports disponibles</h2>
+            </div>
+            <span class="counter">{{ materialsForTeaching().length }} fichiers</span>
+          </div>
+
+          <div class="data-list">
+            @if (materialsForTeaching().length > 0) {
+              @for (material of materialsForTeaching(); track material.id) {
+                <div class="data-row material-row">
+                  <span class="code-pill">DOC</span>
+                  <div>
+                    <strong>{{ material.title }}</strong>
+                    <small>{{ material.subject }} - {{ material.fileName }}</small>
+                  </div>
+                  <span class="status-pill">{{ material.size }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des supports...' : 'Aucun support disponible.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    }
+  </section>
+</main>

@@ -21,6 +21,12 @@ export const routes: Routes = [
       import('./features/admin/admin-module').then((module) => module.AdminModule),
   },
   {
+    path: 'professor',
+    title: 'Professor Workspace',
+    loadChildren: () =>
+      import('./features/professor/professor-module').then((module) => module.ProfessorModule),
+  },
+  {
     path: '**',
     redirectTo: '',
   },
