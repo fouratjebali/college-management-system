@@ -2002,4 +2002,234 @@ Examens et notes & Le flux de planification/publication est represente & \textbf
 
 Cette deuxieme etape du Sprint 2 livre l'espace administrateur cote frontend. L'application dispose maintenant d'une route \texttt{/admin}, d'un dashboard moderne, de sections de gestion structure/utilisateurs/examens/notes, d'une palette coherente avec le login et d'une validation Angular reussie. L'etape suivante pourra se concentrer sur les espaces professeur et etudiant, puis sur le branchement complet des workflows.
 
+\section{Sprint Goal -- Etape 3 Frontend Professeur}
+
+\begin{center}
+\fcolorbox{black}{gray!10}{
+\begin{minipage}{0.85\textwidth}
+\centering
+\vspace{0.4cm}
+\textbf{Objectif de l'etape 3 du Sprint 2 :}\\[0.3cm]
+\textit{<< Realiser un espace professeur complet, coherent avec l'interface administrateur, permettant de consulter les enseignements assignes, les groupes et les seances, puis de saisir les notes, enregistrer les presences, creer des rattrapages et deposer des supports de cours. >>}
+\vspace{0.4cm}
+\end{minipage}
+}
+\end{center}
+
+\textbf{Critere de succes :} l'application Angular compile, la route \texttt{/professor} est protegee par le role \texttt{PROFESSOR}, les donnees professeur sont chargees depuis le backend, et les workflows notes/presences/rattrapages/supports sont utilisables depuis une interface responsive.
+
+\section{Definition of Done -- Sprint 2 Frontend Professeur}
+
+Les criteres specifiques retenus pour cette etape sont :
+
+\begin{itemize}[itemsep=0.4em]
+    \item La page professeur est accessible via une route Angular dediee \texttt{/professor}.
+    \item Le module professeur est charge en lazy loading.
+    \item L'acces a la route est limite au role \texttt{PROFESSOR}.
+    \item L'interface reprend la meme structure visuelle que l'espace administrateur : sidebar, topbar, cartes, panneaux, toasts et palette sombre.
+    \item Le dashboard affiche les enseignements assignes, les groupes suivis, les prochaines seances et les actions rapides.
+    \item Le professeur peut preparer une saisie batch des notes par evaluation.
+    \item Le professeur peut enregistrer les presences par seance avec les statuts Present, Absent et Retard.
+    \item Le professeur peut creer une seance de rattrapage et uploader un support de cours.
+    \item Les commandes \texttt{npm run build} et \texttt{./mvnw.cmd -q -DskipTests compile} se terminent sans erreur.
+\end{itemize}
+
+\section{Backlog Sprint 2 -- Etape 3 Frontend Professeur}
+
+\begin{table}[H]
+\centering
+\caption{User Stories -- Sprint 2 Frontend Professeur}
+\begin{tabular}{|p{1.2cm}|p{7.4cm}|p{1.8cm}|p{2.6cm}|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{SP} & \textbf{Statut} \\
+\hline
+S2-P1 & En tant que professeur, je veux consulter un dashboard personnalise avec mes enseignements, groupes et prochaines seances, afin d'avoir une vue rapide de mon activite pedagogique. & 3 & \textbf{\checkmark Termine} \\
+\hline
+S2-P2 & En tant que professeur, je veux saisir les notes des etudiants par evaluation, afin de transmettre les resultats en une seule operation batch. & 8 & \textbf{\checkmark Termine} \\
+\hline
+S2-P3 & En tant que professeur, je veux gerer les presences par seance, afin de suivre les absences et retards des etudiants. & 3 & \textbf{\checkmark Termine} \\
+\hline
+S2-P4 & En tant que professeur, je veux creer des rattrapages et deposer des supports de cours, afin de partager les ressources et organiser les seances supplementaires. & 5 & \textbf{\checkmark Termine} \\
+\hline
+\textbf{Total} & & \textbf{19} & \textbf{Livre} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Implementation Technique -- Frontend Professeur}
+
+\subsection{Routing et Architecture Angular}
+
+L'espace professeur a ete ajoute dans la meme logique que l'espace administrateur :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout de la route \texttt{/professor} dans \texttt{app.routes.ts}.
+    \item Chargement lazy du module \texttt{ProfessorModule}.
+    \item Ajout du composant standalone \texttt{ProfessorDashboardComponent}.
+    \item Protection de la route avec \texttt{roleGuard} et le role \texttt{UserRole.PROFESSOR}.
+    \item Creation du service Angular \texttt{ProfessorDashboardApi} pour centraliser les appels REST.
+\end{itemize}
+
+\subsection{Endpoint de Synthese Professeur}
+
+Pour eviter d'exposer directement des entites JPA cycliques au frontend, un endpoint de synthese a ete ajoute cote backend :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout du DTO \texttt{ProfessorDashboardResponseDTO}.
+    \item Ajout du service \texttt{ProfessorDashboardService}.
+    \item Ajout du controller \texttt{ProfessorDashboardController}.
+    \item Endpoint livre : \texttt{GET /api/professor/dashboard}.
+    \item Chargement des enseignements, groupes, seances, evaluations, etudiants, notes, presences et supports du professeur connecte.
+\end{itemize}
+
+\subsection{Dashboard Professeur}
+
+Le dashboard professeur reprend la structure visuelle de l'admin tout en l'adaptant au contexte pedagogique :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Cartes statistiques : enseignements, groupes, seances et supports.
+    \item Liste des enseignements assignes avec code, semestre, annee universitaire et coefficient.
+    \item Vue des groupes suivis avec niveau, departement et nombre d'etudiants.
+    \item Timeline des prochaines seances avec type, groupe, salle et horaire.
+    \item Actions rapides vers la saisie de notes, la gestion des presences, les rattrapages et les supports.
+\end{itemize}
+
+\subsection{Saisie des Notes}
+
+Le workflow de notes permet au professeur de travailler par evaluation :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Selection d'une evaluation existante.
+    \item Chargement automatique des etudiants du groupe concerne.
+    \item Tableau de saisie inline avec note, statut et remarque.
+    \item Envoi batch des notes vers \texttt{POST /api/notes}.
+    \item Rechargement du dashboard apres sauvegarde afin de garder l'interface synchronisee avec la base.
+\end{itemize}
+
+\subsection{Gestion des Presences}
+
+La section presences couvre l'appel par seance :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Selection d'une seance du professeur.
+    \item Affichage des etudiants du groupe lie a la seance.
+    \item Choix du statut : Present, Absent ou Retard.
+    \item Sauvegarde rapide via \texttt{POST /api/presences}.
+\end{itemize}
+
+\subsection{Rattrapages et Supports}
+
+La derniere section regroupe les besoins de rattrapage et de depot des supports :
+
+\begin{itemize}[itemsep=0.3em]
+    \item Formulaire de creation d'une seance de rattrapage : enseignement, groupe, jour, horaire, batiment et salle.
+    \item Creation via \texttt{POST /api/schedules}, avec validation backend des conflits horaires.
+    \item Upload de support via formulaire multipart : enseignement, titre et fichier.
+    \item Envoi vers \texttt{POST /api/supports/upload}.
+    \item Liste des supports deja disponibles pour l'enseignement selectionne.
+\end{itemize}
+
+\section{Interfaces Livrees -- Frontend Professeur}
+
+\begin{table}[H]
+\centering
+\caption{Interfaces frontend livrees -- Sprint 2 Professeur}
+\begin{tabular}{|p{4cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Interface} & \textbf{Route / Section} & \textbf{Objectif} \\
+\hline
+Dashboard Professeur & \texttt{/professor} / Dashboard & Enseignements, groupes, prochaines seances et actions rapides \\
+\hline
+Saisie Notes & \texttt{/professor} / Saisie notes & Selection evaluation, tableau etudiant et envoi batch \\
+\hline
+Gestion Presences & \texttt{/professor} / Presences & Appel par seance avec statuts Present, Absent, Retard \\
+\hline
+Rattrapages \& Supports & \texttt{/professor} / Rattrapages \& Supports & Creation de rattrapage, upload et liste des supports \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Tests et Validation -- Frontend Professeur}
+
+\textbf{Commande de validation frontend executee :}
+
+\begin{verbatim}
+cd frontend
+npm run build
+\end{verbatim}
+
+\textbf{Resultat :} build Angular termine avec succes. Le bundle genere contient les chunks lazy \texttt{professor-module} et \texttt{professor-dashboard}, confirmant le chargement a la demande de l'espace professeur.
+
+\textbf{Commande de validation backend executee :}
+
+\begin{verbatim}
+cd backend
+./mvnw.cmd -q -DskipTests compile
+\end{verbatim}
+
+\textbf{Resultat :} compilation backend terminee sans erreur apres ajout du DTO, du service et du controller de dashboard professeur.
+
+\begin{table}[H]
+\centering
+\caption{Validation de l'etape frontend professeur}
+\begin{tabular}{|p{5cm}|p{5.5cm}|p{2.5cm}|}
+\hline
+\textbf{Element} & \textbf{Critere de validation} & \textbf{Statut} \\
+\hline
+Route professeur & \texttt{/professor} charge le module professeur & \textbf{\checkmark OK} \\
+\hline
+Protection role & Acces limite a \texttt{UserRole.PROFESSOR} & \textbf{\checkmark OK} \\
+\hline
+Compilation Angular & \texttt{npm run build} sans erreur & \textbf{\checkmark OK} \\
+\hline
+Compilation backend & \texttt{./mvnw.cmd -q -DskipTests compile} sans erreur & \textbf{\checkmark OK} \\
+\hline
+Palette UI & Meme structure visuelle que l'espace admin & \textbf{\checkmark OK} \\
+\hline
+Workflows professeur & Notes, presences, rattrapages et supports presents & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Organisation GitHub -- Etape 3}
+
+Le travail frontend professeur a ete isole sur la branche :
+
+\begin{verbatim}
+sprint2/professor-frontend-step3
+\end{verbatim}
+
+La strategie de commits retenue est :
+
+\begin{itemize}[itemsep=0.3em]
+    \item un commit pour le dashboard professeur et son endpoint de synthese ;
+    \item un commit pour les workflows notes, presences, rattrapages et supports ;
+    \item un commit pour la mise a jour du rapport et la validation des builds ;
+    \item push de la branche distante pour revue avant integration dans \texttt{dev}.
+\end{itemize}
+
+\section{Sprint Review -- Etape 3}
+
+\begin{table}[H]
+\centering
+\caption{Review de l'etape frontend professeur}
+\begin{tabular}{|p{5cm}|p{5cm}|p{3cm}|}
+\hline
+\textbf{Element} & \textbf{Observation} & \textbf{Decision} \\
+\hline
+Dashboard & Le professeur dispose d'une vue synthetique de ses enseignements, groupes et seances & \textbf{Accepte} \\
+\hline
+Notes & La saisie par evaluation et l'envoi batch sont disponibles & \textbf{Accepte} \\
+\hline
+Presences & L'appel par seance avec statuts est operationnel cote interface & \textbf{Accepte} \\
+\hline
+Rattrapages et supports & Les formulaires utilisent les endpoints backend existants & \textbf{Accepte} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion Sprint 2 -- Etape 3}
+
+Cette etape livre l'espace professeur du Sprint 2. La route \texttt{/professor} est maintenant disponible, protegee par role, chargee en lazy loading et connectee a un endpoint de synthese backend. Le professeur peut consulter ses enseignements, groupes et seances, saisir les notes, enregistrer les presences, creer des rattrapages et uploader des supports, avec une interface coherente avec l'espace administrateur. L'espace etudiant pourra etre traite dans la prochaine sous-etape du Sprint 2.
+
 \end{document}
