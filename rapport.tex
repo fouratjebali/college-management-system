@@ -8,6 +8,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{geometry}
 \usepackage{graphicx}
+\graphicspath{{conception/}}
 \usepackage{amssymb}
 \setlength{\headheight}{15pt}
 \DeclareUnicodeCharacter{2713}{}
@@ -708,23 +709,12 @@ L'analyse du Sprint 0 a mis en evidence la necessite de commencer par un socle t
 
 La conception technique du Sprint 0 repose sur une architecture trois tiers : une application Angular pour le frontend, une API Spring Boot pour le backend et une base PostgreSQL pour la persistance. Docker Compose orchestre ces trois services afin de simplifier le demarrage local.
 
-\begin{lstlisting}[caption={Architecture Sprint 0 en PlantUML}]
-@startuml
-node "Poste developpeur" {
-  component "Frontend Angular" as Front
-  component "Backend Spring Boot" as Back
-  database "PostgreSQL" as DB
-}
-
-Front --> Back : HTTP / REST
-Back --> DB : JDBC / JPA
-
-artifact "docker-compose.yml" as Compose
-Compose ..> Front
-Compose ..> Back
-Compose ..> DB
-@enduml
-\end{lstlisting}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{archDiag.png}
+    \caption{Architecture technique du Sprint 0}
+    \label{fig:sprint0-architecture}
+\end{figure}
 
 \subsection{Developpement}
 
@@ -1330,49 +1320,19 @@ Les besoins principaux identifies sont :
 
 La conception du Sprint 1 repose sur une chaine de securite backend et un mecanisme de protection frontend. Le backend valide les credentials, genere les tokens et controle les routes. Le frontend conserve l'etat utilisateur, injecte le token dans les appels HTTP et empeche l'acces aux routes non autorisees.
 
-\begin{lstlisting}[caption={Flux d'authentification Sprint 1 en PlantUML}]
-@startuml
-actor Utilisateur
-participant "LoginComponent" as UI
-participant "AuthService Angular" as FA
-participant "AuthController" as C
-participant "AuthService Backend" as BA
-participant "JwtTokenProvider" as JWT
-database "UserRepository" as DB
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{FluxLogin(sequence).png}
+    \caption{Diagramme de sequence du flux d'authentification}
+    \label{fig:sprint1-flux-login}
+\end{figure}
 
-Utilisateur -> UI : Saisir email/mot de passe
-UI -> FA : login(credentials)
-FA -> C : POST /api/auth/login
-C -> BA : login(request)
-BA -> DB : chercher utilisateur
-BA -> BA : verifier mot de passe BCrypt
-BA -> JWT : generer access token
-BA --> C : LoginResponse
-C --> FA : JWT + role
-FA --> UI : stocker session
-UI --> Utilisateur : redirection espace role
-@enduml
-\end{lstlisting}
-
-\begin{lstlisting}[caption={Protection des routes par role en PlantUML}]
-@startuml
-actor Utilisateur
-participant "Angular Router" as R
-participant "AuthGuard" as AG
-participant "RoleGuard" as RG
-participant "Route protegee" as RP
-
-Utilisateur -> R : acceder /admin ou /student ou /professor
-R -> AG : verifier token
-AG -> RG : token valide
-RG -> RG : comparer role utilisateur / role requis
-alt role autorise
-  RG -> RP : autoriser navigation
-else role refuse
-  RG -> R : bloquer et rediriger
-end
-@enduml
-\end{lstlisting}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=14cm]{FluxProtect.png}
+    \caption{Diagramme de protection des routes par role}
+    \label{fig:sprint1-protection-routes}
+\end{figure}
 
 \subsection{Developpement}
 
@@ -1901,112 +1861,30 @@ La conception du sprint a ete organisee autour d'une architecture en couches : c
 
 \subsubsection{Diagramme de cas d'utilisation}
 
-\begin{lstlisting}[caption={Cas d'utilisation Sprint 2 en PlantUML}]
-@startuml
-left to right direction
-actor Administrateur
-actor Professeur
-actor Etudiant
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=8cm]{usecaseSprint2.png}
+    \caption{Diagramme de cas d'utilisation du Sprint 2}
+    \label{fig:sprint2-usecase}
+\end{figure}
 
-rectangle "College Management System - Sprint 2" {
-  Administrateur --> (Consulter dashboard admin)
-  Administrateur --> (Gerer structure pedagogique)
-  Administrateur --> (Planifier evaluations)
-  Administrateur --> (Publier annonces)
+\subsubsection{Diagramme de sequence -- consultation des notes}
 
-  Professeur --> (Consulter enseignements)
-  Professeur --> (Saisir notes)
-  Professeur --> (Valider presences)
-  Professeur --> (Creer rattrapage)
-  Professeur --> (Deposer supports)
-
-  Etudiant --> (Consulter dashboard etudiant)
-  Etudiant --> (Consulter emploi du temps)
-  Etudiant --> (Telecharger supports)
-  Etudiant --> (Lire annonces)
-  Etudiant --> (Consulter bulletin)
-}
-@enduml
-\end{lstlisting}
-
-\subsubsection{Diagramme de sequence -- consultation du bulletin}
-
-\begin{lstlisting}[caption={Sequence consultation bulletin etudiant en PlantUML}]
-@startuml
-actor Etudiant
-participant "StudentDashboardComponent" as UI
-participant "StudentDashboardApi" as API
-participant "StudentDashboardController" as C
-participant "StudentDashboardService" as S
-database "Repositories JPA" as DB
-
-Etudiant -> UI : Ouvrir /student > Notes
-UI -> API : getDashboard()
-API -> C : GET /api/student/dashboard
-C -> S : getDashboard(email)
-S -> DB : Charger etudiant, seances, evaluations, notes
-S -> S : Calculer moyenne matiere
-S -> S : Calculer moyenne generale ponderee
-S --> C : StudentDashboardResponseDTO
-C --> API : JSON
-API --> UI : donnees dashboard
-UI --> Etudiant : Bulletin par matiere
-@enduml
-\end{lstlisting}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{Diagrammesequence-consultationnotes.png}
+    \caption{Diagramme de sequence de la consultation des notes}
+    \label{fig:sprint2-sequence-notes}
+\end{figure}
 
 \subsubsection{Diagramme de classes simplifie}
 
-\begin{lstlisting}[caption={Modele pedagogique Sprint 2 en PlantUML}]
-@startuml
-class User {
-  id
-  nomComplet
-  email
-  motDePasseHash
-}
-class Administrateur
-class Professeur
-class Etudiant
-class Departement
-class Matiere {
-  code
-  libelle
-  coefficient
-}
-class Groupe
-class Enseignement
-class Seance
-class Evaluation {
-  typeEvaluation
-  coefficient
-}
-class Note {
-  valeur
-  statut
-}
-class Presence
-class SupportCours
-class Annonce
-
-User <|-- Administrateur
-User <|-- Professeur
-User <|-- Etudiant
-Departement "1" --> "*" Matiere
-Departement "1" --> "*" Groupe
-Groupe "1" --> "*" Etudiant
-Professeur "1" --> "*" Enseignement
-Matiere "1" --> "*" Enseignement
-Enseignement "1" --> "*" Seance
-Groupe "1" --> "*" Seance
-Seance "1" --> "*" Evaluation
-Evaluation "1" --> "*" Note
-Etudiant "1" --> "*" Note
-Seance "1" --> "*" Presence
-Etudiant "1" --> "*" Presence
-Enseignement "1" --> "*" SupportCours
-Administrateur "1" --> "*" Annonce
-@enduml
-\end{lstlisting}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=10cm]{ClassSprint2.png}
+    \caption{Diagramme de classes simplifie du Sprint 2}
+    \label{fig:sprint2-classes}
+\end{figure}
 
 \subsection{Developpement}
 
