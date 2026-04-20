@@ -2263,7 +2263,7 @@ La quatrieme etape du Sprint 2 consiste a livrer l'espace etudiant. L'objectif e
 \hline
 S2-E4-01 & En tant qu'etudiant, je veux acceder a mon espace personnel & Route \texttt{/student}, module lazy, guard role \texttt{STUDENT}, redirection login existante & 3 \\
 \hline
-S2-E4-02 & En tant qu'etudiant, je veux voir une synthese de ma situation academique & Dashboard profil, moyenne, nombre de seances, supports, taux de presence et annonces & 3 \\
+S2-E4-02 & En tant qu'etudiant, je veux voir une synthese de ma situation academique & Dashboard profil, nombre de seances, supports, taux de presence et annonces & 3 \\
 \hline
 S2-E4-03 & En tant qu'etudiant, je veux consulter mes notes et evaluations & Tableau des notes, recherche, evaluation, type, date, coefficient, statut et remarque & 3 \\
 \hline
@@ -2293,7 +2293,7 @@ Le DTO \texttt{StudentDashboardResponseDTO} regroupe toutes les donnees necessai
 \begin{itemize}[itemsep=0.3em]
     \item profil etudiant : identite, email, matricule, niveau, groupe, departement et annee ;
     \item statistiques principales : seances, supports, presence et annonces ;
-    \item synthese des notes : moyenne semestrielle affichee seulement lorsque toutes les notes DS/Examen attendues sont publiees ;
+    \item synthese des notes : moyenne semestrielle affichee seulement lorsque toutes les notes DS, Examen et Examen TP attendues sont publiees ;
     \item notes et evaluations ;
     \item emploi du temps du groupe de l'etudiant ;
     \item supports de cours des enseignements suivis ;
@@ -2318,6 +2318,29 @@ Le service \texttt{StudentDashboardService} centralise la recuperation des donne
 \subsection{Donnees de Demonstration Etudiant}
 
 Le seed backend a ete enrichi pour garantir un test complet avec le compte \texttt{student.demo@issatso.tn}. Le groupe \texttt{GI-3A} dispose maintenant de seances reparties sur la semaine, d'evaluations, de notes, de presences, de supports de cours telechargeables et d'annonces ciblees etudiant. Ces donnees permettent de verifier directement les statistiques, les prochaines seances et les differentes sections du dashboard.
+
+\subsection{Regle de Calcul des Moyennes}
+
+La logique de notation a ete centralisee cote backend. Les seuls types d'evaluation academique retenus sont \texttt{DS}, \texttt{Examen} et \texttt{Examen TP}. Les coefficients d'evaluation sont fixes comme suit :
+
+\begin{itemize}[itemsep=0.3em]
+    \item matiere sans TP : \texttt{DS = 2} et \texttt{Examen = 8} ;
+    \item matiere avec TP : \texttt{DS = 2}, \texttt{Examen TP = 2} et \texttt{Examen = 6}.
+\end{itemize}
+
+La moyenne d'une matiere est calculee par :
+
+\begin{verbatim}
+somme(note evaluation * coefficient evaluation) / 10
+\end{verbatim}
+
+La moyenne generale du semestre est calculee par :
+
+\begin{verbatim}
+somme(moyenne matiere * coefficient matiere) / somme(coefficients matieres)
+\end{verbatim}
+
+La moyenne generale n'est affichee dans l'onglet \texttt{Notes} que lorsque toutes les notes attendues pour toutes les matieres du semestre sont publiees.
 
 \section{Implementation Frontend -- Espace Etudiant}
 
@@ -2450,7 +2473,7 @@ La strategie de commits retenue est :
 \hline
 Dashboard & L'etudiant dispose d'une vue synthetique de son profil, de ses indicateurs et de ses prochaines seances & \textbf{Accepte} \\
 \hline
-Notes & Les evaluations, les remarques et la moyenne conditionnelle DS/Examen sont consultables dans un tableau dedie & \textbf{Accepte} \\
+Notes & Les evaluations, les remarques et la moyenne conditionnelle DS/Examen/Examen TP sont consultables dans un tableau dedie & \textbf{Accepte} \\
 \hline
 Emploi du temps & Le planning hebdomadaire est organise par jour, horaire, salle et professeur & \textbf{Accepte} \\
 \hline

@@ -35,6 +35,7 @@ public class AdminDashboardService {
     private final MatiereRepository matiereRepository;
     private final GroupeRepository groupeRepository;
     private final EvaluationRepository evaluationRepository;
+    private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
 
     public AdminDashboardService(
             UserRepository userRepository,
@@ -44,7 +45,8 @@ public class AdminDashboardService {
             EnseignementRepository enseignementRepository,
             MatiereRepository matiereRepository,
             GroupeRepository groupeRepository,
-            EvaluationRepository evaluationRepository
+            EvaluationRepository evaluationRepository,
+            AcademicEvaluationPolicyService academicEvaluationPolicyService
     ) {
         this.userRepository = userRepository;
         this.etudiantRepository = etudiantRepository;
@@ -54,6 +56,7 @@ public class AdminDashboardService {
         this.matiereRepository = matiereRepository;
         this.groupeRepository = groupeRepository;
         this.evaluationRepository = evaluationRepository;
+        this.academicEvaluationPolicyService = academicEvaluationPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -117,13 +120,14 @@ public class AdminDashboardService {
 
     private List<AdminDashboardResponseDTO.ExamRowDTO> buildExams() {
         return evaluationRepository.findAll().stream()
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
                 .sorted(Comparator.comparing(Evaluation::getDateEvaluation))
                 .map(evaluation -> AdminDashboardResponseDTO.ExamRowDTO.builder()
                         .subject(evaluation.getLibelle())
                         .group(evaluation.getSeance().getGroupe().getLibelle())
                         .date(evaluation.getDateEvaluation().format(EXAM_FORMATTER))
                         .room(evaluation.getSeance().getBatiment() + " / " + evaluation.getSeance().getSalle())
-                        .type(evaluation.getTypeEvaluation())
+                        .type(academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()))
                         .scope(resolveEvaluationScope(evaluation))
                         .build())
                 .toList();

@@ -40,6 +40,7 @@ public class StudentDashboardService {
     private final PresenceRepository presenceRepository;
     private final SupportCoursRepository supportCoursRepository;
     private final AnnonceRepository annonceRepository;
+    private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
 
     public StudentDashboardService(
             EtudiantRepository etudiantRepository,
@@ -48,7 +49,8 @@ public class StudentDashboardService {
             NoteRepository noteRepository,
             PresenceRepository presenceRepository,
             SupportCoursRepository supportCoursRepository,
-            AnnonceRepository annonceRepository
+            AnnonceRepository annonceRepository,
+            AcademicEvaluationPolicyService academicEvaluationPolicyService
     ) {
         this.etudiantRepository = etudiantRepository;
         this.seanceRepository = seanceRepository;
@@ -57,6 +59,7 @@ public class StudentDashboardService {
         this.presenceRepository = presenceRepository;
         this.supportCoursRepository = supportCoursRepository;
         this.annonceRepository = annonceRepository;
+        this.academicEvaluationPolicyService = academicEvaluationPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -72,6 +75,7 @@ public class StudentDashboardService {
                 .sorted(Comparator.comparing(Seance::getJoursemaine).thenComparing(Seance::getHeureDebut))
                 .toList();
         List<Note> grades = noteRepository.findByEtudiantId(student.getId()).stream()
+                .filter(note -> academicEvaluationPolicyService.isAcademicEvaluation(note.getEvaluation()))
                 .sorted(Comparator.comparing(note -> note.getEvaluation().getDateEvaluation()))
                 .toList();
         List<Presence> attendance = presenceRepository.findByEtudiantId(student.getId()).stream()
@@ -155,26 +159,20 @@ public class StudentDashboardService {
             List<Seance> schedule,
             List<Note> grades
     ) {
-        List<Evaluation> expectedEvaluations = schedule.stream()
-                .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
-                .filter(this::isSemesterAverageEvaluation)
-                .sorted(Comparator.comparing(Evaluation::getDateEvaluation))
-                .toList();
-        Map<Integer, Note> gradesByEvaluation = new LinkedHashMap<>();
-        grades.forEach(note -> gradesByEvaluation.putIfAbsent(note.getEvaluation().getId(), note));
-        List<Note> receivedGrades = expectedEvaluations.stream()
-                .map(evaluation -> gradesByEvaluation.get(evaluation.getId()))
-                .filter(note -> note != null)
-                .toList();
-
-        int expectedCount = expectedEvaluations.size();
-        int receivedCount = receivedGrades.size();
-        boolean complete = expectedCount > 0 && expectedCount == receivedCount;
+        List<SubjectAverage> subjectAverages = resolveSubjectAverages(schedule, grades);
+        int expectedCount = subjectAverages.stream()
+                .mapToInt(SubjectAverage::expectedCount)
+                .sum();
+        int receivedCount = subjectAverages.stream()
+                .mapToInt(SubjectAverage::receivedCount)
+                .sum();
+        boolean complete = !subjectAverages.isEmpty()
+                && subjectAverages.stream().allMatch(SubjectAverage::complete);
 
         if (!complete) {
             String message = expectedCount == 0
                     ? "Aucun DS ou examen configure pour ce semestre."
-                    : receivedCount + "/" + expectedCount + " note(s) DS/Examen publiee(s).";
+                    : receivedCount + "/" + expectedCount + " note(s) DS/Examen/Examen TP publiee(s).";
             return StudentDashboardResponseDTO.GradeSummaryDTO.builder()
                     .average("--")
                     .complete(false)
@@ -184,43 +182,96 @@ public class StudentDashboardService {
                     .build();
         }
 
+        double subjectCoefficientSum = subjectAverages.stream()
+                .mapToDouble(SubjectAverage::subjectCoefficient)
+                .sum();
+        if (subjectCoefficientSum <= 0) {
+            return StudentDashboardResponseDTO.GradeSummaryDTO.builder()
+                    .average("--")
+                    .complete(false)
+                    .expectedCount(expectedCount)
+                    .receivedCount(receivedCount)
+                    .message("Les coefficients des matieres ne sont pas disponibles.")
+                    .build();
+        }
+
+        double weightedAverage = subjectAverages.stream()
+                .mapToDouble(subjectAverage -> subjectAverage.average() * subjectAverage.subjectCoefficient())
+                .sum() / subjectCoefficientSum;
+
         return StudentDashboardResponseDTO.GradeSummaryDTO.builder()
-                .average(calculateWeightedAverage(receivedGrades))
+                .average(String.format(Locale.US, "%.2f", weightedAverage))
                 .complete(true)
                 .expectedCount(expectedCount)
                 .receivedCount(receivedCount)
-                .message("Toutes les notes DS/Examen du semestre sont publiees.")
+                .message("Toutes les notes DS/Examen/Examen TP du semestre sont publiees.")
                 .build();
     }
 
-    private boolean isSemesterAverageEvaluation(Evaluation evaluation) {
-        String text = (evaluation.getTypeEvaluation() + " " + evaluation.getLibelle())
-                .toLowerCase(Locale.ROOT);
-        return text.contains("devoir surveille")
-                || text.contains("examen")
-                || text.contains("exam")
-                || text.matches(".*\\bds\\b.*");
+    private List<SubjectAverage> resolveSubjectAverages(List<Seance> schedule, List<Note> grades) {
+        List<Enseignement> teachings = uniqueTeachings(schedule);
+        Map<Integer, Note> gradesByEvaluation = new LinkedHashMap<>();
+        grades.forEach(note -> gradesByEvaluation.putIfAbsent(note.getEvaluation().getId(), note));
+
+        return teachings.stream()
+                .map(enseignement -> resolveSubjectAverage(enseignement, schedule, gradesByEvaluation))
+                .toList();
     }
 
-    private String calculateWeightedAverage(List<Note> grades) {
-        double coefficientSum = grades.stream()
-                .mapToDouble(note -> note.getEvaluation().getCoefficient() == null
-                        ? 1.0
-                        : note.getEvaluation().getCoefficient())
-                .sum();
-        if (coefficientSum <= 0) {
-            return "--";
-        }
+    private SubjectAverage resolveSubjectAverage(
+            Enseignement enseignement,
+            List<Seance> schedule,
+            Map<Integer, Note> gradesByEvaluation
+    ) {
+        Seance referenceSession = schedule.stream()
+                .filter(seance -> seance.getEnseignement().getId().equals(enseignement.getId()))
+                .findFirst()
+                .orElseThrow();
+        List<String> requiredTypes = academicEvaluationPolicyService.requiredTypes(
+                enseignement,
+                referenceSession.getGroupe()
+        );
+        List<Evaluation> evaluations = schedule.stream()
+                .filter(seance -> seance.getEnseignement().getId().equals(enseignement.getId()))
+                .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .toList();
+        Map<String, Evaluation> evaluationsByType = new LinkedHashMap<>();
+        evaluations.forEach(evaluation -> evaluationsByType.putIfAbsent(
+                academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()),
+                evaluation
+        ));
+        List<Note> subjectNotes = requiredTypes.stream()
+                .map(evaluationsByType::get)
+                .filter(evaluation -> evaluation != null)
+                .map(evaluation -> gradesByEvaluation.get(evaluation.getId()))
+                .filter(note -> note != null)
+                .toList();
+        int expectedCount = requiredTypes.size();
+        int receivedCount = subjectNotes.size();
+        boolean complete = expectedCount > 0 && expectedCount == receivedCount;
+        double average = complete ? calculateSubjectAverage(subjectNotes) : 0;
+        double subjectCoefficient = enseignement.getMatiere().getCoefficient() == null
+                ? 0
+                : enseignement.getMatiere().getCoefficient();
 
-        double weightedSum = grades.stream()
-                .mapToDouble(note -> {
-                    double coefficient = note.getEvaluation().getCoefficient() == null
-                            ? 1.0
-                            : note.getEvaluation().getCoefficient();
-                    return note.getValeur() * coefficient;
-                })
-                .sum();
-        return String.format(Locale.US, "%.2f", weightedSum / coefficientSum);
+        return new SubjectAverage(average, subjectCoefficient, expectedCount, receivedCount, complete);
+    }
+
+    private List<Enseignement> uniqueTeachings(List<Seance> schedule) {
+        Map<Integer, Enseignement> teachings = new LinkedHashMap<>();
+        schedule.forEach(seance -> teachings.putIfAbsent(
+                seance.getEnseignement().getId(),
+                seance.getEnseignement()
+        ));
+        return teachings.values().stream().toList();
+    }
+
+    private double calculateSubjectAverage(List<Note> grades) {
+        return grades.stream()
+                .mapToDouble(note -> note.getValeur()
+                        * academicEvaluationPolicyService.effectiveCoefficient(note.getEvaluation()))
+                .sum() / 10.0;
     }
 
     private List<SupportCours> resolveMaterials(List<Seance> schedule) {
@@ -243,10 +294,10 @@ public class StudentDashboardService {
                 .id(note.getId())
                 .subject(seance.getEnseignement().getMatiere().getLibelle())
                 .evaluation(note.getEvaluation().getLibelle())
-                .type(note.getEvaluation().getTypeEvaluation())
+                .type(academicEvaluationPolicyService.normalizeEvaluationType(note.getEvaluation().getTypeEvaluation()))
                 .date(note.getEvaluation().getDateEvaluation().format(DATE_TIME_FORMATTER))
                 .value(Float.toString(note.getValeur()))
-                .coefficient(Float.toString(note.getEvaluation().getCoefficient()))
+                .coefficient(Float.toString(academicEvaluationPolicyService.effectiveCoefficient(note.getEvaluation())))
                 .status(note.getStatut())
                 .remark(note.getRemarque())
                 .build();
@@ -323,5 +374,14 @@ public class StudentDashboardService {
         }
 
         return String.format("%.1f Mo", size / (1024.0 * 1024.0));
+    }
+
+    private record SubjectAverage(
+            double average,
+            double subjectCoefficient,
+            int expectedCount,
+            int receivedCount,
+            boolean complete
+    ) {
     }
 }

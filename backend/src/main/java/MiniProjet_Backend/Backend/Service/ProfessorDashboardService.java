@@ -40,6 +40,7 @@ public class ProfessorDashboardService {
     private final NoteRepository noteRepository;
     private final PresenceRepository presenceRepository;
     private final SupportCoursRepository supportCoursRepository;
+    private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
 
     public ProfessorDashboardService(
             ProfesseurRepository professeurRepository,
@@ -49,7 +50,8 @@ public class ProfessorDashboardService {
             EtudiantRepository etudiantRepository,
             NoteRepository noteRepository,
             PresenceRepository presenceRepository,
-            SupportCoursRepository supportCoursRepository
+            SupportCoursRepository supportCoursRepository,
+            AcademicEvaluationPolicyService academicEvaluationPolicyService
     ) {
         this.professeurRepository = professeurRepository;
         this.enseignementRepository = enseignementRepository;
@@ -59,6 +61,7 @@ public class ProfessorDashboardService {
         this.noteRepository = noteRepository;
         this.presenceRepository = presenceRepository;
         this.supportCoursRepository = supportCoursRepository;
+        this.academicEvaluationPolicyService = academicEvaluationPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -75,6 +78,7 @@ public class ProfessorDashboardService {
                 .toList();
         List<Evaluation> evaluations = sessions.stream()
                 .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
                 .sorted(Comparator.comparing(Evaluation::getDateEvaluation))
                 .toList();
         List<Groupe> groups = uniqueGroups(sessions);
@@ -193,9 +197,9 @@ public class ProfessorDashboardService {
                 .id(evaluation.getId())
                 .sessionId(seance.getId())
                 .label(evaluation.getLibelle())
-                .type(evaluation.getTypeEvaluation())
+                .type(academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()))
                 .date(evaluation.getDateEvaluation().format(DATE_TIME_FORMATTER))
-                .coefficient(Float.toString(evaluation.getCoefficient()))
+                .coefficient(Float.toString(academicEvaluationPolicyService.effectiveCoefficient(evaluation)))
                 .groupId(seance.getGroupe().getId())
                 .group(seance.getGroupe().getLibelle())
                 .subject(seance.getEnseignement().getMatiere().getLibelle())

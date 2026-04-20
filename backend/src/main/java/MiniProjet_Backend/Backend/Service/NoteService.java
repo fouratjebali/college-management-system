@@ -29,6 +29,23 @@ public class NoteService {
     }
 
     public Note saveNote(Note note) {
+        if (note.getEvaluation() != null
+                && note.getEvaluation().getId() != null
+                && note.getEtudiant() != null
+                && note.getEtudiant().getId() != null) {
+            return noteRepository
+                    .findByEvaluationIdAndEtudiantId(note.getEvaluation().getId(), note.getEtudiant().getId())
+                    .map(existingNote -> {
+                        existingNote.setValeur(note.getValeur());
+                        existingNote.setStatut(note.getStatut());
+                        existingNote.setRemarque(note.getRemarque());
+                        existingNote.setEvaluation(note.getEvaluation());
+                        existingNote.setEtudiant(note.getEtudiant());
+                        return noteRepository.save(existingNote);
+                    })
+                    .orElseGet(() -> noteRepository.save(note));
+        }
+
         return noteRepository.save(note);
     }
 

@@ -446,14 +446,14 @@ public class SeedDataConfig {
         Evaluation evaluation = new Evaluation();
         evaluation.setLibelle("DS " + seance.getEnseignement().getMatiere().getLibelle()
                 + " - " + seance.getGroupe().getLibelle());
-        evaluation.setTypeEvaluation("Devoir Surveille");
+        evaluation.setTypeEvaluation("DS");
         evaluation.setDateEvaluation(LocalDateTime.now()
                 .plusDays(7L + scheduleIndex)
                 .withHour(seance.getHeureDebut().getHour())
                 .withMinute(seance.getHeureDebut().getMinute())
                 .withSecond(0)
                 .withNano(0));
-        evaluation.setCoefficient(1.0F);
+        evaluation.setCoefficient(2.0F);
         evaluation.setSeance(seance);
         evaluationRepository.save(evaluation);
     }
@@ -483,20 +483,20 @@ public class SeedDataConfig {
                 .toList();
         List<StudentDemoSession> demoSessions = List.of(
                 new StudentDemoSession(0, "Lundi", LocalTime.of(8, 30), LocalTime.of(10, 0),
-                        "Cours", "Bloc A", "Salle 101", "Controle continu Architecture Logicielle",
-                        "Controle continu", 15.5F, "Valide", "Tres bon travail", "Present"),
+                        "Cours", "Bloc A", "Salle 101", "DS Architecture Logicielle",
+                        "DS", 15.5F, "Valide", "Tres bon travail", "Present"),
                 new StudentDemoSession(1, "Mardi", LocalTime.of(10, 15), LocalTime.of(11, 45),
                         "TD", "Bloc B", "Salle 203", "DS Bases de Donnees",
-                        "Devoir Surveille", 13.75F, "Valide", "Revoir les jointures", "Present"),
+                        "DS", 13.75F, "Valide", "Revoir les jointures", "Present"),
                 new StudentDemoSession(2, "Mercredi", LocalTime.of(13, 30), LocalTime.of(15, 0),
-                        "TP", "Lab Web", "Salle TP 2", "TP Angular Components",
-                        "Travaux Pratiques", 16.25F, "Valide", "Interface propre", "Retard"),
+                        "TP", "Lab Web", "Salle TP 2", "Examen TP Angular",
+                        "Examen TP", 16.25F, "Valide", "Interface propre", "Retard"),
                 new StudentDemoSession(3, "Jeudi", LocalTime.of(10, 15), LocalTime.of(11, 45),
-                        "TD", "Bloc C", "Salle 305", "Quiz APIs REST Spring Boot",
-                        "Quiz", 14.5F, "Valide", "Bonne maitrise des endpoints", "Present"),
+                        "TD", "Bloc C", "Salle 305", "DS APIs REST Spring Boot",
+                        "DS", 14.5F, "Valide", "Bonne maitrise des endpoints", "Present"),
                 new StudentDemoSession(4, "Vendredi", LocalTime.of(8, 30), LocalTime.of(10, 0),
-                        "Cours", "Bloc D", "Salle 402", "Mini projet DevOps",
-                        "Projet", 17.0F, "Valide", "Pipeline bien structure", "Present"),
+                        "Cours", "Bloc D", "Salle 402", "Examen DevOps",
+                        "Examen", 17.0F, "Valide", "Pipeline bien structure", "Present"),
                 new StudentDemoSession(2, "Vendredi", LocalTime.of(15, 15), LocalTime.of(16, 45),
                         "Rattrapage", "Lab Web", "Salle TP 1", "Rattrapage Angular Routing",
                         "Rattrapage", 12.5F, "En attente", "Seance de consolidation", "Absent")
@@ -514,16 +514,19 @@ public class SeedDataConfig {
                     demoSession.building(),
                     demoSession.room()
             );
-            Evaluation evaluation = ensureStudentEvaluation(
-                    evaluationRepository,
-                    seance,
-                    demoSession.evaluationLabel(),
-                    demoSession.evaluationType(),
-                    index
-            );
-            ensureStudentNote(noteRepository, evaluation, student, demoSession);
+            if (isMajorEvaluationType(demoSession.evaluationType())) {
+                Evaluation evaluation = ensureStudentEvaluation(
+                        evaluationRepository,
+                        seance,
+                        demoSession.evaluationLabel(),
+                        demoSession.evaluationType(),
+                        index
+                );
+                ensureStudentNote(noteRepository, evaluation, student, demoSession);
+            }
             ensureStudentPresence(presenceRepository, seance, student, demoSession, index);
         }
+        ensureStudentEvaluationPlan(seanceRepository, evaluationRepository, teachings, group);
         ensureStudentMajorEvaluationNotes(
                 seanceRepository,
                 evaluationRepository,
@@ -575,23 +578,24 @@ public class SeedDataConfig {
             String type,
             int index
     ) {
-        return evaluationRepository.findBySeanceId(seance.getId()).stream()
-                .filter(evaluation -> evaluation.getLibelle().equalsIgnoreCase(label))
+        Evaluation evaluation = evaluationRepository.findBySeanceId(seance.getId()).stream()
+                .filter(existingEvaluation -> existingEvaluation.getLibelle().equalsIgnoreCase(label))
                 .findFirst()
                 .orElseGet(() -> {
-                    Evaluation evaluation = new Evaluation();
-                    evaluation.setLibelle(label);
-                    evaluation.setTypeEvaluation(type);
-                    evaluation.setDateEvaluation(LocalDateTime.now()
+                    Evaluation newEvaluation = new Evaluation();
+                    newEvaluation.setDateEvaluation(LocalDateTime.now()
                             .minusDays(20L - (index * 3L))
                             .withHour(seance.getHeureDebut().getHour())
                             .withMinute(seance.getHeureDebut().getMinute())
                             .withSecond(0)
                             .withNano(0));
-                    evaluation.setCoefficient("Projet".equalsIgnoreCase(type) ? 2.0F : 1.0F);
-                    evaluation.setSeance(seance);
-                    return evaluationRepository.save(evaluation);
+                    return newEvaluation;
                 });
+        evaluation.setLibelle(label);
+        evaluation.setTypeEvaluation(normalizeMajorEvaluationType(type));
+        evaluation.setCoefficient(seedEvaluationCoefficient(evaluation.getTypeEvaluation(), seance));
+        evaluation.setSeance(seance);
+        return evaluationRepository.save(evaluation);
     }
 
     private void ensureStudentNote(
@@ -645,11 +649,91 @@ public class SeedDataConfig {
     }
 
     private boolean isMajorEvaluation(Evaluation evaluation) {
-        String text = (evaluation.getTypeEvaluation() + " " + evaluation.getLibelle()).toLowerCase();
-        return text.contains("devoir surveille")
-                || text.contains("examen")
-                || text.contains("exam")
-                || text.matches(".*\\bds\\b.*");
+        return isMajorEvaluationType(evaluation.getTypeEvaluation());
+    }
+
+    private void ensureStudentEvaluationPlan(
+            SeanceRepository seanceRepository,
+            EvaluationRepository evaluationRepository,
+            List<Enseignement> teachings,
+            Groupe group
+    ) {
+        for (Enseignement teaching : teachings) {
+            List<Seance> teachingSessions = seanceRepository.findByGroupeId(group.getId()).stream()
+                    .filter(seance -> seance.getEnseignement().getId().equals(teaching.getId()))
+                    .toList();
+            if (teachingSessions.isEmpty()) {
+                continue;
+            }
+
+            Seance referenceSession = teachingSessions.get(0);
+            boolean hasTp = teachingSessions.stream()
+                    .anyMatch(seance -> "TP".equalsIgnoreCase(seance.getTypeSeance()));
+            ensureStudentEvaluation(
+                    evaluationRepository,
+                    referenceSession,
+                    "DS " + teaching.getMatiere().getLibelle(),
+                    "DS",
+                    1
+            );
+            ensureStudentEvaluation(
+                    evaluationRepository,
+                    referenceSession,
+                    "Examen " + teaching.getMatiere().getLibelle(),
+                    "Examen",
+                    2
+            );
+
+            if (hasTp) {
+                Seance tpSession = teachingSessions.stream()
+                        .filter(seance -> "TP".equalsIgnoreCase(seance.getTypeSeance()))
+                        .findFirst()
+                        .orElse(referenceSession);
+                ensureStudentEvaluation(
+                        evaluationRepository,
+                        tpSession,
+                        "Examen TP " + teaching.getMatiere().getLibelle(),
+                        "Examen TP",
+                        3
+                );
+            }
+        }
+    }
+
+    private boolean isMajorEvaluationType(String type) {
+        try {
+            normalizeMajorEvaluationType(type);
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private String normalizeMajorEvaluationType(String type) {
+        String normalized = type == null ? "" : type.trim().toLowerCase();
+        if (normalized.equals("ds") || normalized.contains("devoir surveille")) {
+            return "DS";
+        }
+        if (normalized.equals("examen tp") || normalized.equals("exam tp") || normalized.equals("tp")) {
+            return "Examen TP";
+        }
+        if (normalized.equals("examen") || normalized.equals("exam")) {
+            return "Examen";
+        }
+
+        throw new IllegalArgumentException("Type evaluation invalide");
+    }
+
+    private float seedEvaluationCoefficient(String type, Seance seance) {
+        String normalizedType = normalizeMajorEvaluationType(type);
+        boolean hasTp = "Examen TP".equals(normalizedType)
+                || "TP".equalsIgnoreCase(seance.getTypeSeance());
+
+        if ("DS".equals(normalizedType) || "Examen TP".equals(normalizedType)) {
+            return 2.0F;
+        }
+
+        return hasTp ? 6.0F : 8.0F;
     }
 
     private void ensureStudentPresence(

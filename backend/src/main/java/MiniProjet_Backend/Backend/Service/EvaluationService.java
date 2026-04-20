@@ -12,20 +12,31 @@ public class EvaluationService {
     @Autowired
     private EvaluationRepository evaluationRepository;
 
+    @Autowired
+    private AcademicEvaluationPolicyService academicEvaluationPolicyService;
+
     public List<Evaluation> getAllEvaluations() {
-        return evaluationRepository.findAll();
+        return evaluationRepository.findAll().stream()
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .map(this::toPolicyEvaluation)
+                .toList();
     }
 
     public Optional<Evaluation> getEvaluationById(Integer id) {
-        return evaluationRepository.findById(id);
+        return evaluationRepository.findById(id)
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .map(this::toPolicyEvaluation);
     }
 
     public List<Evaluation> getEvaluationsBySeance(Integer seanceId) {
-        return evaluationRepository.findBySeanceId(seanceId);
+        return evaluationRepository.findBySeanceId(seanceId).stream()
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .map(this::toPolicyEvaluation)
+                .toList();
     }
 
     public Evaluation saveEvaluation(Evaluation evaluation) {
-        return evaluationRepository.save(evaluation);
+        return evaluationRepository.save(academicEvaluationPolicyService.applyPolicy(evaluation));
     }
 
     public Evaluation updateEvaluation(Integer id, Evaluation evaluationDetails) {
@@ -33,14 +44,19 @@ public class EvaluationService {
             evaluation.setLibelle(evaluationDetails.getLibelle());
             evaluation.setTypeEvaluation(evaluationDetails.getTypeEvaluation());
             evaluation.setDateEvaluation(evaluationDetails.getDateEvaluation());
-            evaluation.setCoefficient(evaluationDetails.getCoefficient());
             evaluation.setSeance(evaluationDetails.getSeance());
-            return evaluationRepository.save(evaluation);
+            return evaluationRepository.save(academicEvaluationPolicyService.applyPolicy(evaluation));
         }).orElseThrow(() -> new RuntimeException("Evaluation not found"));
     }
 
     public void deleteEvaluation(Integer id) {
         evaluationRepository.deleteById(id);
+    }
+
+    private Evaluation toPolicyEvaluation(Evaluation evaluation) {
+        evaluation.setTypeEvaluation(academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()));
+        evaluation.setCoefficient(academicEvaluationPolicyService.effectiveCoefficient(evaluation));
+        return evaluation;
     }
 }
 
