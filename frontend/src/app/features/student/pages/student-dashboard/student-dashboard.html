@@ -1,0 +1,367 @@
+<main class="student-page">
+  <aside class="sidebar" aria-label="Navigation etudiant">
+    <div class="brand-block">
+      <span class="brand-mark"></span>
+      <div>
+        <strong>ISSATSO+</strong>
+        <span>Student Space</span>
+      </div>
+    </div>
+
+    <nav class="nav-stack">
+      @for (item of navItems; track item.id) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="activeSection() === item.id"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          (click)="setSection(item.id)"
+        >
+          <span class="nav-dot"></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">College Management System</span>
+        <h1>Espace Etudiant</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <label class="search-box">
+          <span>Search</span>
+          <input
+            type="search"
+            placeholder="Note, matiere, support..."
+            [value]="searchTerm()"
+            (input)="updateSearch($event)"
+          />
+        </label>
+        <button type="button" class="ghost-button" (click)="logout()">Logout</button>
+      </div>
+    </header>
+
+    <p class="toast" role="status">{{ toastMessage() }}</p>
+
+    @if (activeSection() === 'overview') {
+      <section class="content-grid overview-grid">
+        <article class="hero-card">
+          <span class="eyebrow">Suivi academique</span>
+          <h2>Consulter notes, planning, supports et annonces sans friction.</h2>
+          @if (profile(); as student) {
+            <p>
+              {{ student.name }} - {{ student.group }} - {{ student.level }} - {{ student.year }}
+            </p>
+          } @else {
+            <p>Chargement du profil etudiant...</p>
+          }
+          <div class="hero-actions">
+            <button type="button" class="primary-button" (click)="setSection('grades')">
+              Voir mes notes
+            </button>
+            <button type="button" class="secondary-button" (click)="setSection('schedule')">
+              Emploi du temps
+            </button>
+          </div>
+        </article>
+
+        <section class="stats-grid" aria-label="Statistiques etudiant">
+          @if (stats().length > 0) {
+            @for (stat of stats(); track stat.label) {
+              <article
+                class="stat-card"
+                [class.tone-light]="stat.tone === 'light'"
+                [class.tone-warm]="stat.tone === 'warm'"
+                [class.tone-steel]="stat.tone === 'steel'"
+                [class.tone-sand]="stat.tone === 'sand'"
+              >
+                <span>{{ stat.label }}</span>
+                <strong>{{ stat.value }}</strong>
+                <small>{{ stat.trend }}</small>
+              </article>
+            }
+          } @else {
+            <article class="empty-state grid-empty">
+              {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique disponible.' }}
+            </article>
+          }
+        </section>
+
+        <article class="panel quick-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Actions rapides</span>
+            <h2>Acces direct</h2>
+          </div>
+          <div class="quick-list">
+            @for (action of quickActions; track action) {
+              <button type="button" (click)="activateQuickAction(action)">
+                <span>{{ action }}</span>
+                <strong>Open</strong>
+              </button>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Dernieres notes</span>
+              <h2>Evaluations publiees</h2>
+            </div>
+            <span class="counter">{{ grades().length }} notes</span>
+          </div>
+
+          <div class="data-list">
+            @if (recentGrades().length > 0) {
+              @for (grade of recentGrades(); track grade.id) {
+                <div class="data-row">
+                  <span class="code-pill">{{ grade.value }}</span>
+                  <div>
+                    <strong>{{ grade.subject }}</strong>
+                    <small>{{ grade.evaluation }} - {{ grade.date }}</small>
+                  </div>
+                  <span class="status-pill">{{ grade.status }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des notes...' : 'Aucune note publiee.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading">
+            <span class="eyebrow">Prochaines seances</span>
+            <h2>Apercu du planning</h2>
+          </div>
+          <div class="timeline">
+            @if (upcomingSessions().length > 0) {
+              @for (session of upcomingSessions(); track session.id) {
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>{{ session.subject }}</strong>
+                    <small>{{ session.type }} - {{ session.professor }}</small>
+                    <small>{{ session.day }} de {{ session.start }} a {{ session.end }} - {{ session.room }}</small>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement du planning...' : 'Aucune seance trouvee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'grades') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Notes publiees</span>
+              <h2>Consultation des resultats</h2>
+            </div>
+            <span class="counter">{{ filteredGrades().length }} resultat(s)</span>
+          </div>
+
+          <div class="grade-table">
+            @if (filteredGrades().length > 0) {
+              @for (grade of filteredGrades(); track grade.id) {
+                <div class="grade-row">
+                  <span class="grade-value">{{ grade.value }}</span>
+                  <div>
+                    <strong>{{ grade.subject }}</strong>
+                    <small>{{ grade.evaluation }} - {{ grade.type }}</small>
+                  </div>
+                  <span>{{ grade.date }}</span>
+                  <span>Coef {{ grade.coefficient }}</span>
+                  <span class="status-pill">{{ grade.status }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des notes...' : 'Aucune note ne correspond a la recherche.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'schedule') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Planning hebdomadaire</span>
+              <h2>Emploi du temps</h2>
+            </div>
+            <span class="counter">{{ filteredSchedule().length }} seance(s)</span>
+          </div>
+
+          <div class="schedule-board">
+            @if (scheduleDayGroups().length > 0) {
+              @for (dayGroup of scheduleDayGroups(); track dayGroup.day) {
+                <section class="schedule-day">
+                  <div class="schedule-day-heading">
+                    <strong>{{ dayGroup.day }}</strong>
+                    <span>{{ dayGroup.sessions.length }} seance(s)</span>
+                  </div>
+                  <div class="schedule-table">
+                    <div class="schedule-row schedule-header">
+                      <span>Horaire</span>
+                      <span>Matiere</span>
+                      <span>Type</span>
+                      <span>Professeur</span>
+                      <span>Salle</span>
+                    </div>
+                    @for (session of dayGroup.sessions; track session.id) {
+                      <div class="schedule-row">
+                        <strong>{{ session.start }} - {{ session.end }}</strong>
+                        <span>{{ session.subject }}</span>
+                        <span class="status-pill">{{ session.type }}</span>
+                        <span>{{ session.professor }}</span>
+                        <span>{{ session.room }}</span>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement de l emploi du temps...' : 'Aucun planning disponible.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'materials') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Supports de cours</span>
+              <h2>Documents disponibles</h2>
+            </div>
+            <span class="counter">{{ filteredMaterials().length }} fichier(s)</span>
+          </div>
+
+          <div class="material-grid">
+            @if (filteredMaterials().length > 0) {
+              @for (material of filteredMaterials(); track material.id) {
+                <article class="material-card">
+                  <span class="code-pill">DOC</span>
+                  <div>
+                    <strong>{{ material.title }}</strong>
+                    <small>{{ material.subject }}</small>
+                    <small>{{ material.fileName }} - {{ material.size }} - {{ material.date }}</small>
+                  </div>
+                  <button type="button" class="secondary-button" (click)="downloadMaterial(material)">
+                    Telecharger
+                  </button>
+                </article>
+              }
+            } @else {
+              <p class="empty-state grid-empty">
+                {{ isDashboardLoading() ? 'Chargement des supports...' : 'Aucun support disponible.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else {
+      <section class="content-grid two-columns">
+        <article class="panel table-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annonces</span>
+              <h2>Messages actifs</h2>
+            </div>
+            <span class="counter">{{ filteredAnnouncements().length }} annonce(s)</span>
+          </div>
+
+          <div class="announcement-list">
+            @if (filteredAnnouncements().length > 0) {
+              @for (announcement of filteredAnnouncements(); track announcement.id) {
+                <article class="announcement-card">
+                  <strong>{{ announcement.title }}</strong>
+                  <p>{{ announcement.content }}</p>
+                  <small>{{ announcement.author }} - {{ announcement.publicationDate }}</small>
+                </article>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des annonces...' : 'Aucune annonce active.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Rattrapages</span>
+              <h2>Seances supplementaires</h2>
+            </div>
+            <span class="counter">{{ filteredMakeups().length }} seance(s)</span>
+          </div>
+
+          <div class="timeline">
+            @if (filteredMakeups().length > 0) {
+              @for (makeup of filteredMakeups(); track makeup.id) {
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>{{ makeup.subject }}</strong>
+                    <small>{{ makeup.professor }} - {{ makeup.room }}</small>
+                    <small>{{ makeup.day }} de {{ makeup.start }} a {{ makeup.end }}</small>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des rattrapages...' : 'Aucun rattrapage programme.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Presence</span>
+              <h2>Historique de presence</h2>
+            </div>
+            <span class="counter">{{ attendance().length }} entree(s)</span>
+          </div>
+
+          <div class="attendance-list">
+            @if (attendance().length > 0) {
+              @for (item of attendance(); track item.id) {
+                <div class="attendance-row">
+                  <div>
+                    <strong>{{ item.subject }}</strong>
+                    <small>{{ item.session }} - {{ item.date }}</small>
+                  </div>
+                  <span class="status-pill">{{ item.status }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des presences...' : 'Aucune presence enregistree.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    }
+  </section>
+</main>
