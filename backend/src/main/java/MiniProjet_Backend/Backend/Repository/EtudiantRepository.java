@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface EtudiantRepository extends JpaRepository<Etudiant, Integer> {
     Optional<Etudiant> findByMatricule(String matricule);
+    Optional<Etudiant> findByEmail(String email);
     List<Etudiant> findByGroupeId(Integer groupeId);
 }
 
