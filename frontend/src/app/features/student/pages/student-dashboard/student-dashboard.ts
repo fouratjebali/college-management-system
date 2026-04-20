@@ -91,6 +91,9 @@ export class StudentDashboardComponent {
     'Voir annonces',
   ] as const;
 
+  protected readonly dashboardStats = computed(() =>
+    this.stats().filter((stat) => stat.label.trim().toLowerCase() !== 'moyenne')
+  );
   protected readonly recentGrades = computed(() => this.filteredGrades().slice(0, 4));
   protected readonly upcomingSessions = computed(() => this.filteredSchedule().slice(0, 6));
 

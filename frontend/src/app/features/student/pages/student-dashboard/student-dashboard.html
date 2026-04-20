@@ -73,8 +73,8 @@
         </article>
 
         <section class="stats-grid" aria-label="Statistiques etudiant">
-          @if (stats().length > 0) {
-            @for (stat of stats(); track stat.label) {
+          @if (dashboardStats().length > 0) {
+            @for (stat of dashboardStats(); track stat.label) {
               <article
                 class="stat-card"
                 [class.tone-light]="stat.tone === 'light'"
