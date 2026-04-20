@@ -658,6 +658,164 @@ Le diagramme de déploiement (Figure \ref{fig:deployment}) présente l'infrastru
 % ==========================================================
 \chapter{Sprint 0 : Mise en Place de l'Infrastructure}
 
+\section{Presentation du sprint}
+
+Le Sprint 0 constitue le sprint d'initialisation du projet. Son objectif principal est de preparer une base technique stable, reproductible et partageable afin que l'equipe puisse demarrer le developpement metier sans blocage d'infrastructure.
+
+Ce sprint a porte sur la creation du depot GitHub, la definition d'une strategie de branches, la mise en place de Docker Compose, le scaffolding des projets Spring Boot et Angular, la preparation de la base PostgreSQL et l'organisation initiale du code.
+
+\textbf{Sprint Goal :} disposer d'un environnement de developpement complet et conteneurise, avec backend, frontend et base de donnees operationnels, permettant a un nouveau developpeur de lancer le projet rapidement.
+
+\textbf{Periode estimee :} 1 semaine.
+
+\section{Backlog du sprint}
+
+\begin{longtable}{|p{1.6cm}|p{5.3cm}|p{5.4cm}|p{1.4cm}|}
+\caption{Backlog consolide du Sprint 0}\\
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endhead
+S0-01 & En tant que developpeur, je veux un depot Git structure & Depot GitHub, branches main/develop, fichiers Git de base & 2 \\
+\hline
+S0-02 & En tant que developpeur, je veux un environnement Docker reproductible & Docker Compose avec PostgreSQL, backend Spring Boot et frontend Angular & 3 \\
+\hline
+S0-03 & En tant que developpeur, je veux un backend Spring Boot initialise & Projet Maven, dependances JPA, Security, JWT et Flyway & 3 \\
+\hline
+S0-04 & En tant que developpeur, je veux un frontend Angular initialise & Projet Angular, routing initial, structure features/core/shared & 2 \\
+\hline
+S0-05 & En tant qu'equipe, nous voulons une base PostgreSQL prete & Schema relationnel initial, migrations Flyway et contraintes & 2 \\
+\hline
+S0-06 & En tant qu'equipe, nous voulons une configuration multi-profils & Profils dev, docker et production & 1 \\
+\hline
+S0-07 & En tant qu'equipe, nous voulons valider l'integration initiale & Demarrage des services et verification des communications & 1 \\
+\hline
+\end{longtable}
+
+\textbf{Total realise :} 14 story points.
+
+\section{Travaux realises pendant le sprint}
+
+\subsection{Analyse des besoins}
+
+L'analyse du Sprint 0 a mis en evidence la necessite de commencer par un socle technique fiable. Les besoins prioritaires etaient la reproductibilite de l'environnement, la separation claire backend/frontend/base de donnees, et la preparation d'une architecture evolutive pour les sprints suivants.
+
+\subsection{Conception}
+
+La conception technique du Sprint 0 repose sur une architecture trois tiers : une application Angular pour le frontend, une API Spring Boot pour le backend et une base PostgreSQL pour la persistance. Docker Compose orchestre ces trois services afin de simplifier le demarrage local.
+
+\begin{lstlisting}[caption={Architecture Sprint 0 en PlantUML}]
+@startuml
+node "Poste developpeur" {
+  component "Frontend Angular" as Front
+  component "Backend Spring Boot" as Back
+  database "PostgreSQL" as DB
+}
+
+Front --> Back : HTTP / REST
+Back --> DB : JDBC / JPA
+
+artifact "docker-compose.yml" as Compose
+Compose ..> Front
+Compose ..> Back
+Compose ..> DB
+@enduml
+\end{lstlisting}
+
+\subsection{Developpement}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Creation du repository GitHub et des branches de travail.
+    \item Initialisation du projet Spring Boot avec Maven.
+    \item Initialisation du projet Angular avec structure modulaire.
+    \item Configuration de PostgreSQL et Flyway.
+    \item Creation des fichiers Docker et Docker Compose.
+    \item Mise en place des fichiers de configuration et de documentation initiale.
+\end{itemize}
+
+\subsection{Tests}
+
+\begin{table}[H]
+\centering
+\caption{Tests et validations du Sprint 0}
+\begin{tabular}{|p{4cm}|p{6cm}|p{3cm}|}
+\hline
+\textbf{Categorie} & \textbf{Validation} & \textbf{Resultat} \\
+\hline
+Docker & Demarrage des services avec \texttt{docker-compose up} & \textbf{\checkmark OK} \\
+\hline
+Backend & Service Spring Boot accessible & \textbf{\checkmark OK} \\
+\hline
+Frontend & Application Angular accessible & \textbf{\checkmark OK} \\
+\hline
+Base de donnees & PostgreSQL accessible depuis le backend & \textbf{\checkmark OK} \\
+\hline
+Migrations & Flyway execute le schema initial & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Integration}
+
+L'integration du Sprint 0 a valide la communication entre les trois couches. Le backend peut se connecter a PostgreSQL, le frontend est pret a consommer l'API backend, et l'environnement complet peut etre lance depuis une commande Docker.
+
+\section{Reunions Scrum associees}
+
+\begin{table}[H]
+\centering
+\caption{Reunions Scrum du Sprint 0}
+\begin{tabular}{|p{3.5cm}|p{6cm}|p{4cm}|}
+\hline
+\textbf{Reunion} & \textbf{Objectif} & \textbf{Decision / Resultat} \\
+\hline
+Sprint Planning & Identifier les fondations techniques obligatoires & Priorite au repository, Docker, Spring Boot, Angular et PostgreSQL \\
+\hline
+Daily Scrum & Suivre les blocages d'installation et de configuration & Correction progressive des problemes Docker et profils \\
+\hline
+Sprint Review & Demontrer le demarrage complet de l'environnement & Sprint accepte apres lancement des services \\
+\hline
+Retrospective & Evaluer la qualite du socle technique & Besoin de renforcer l'automatisation et la documentation \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Resultats du sprint}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Environnement de developpement initialise.
+    \item Backend Spring Boot et frontend Angular prets pour le developpement.
+    \item Base PostgreSQL et migrations initiales disponibles.
+    \item Structure de repository et conventions de travail definies.
+\end{itemize}
+
+\section{Difficultes rencontrees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Delais de demarrage de PostgreSQL dans Docker.
+    \item Risque de conflit de ports entre services locaux.
+    \item Configuration initiale des profils backend.
+    \item Besoin de rendre l'environnement reproductible sur plusieurs machines.
+\end{itemize}
+
+\section{Solutions apportees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout de healthchecks Docker.
+    \item Centralisation des ports et variables dans Docker Compose.
+    \item Separation des profils applicatifs.
+    \item Documentation des commandes de demarrage et des pre-requis.
+\end{itemize}
+
+\section{Bilan du sprint}
+
+Le Sprint 0 est considere comme reussi. Il a permis de poser une base technique stable et de reduire fortement les risques d'installation pour les sprints suivants. L'equipe peut maintenant se concentrer sur les fonctionnalites metier, en s'appuyant sur une architecture claire et un environnement reproductible.
+
+\iffalse
+
 % ---- [AJOUT SCRUM] Sprint Goal ----
 \section{Sprint Goal}
 
@@ -1099,11 +1257,229 @@ Sprint 0 a établi avec succès une fondation permettant le démarrage immédiat
 
 Les actions issues de la rétrospective (GitHub Actions, données initiales, Swagger) seront implémentées en début de Sprint 1 pour renforcer la qualité du processus de développement.
 
+\fi
+
 \newpage
 % ==========================================================
 % CHAPITRE 4 : SPRINT 1
 % ==========================================================
 \chapter{Sprint 1 : Authentification \& Autorisation}
+
+\section{Presentation du sprint}
+
+Le Sprint 1 est consacre a la securisation de l'application. Apres la mise en place de l'infrastructure pendant le Sprint 0, l'objectif est de permettre aux utilisateurs de s'authentifier et d'acceder uniquement aux espaces correspondant a leurs roles.
+
+Ce sprint a introduit l'authentification par JWT, la gestion des roles, les guards frontend, les intercepteurs HTTP et les premieres interfaces d'authentification. Il constitue la base de securite sur laquelle reposent les espaces administrateur, professeur et etudiant livres ensuite.
+
+\textbf{Sprint Goal :} permettre a un administrateur, un professeur et un etudiant de se connecter de maniere securisee, de recevoir un token valide et d'etre redirige vers son espace autorise.
+
+\textbf{Periode estimee :} 2 semaines.
+
+\section{Backlog du sprint}
+
+\begin{longtable}{|p{1.6cm}|p{5.3cm}|p{5.4cm}|p{1.4cm}|}
+\caption{Backlog consolide du Sprint 1}\\
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endhead
+S1-01 & En tant qu'utilisateur, je veux me connecter avec email et mot de passe & Endpoint login, verification BCrypt et generation JWT & 5 \\
+\hline
+S1-02 & En tant qu'etudiant, je veux pouvoir creer un compte & Endpoint register, validation email et persistance du profil etudiant & 3 \\
+\hline
+S1-03 & En tant que systeme, je veux emettre des tokens securises & Access token, refresh token et validation de signature & 5 \\
+\hline
+S1-04 & En tant qu'utilisateur, je veux garder ma session active & Mecanisme de refresh token et reprise automatique des requetes & 3 \\
+\hline
+S1-05 & En tant que systeme, je veux controler les acces par role & RBAC backend et restrictions par role & 5 \\
+\hline
+S1-06 & En tant qu'utilisateur, je veux une interface de connexion claire & Page login Angular et integration du service Auth & 3 \\
+\hline
+S1-07 & En tant que frontend, je veux proteger les routes & AuthGuard, roleGuard et redirection selon profil & 3 \\
+\hline
+S1-08 & En tant que frontend, je veux injecter le JWT automatiquement & Intercepteur HTTP Authorization Bearer & 3 \\
+\hline
+S1-09 & En tant qu'equipe, nous voulons valider la securite & Tests auth, scenarios 401/403 et parcours login complet & 5 \\
+\hline
+\end{longtable}
+
+\textbf{Total realise :} 35 story points.
+
+\section{Travaux realises pendant le sprint}
+
+\subsection{Analyse des besoins}
+
+L'analyse du Sprint 1 a porte sur les besoins de securite et de separation des responsabilites entre roles. L'application devait distinguer les profils administrateur, professeur et etudiant, tout en conservant une experience de connexion simple.
+
+Les besoins principaux identifies sont :
+
+\begin{itemize}[itemsep=0.3em]
+    \item authentifier les utilisateurs avec email et mot de passe ;
+    \item chiffrer les mots de passe avec BCrypt ;
+    \item generer des tokens JWT utilisables par le frontend ;
+    \item proteger les endpoints backend selon le role ;
+    \item proteger les routes Angular selon le role connecte ;
+    \item gerer les erreurs 401 et 403 proprement.
+\end{itemize}
+
+\subsection{Conception}
+
+La conception du Sprint 1 repose sur une chaine de securite backend et un mecanisme de protection frontend. Le backend valide les credentials, genere les tokens et controle les routes. Le frontend conserve l'etat utilisateur, injecte le token dans les appels HTTP et empeche l'acces aux routes non autorisees.
+
+\begin{lstlisting}[caption={Flux d'authentification Sprint 1 en PlantUML}]
+@startuml
+actor Utilisateur
+participant "LoginComponent" as UI
+participant "AuthService Angular" as FA
+participant "AuthController" as C
+participant "AuthService Backend" as BA
+participant "JwtTokenProvider" as JWT
+database "UserRepository" as DB
+
+Utilisateur -> UI : Saisir email/mot de passe
+UI -> FA : login(credentials)
+FA -> C : POST /api/auth/login
+C -> BA : login(request)
+BA -> DB : chercher utilisateur
+BA -> BA : verifier mot de passe BCrypt
+BA -> JWT : generer access token
+BA --> C : LoginResponse
+C --> FA : JWT + role
+FA --> UI : stocker session
+UI --> Utilisateur : redirection espace role
+@enduml
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Protection des routes par role en PlantUML}]
+@startuml
+actor Utilisateur
+participant "Angular Router" as R
+participant "AuthGuard" as AG
+participant "RoleGuard" as RG
+participant "Route protegee" as RP
+
+Utilisateur -> R : acceder /admin ou /student ou /professor
+R -> AG : verifier token
+AG -> RG : token valide
+RG -> RG : comparer role utilisateur / role requis
+alt role autorise
+  RG -> RP : autoriser navigation
+else role refuse
+  RG -> R : bloquer et rediriger
+end
+@enduml
+\end{lstlisting}
+
+\subsection{Developpement}
+
+\subsubsection{Backend}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Creation des endpoints d'authentification : login, register, refresh token et logout.
+    \item Mise en place de \texttt{SecurityConfig} et de la chaine Spring Security.
+    \item Ajout du filtre JWT pour authentifier les requetes entrantes.
+    \item Ajout du provider JWT pour generer et valider les tokens.
+    \item Utilisation de BCrypt pour le hachage des mots de passe.
+    \item Mise en place de l'autorisation par role.
+\end{itemize}
+
+\subsubsection{Frontend}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Creation de l'interface de connexion.
+    \item Ajout du service \texttt{AuthService} pour gerer la session.
+    \item Ajout de l'intercepteur JWT.
+    \item Ajout des guards \texttt{authGuard} et \texttt{roleGuard}.
+    \item Redirection automatique vers l'espace correspondant au role.
+    \item Gestion des erreurs de connexion et d'autorisation.
+\end{itemize}
+
+\subsection{Tests}
+
+\begin{table}[H]
+\centering
+\caption{Tests et validations du Sprint 1}
+\begin{tabular}{|p{4cm}|p{6cm}|p{3cm}|}
+\hline
+\textbf{Categorie} & \textbf{Validation} & \textbf{Resultat} \\
+\hline
+Login & Connexion avec credentials valides & \textbf{\checkmark OK} \\
+\hline
+Credentials invalides & Reponse 401 et message d'erreur & \textbf{\checkmark OK} \\
+\hline
+JWT & Generation et validation du token & \textbf{\checkmark OK} \\
+\hline
+RBAC & Acces refuse pour role insuffisant & \textbf{\checkmark OK} \\
+\hline
+Frontend guards & Routes bloquees si non connecte ou mauvais role & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Integration}
+
+L'integration a relie les formulaires Angular aux endpoints backend. Le token JWT est stocke cote frontend et transmis automatiquement aux appels API. Les routes \texttt{/admin}, \texttt{/professor} et \texttt{/student} ont ete preparees pour etre protegees par role dans les sprints suivants.
+
+\section{Reunions Scrum associees}
+
+\begin{table}[H]
+\centering
+\caption{Reunions Scrum du Sprint 1}
+\begin{tabular}{|p{3.5cm}|p{6cm}|p{4cm}|}
+\hline
+\textbf{Reunion} & \textbf{Objectif} & \textbf{Decision / Resultat} \\
+\hline
+Sprint Planning & Selectionner les fonctionnalites de securite & Priorite a JWT, login, guards et roles \\
+\hline
+Daily Scrum & Suivre la progression backend/frontend & Synchronisation sur le format du token et des roles \\
+\hline
+Backlog Refinement & Clarifier les scenarios 401 et 403 & Ajout des tests d'acces refuse \\
+\hline
+Sprint Review & Demontrer login et redirection par role & Fonctionnalites acceptees \\
+\hline
+Retrospective & Evaluer les pratiques de securite & Besoin de documenter les endpoints avec Swagger \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Resultats du sprint}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Authentification JWT operationnelle.
+    \item Inscription et connexion disponibles.
+    \item Hachage des mots de passe avec BCrypt.
+    \item Protection backend par role.
+    \item Protection frontend par guards.
+    \item Intercepteur HTTP pour injecter automatiquement le token.
+\end{itemize}
+
+\section{Difficultes rencontrees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Configuration initiale de Spring Security.
+    \item Synchronisation du format des roles entre backend et frontend.
+    \item Gestion des erreurs 401 et 403 sans casser l'experience utilisateur.
+    \item Mise en place du refresh token sans boucle infinie cote frontend.
+\end{itemize}
+
+\section{Solutions apportees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Centralisation de la generation et validation JWT.
+    \item Normalisation des roles dans les DTO de login.
+    \item Ajout d'un intercepteur dedie aux erreurs HTTP.
+    \item Separation entre AuthGuard et RoleGuard pour clarifier les responsabilites.
+\end{itemize}
+
+\section{Bilan du sprint}
+
+Le Sprint 1 est considere comme reussi. Il a livre le socle de securite indispensable aux modules fonctionnels. Les trois roles peuvent etre distingues, les routes peuvent etre protegees et les appels API peuvent transporter automatiquement le token JWT. Cette base a permis au Sprint 2 de developper les espaces admin, professeur et etudiant en s'appuyant sur une authentification deja operationnelle.
+
+\iffalse
 
 % ---- [AJOUT SCRUM] Sprint Goal ----
 \section{Sprint Goal}
@@ -1430,6 +1806,8 @@ Bugs critiques & 0 \\
 Sprint 1 a livré avec succès une authentification sécurisée (JWT 24h + refresh 7 jours) et une autorisation basée sur les rôles. Le Sprint Goal a été intégralement atteint : les trois profils utilisateurs peuvent se connecter, accéder uniquement à leur espace autorisé, et leur session est maintenue de manière transparente par le mécanisme de refresh automatique.
 
 Toutes les 9 User Stories ont été acceptées en Sprint Review après validation de leurs critères d'acceptation respectifs. La vélocité de 17,5 sp/semaine sera utilisée comme référence pour la planification du Sprint 2.
+
+\fi
 
 \newpage
 \chapter{Sprint 2}
