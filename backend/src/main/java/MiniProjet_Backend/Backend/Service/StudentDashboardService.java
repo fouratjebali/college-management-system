@@ -4,12 +4,14 @@ import MiniProjet_Backend.Backend.DTO.StudentDashboardResponseDTO;
 import MiniProjet_Backend.Backend.Model.Annonce;
 import MiniProjet_Backend.Backend.Model.Enseignement;
 import MiniProjet_Backend.Backend.Model.Etudiant;
+import MiniProjet_Backend.Backend.Model.Evaluation;
 import MiniProjet_Backend.Backend.Model.Note;
 import MiniProjet_Backend.Backend.Model.Presence;
 import MiniProjet_Backend.Backend.Model.Seance;
 import MiniProjet_Backend.Backend.Model.SupportCours;
 import MiniProjet_Backend.Backend.Repository.AnnonceRepository;
 import MiniProjet_Backend.Backend.Repository.EtudiantRepository;
+import MiniProjet_Backend.Backend.Repository.EvaluationRepository;
 import MiniProjet_Backend.Backend.Repository.NoteRepository;
 import MiniProjet_Backend.Backend.Repository.PresenceRepository;
 import MiniProjet_Backend.Backend.Repository.SeanceRepository;
@@ -24,6 +26,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 @Service
 public class StudentDashboardService {
@@ -32,6 +35,7 @@ public class StudentDashboardService {
 
     private final EtudiantRepository etudiantRepository;
     private final SeanceRepository seanceRepository;
+    private final EvaluationRepository evaluationRepository;
     private final NoteRepository noteRepository;
     private final PresenceRepository presenceRepository;
     private final SupportCoursRepository supportCoursRepository;
@@ -40,6 +44,7 @@ public class StudentDashboardService {
     public StudentDashboardService(
             EtudiantRepository etudiantRepository,
             SeanceRepository seanceRepository,
+            EvaluationRepository evaluationRepository,
             NoteRepository noteRepository,
             PresenceRepository presenceRepository,
             SupportCoursRepository supportCoursRepository,
@@ -47,6 +52,7 @@ public class StudentDashboardService {
     ) {
         this.etudiantRepository = etudiantRepository;
         this.seanceRepository = seanceRepository;
+        this.evaluationRepository = evaluationRepository;
         this.noteRepository = noteRepository;
         this.presenceRepository = presenceRepository;
         this.supportCoursRepository = supportCoursRepository;
@@ -81,7 +87,8 @@ public class StudentDashboardService {
 
         return StudentDashboardResponseDTO.builder()
                 .profile(toProfile(student))
-                .stats(buildStats(grades, schedule, materials, announcements, attendance))
+                .stats(buildStats(schedule, materials, announcements, attendance))
+                .gradeSummary(buildGradeSummary(schedule, grades))
                 .grades(grades.stream().map(this::toGradeRow).toList())
                 .schedule(schedule.stream().map(this::toScheduleRow).toList())
                 .materials(materials.stream().map(this::toMaterialRow).toList())
@@ -105,14 +112,12 @@ public class StudentDashboardService {
     }
 
     private List<StudentDashboardResponseDTO.StatDTO> buildStats(
-            List<Note> grades,
             List<Seance> schedule,
             List<SupportCours> materials,
             List<Annonce> announcements,
             List<Presence> attendance
     ) {
         return List.of(
-                stat("Moyenne", calculateAverage(grades), grades.size() + " note(s)", "light"),
                 stat("Seances", Integer.toString(schedule.size()), "Emploi du temps", "steel"),
                 stat("Supports", Integer.toString(materials.size()), "Documents disponibles", "warm"),
                 stat("Presence", calculateAttendanceRate(attendance), "Taux actuel", "sand"),
@@ -134,18 +139,6 @@ public class StudentDashboardService {
                 .build();
     }
 
-    private String calculateAverage(List<Note> grades) {
-        if (grades.isEmpty()) {
-            return "--";
-        }
-
-        double average = grades.stream()
-                .mapToDouble(Note::getValeur)
-                .average()
-                .orElse(0);
-        return String.format("%.2f", average);
-    }
-
     private String calculateAttendanceRate(List<Presence> attendance) {
         if (attendance.isEmpty()) {
             return "--";
@@ -156,6 +149,78 @@ public class StudentDashboardService {
                 .count();
         long rate = Math.round((presentCount * 100.0) / attendance.size());
         return rate + "%";
+    }
+
+    private StudentDashboardResponseDTO.GradeSummaryDTO buildGradeSummary(
+            List<Seance> schedule,
+            List<Note> grades
+    ) {
+        List<Evaluation> expectedEvaluations = schedule.stream()
+                .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
+                .filter(this::isSemesterAverageEvaluation)
+                .sorted(Comparator.comparing(Evaluation::getDateEvaluation))
+                .toList();
+        Map<Integer, Note> gradesByEvaluation = new LinkedHashMap<>();
+        grades.forEach(note -> gradesByEvaluation.putIfAbsent(note.getEvaluation().getId(), note));
+        List<Note> receivedGrades = expectedEvaluations.stream()
+                .map(evaluation -> gradesByEvaluation.get(evaluation.getId()))
+                .filter(note -> note != null)
+                .toList();
+
+        int expectedCount = expectedEvaluations.size();
+        int receivedCount = receivedGrades.size();
+        boolean complete = expectedCount > 0 && expectedCount == receivedCount;
+
+        if (!complete) {
+            String message = expectedCount == 0
+                    ? "Aucun DS ou examen configure pour ce semestre."
+                    : receivedCount + "/" + expectedCount + " note(s) DS/Examen publiee(s).";
+            return StudentDashboardResponseDTO.GradeSummaryDTO.builder()
+                    .average("--")
+                    .complete(false)
+                    .expectedCount(expectedCount)
+                    .receivedCount(receivedCount)
+                    .message(message)
+                    .build();
+        }
+
+        return StudentDashboardResponseDTO.GradeSummaryDTO.builder()
+                .average(calculateWeightedAverage(receivedGrades))
+                .complete(true)
+                .expectedCount(expectedCount)
+                .receivedCount(receivedCount)
+                .message("Toutes les notes DS/Examen du semestre sont publiees.")
+                .build();
+    }
+
+    private boolean isSemesterAverageEvaluation(Evaluation evaluation) {
+        String text = (evaluation.getTypeEvaluation() + " " + evaluation.getLibelle())
+                .toLowerCase(Locale.ROOT);
+        return text.contains("devoir surveille")
+                || text.contains("examen")
+                || text.contains("exam")
+                || text.matches(".*\\bds\\b.*");
+    }
+
+    private String calculateWeightedAverage(List<Note> grades) {
+        double coefficientSum = grades.stream()
+                .mapToDouble(note -> note.getEvaluation().getCoefficient() == null
+                        ? 1.0
+                        : note.getEvaluation().getCoefficient())
+                .sum();
+        if (coefficientSum <= 0) {
+            return "--";
+        }
+
+        double weightedSum = grades.stream()
+                .mapToDouble(note -> {
+                    double coefficient = note.getEvaluation().getCoefficient() == null
+                            ? 1.0
+                            : note.getEvaluation().getCoefficient();
+                    return note.getValeur() * coefficient;
+                })
+                .sum();
+        return String.format(Locale.US, "%.2f", weightedSum / coefficientSum);
     }
 
     private List<SupportCours> resolveMaterials(List<Seance> schedule) {

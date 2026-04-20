@@ -165,6 +165,32 @@
       </section>
     } @else if (activeSection() === 'grades') {
       <section class="content-grid">
+        <article class="panel average-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Moyenne</span>
+              <h2>Semestre courant</h2>
+            </div>
+            @if (gradeSummary(); as summary) {
+              <span class="counter">{{ summary.receivedCount }}/{{ summary.expectedCount }} DS/Examen</span>
+            }
+          </div>
+
+          @if (gradeSummary(); as summary) {
+            <div class="average-card" [class.incomplete]="!summary.complete">
+              <strong>{{ summary.complete ? summary.average : '--' }}</strong>
+              <div>
+                <span>{{ summary.complete ? 'Moyenne disponible' : 'Moyenne en attente' }}</span>
+                <small>{{ summary.message }}</small>
+              </div>
+            </div>
+          } @else {
+            <p class="empty-state">
+              {{ isDashboardLoading() ? 'Chargement de la moyenne...' : 'Moyenne indisponible.' }}
+            </p>
+          }
+        </article>
+
         <article class="panel table-panel full-span">
           <div class="panel-heading inline-heading">
             <div>

@@ -2292,7 +2292,8 @@ Le DTO \texttt{StudentDashboardResponseDTO} regroupe toutes les donnees necessai
 
 \begin{itemize}[itemsep=0.3em]
     \item profil etudiant : identite, email, matricule, niveau, groupe, departement et annee ;
-    \item statistiques principales : moyenne, seances, supports, presence et annonces ;
+    \item statistiques principales : seances, supports, presence et annonces ;
+    \item synthese des notes : moyenne semestrielle affichee seulement lorsque toutes les notes DS/Examen attendues sont publiees ;
     \item notes et evaluations ;
     \item emploi du temps du groupe de l'etudiant ;
     \item supports de cours des enseignements suivis ;
@@ -2349,7 +2350,7 @@ Les sections disponibles sont :
 
 \begin{itemize}[itemsep=0.3em]
     \item \textbf{Dashboard} : profil, statistiques, actions rapides, notes recentes et prochaines seances ;
-    \item \textbf{Notes} : tableau detaille des notes avec recherche ;
+    \item \textbf{Notes} : tableau detaille des notes avec recherche et moyenne conditionnelle du semestre ;
     \item \textbf{Emploi du temps} : planning organise par jour et par horaire ;
     \item \textbf{Supports} : liste des supports disponibles avec telechargement ;
     \item \textbf{Annonces} : annonces, rattrapages et historique de presence.
@@ -2366,7 +2367,7 @@ Les sections disponibles sont :
 \hline
 Dashboard Etudiant & \texttt{/student} / Dashboard & Profil, indicateurs, notes recentes et prochaines seances \\
 \hline
-Notes & \texttt{/student} / Notes & Consultation des evaluations, coefficients, statuts et remarques \\
+Notes & \texttt{/student} / Notes & Consultation des evaluations, coefficients, statuts, remarques et moyenne semestrielle conditionnelle \\
 \hline
 Emploi du temps & \texttt{/student} / Emploi du temps & Planning hebdomadaire par jour, horaire, salle et professeur \\
 \hline
@@ -2449,7 +2450,7 @@ La strategie de commits retenue est :
 \hline
 Dashboard & L'etudiant dispose d'une vue synthetique de son profil, de ses indicateurs et de ses prochaines seances & \textbf{Accepte} \\
 \hline
-Notes & Les evaluations et les remarques sont consultables dans un tableau dedie & \textbf{Accepte} \\
+Notes & Les evaluations, les remarques et la moyenne conditionnelle DS/Examen sont consultables dans un tableau dedie & \textbf{Accepte} \\
 \hline
 Emploi du temps & Le planning hebdomadaire est organise par jour, horaire, salle et professeur & \textbf{Accepte} \\
 \hline

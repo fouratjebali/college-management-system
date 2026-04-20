@@ -6,6 +6,7 @@ import {
   StudentAnnouncementRow,
   StudentAttendanceRow,
   StudentDashboardApi,
+  StudentGradeSummary,
   StudentGradeRow,
   StudentMakeupRow,
   StudentMaterialRow,
@@ -47,6 +48,7 @@ export class StudentDashboardComponent {
 
   protected readonly profile = signal<StudentProfile | null>(null);
   protected readonly stats = signal<readonly StudentStat[]>([]);
+  protected readonly gradeSummary = signal<StudentGradeSummary | null>(null);
   protected readonly grades = signal<readonly StudentGradeRow[]>([]);
   protected readonly schedule = signal<readonly StudentScheduleRow[]>([]);
   protected readonly materials = signal<readonly StudentMaterialRow[]>([]);
@@ -178,6 +180,7 @@ export class StudentDashboardComponent {
       next: (dashboard) => {
         this.profile.set(dashboard.profile ?? null);
         this.stats.set(dashboard.stats ?? []);
+        this.gradeSummary.set(dashboard.gradeSummary ?? null);
         this.grades.set(dashboard.grades ?? []);
         this.schedule.set(dashboard.schedule ?? []);
         this.materials.set(dashboard.materials ?? []);
@@ -243,6 +246,7 @@ export class StudentDashboardComponent {
   private clearDashboard(): void {
     this.profile.set(null);
     this.stats.set([]);
+    this.gradeSummary.set(null);
     this.grades.set([]);
     this.schedule.set([]);
     this.materials.set([]);

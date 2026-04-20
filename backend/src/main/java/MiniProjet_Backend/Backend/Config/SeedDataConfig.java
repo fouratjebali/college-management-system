@@ -524,6 +524,13 @@ public class SeedDataConfig {
             ensureStudentNote(noteRepository, evaluation, student, demoSession);
             ensureStudentPresence(presenceRepository, seance, student, demoSession, index);
         }
+        ensureStudentMajorEvaluationNotes(
+                seanceRepository,
+                evaluationRepository,
+                noteRepository,
+                student,
+                group
+        );
 
         ensureStudentSupport(
                 supportCoursRepository,
@@ -604,6 +611,45 @@ public class SeedDataConfig {
         note.setStatut(demoSession.gradeStatus());
         note.setRemarque(demoSession.remark());
         noteRepository.save(note);
+    }
+
+    private void ensureStudentMajorEvaluationNotes(
+            SeanceRepository seanceRepository,
+            EvaluationRepository evaluationRepository,
+            NoteRepository noteRepository,
+            Etudiant student,
+            Groupe group
+    ) {
+        List<Evaluation> majorEvaluations = seanceRepository.findByGroupeId(group.getId()).stream()
+                .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
+                .filter(this::isMajorEvaluation)
+                .toList();
+
+        for (int index = 0; index < majorEvaluations.size(); index++) {
+            Evaluation evaluation = majorEvaluations.get(index);
+            boolean alreadyGraded = noteRepository.findByEvaluationId(evaluation.getId()).stream()
+                    .anyMatch(note -> note.getEtudiant().getId().equals(student.getId()));
+
+            if (alreadyGraded) {
+                continue;
+            }
+
+            Note note = new Note();
+            note.setEvaluation(evaluation);
+            note.setEtudiant(student);
+            note.setValeur(12.5F + (index % 5));
+            note.setStatut("Valide");
+            note.setRemarque("Note ajoutee pour completer le calcul de la moyenne.");
+            noteRepository.save(note);
+        }
+    }
+
+    private boolean isMajorEvaluation(Evaluation evaluation) {
+        String text = (evaluation.getTypeEvaluation() + " " + evaluation.getLibelle()).toLowerCase();
+        return text.contains("devoir surveille")
+                || text.contains("examen")
+                || text.contains("exam")
+                || text.matches(".*\\bds\\b.*");
     }
 
     private void ensureStudentPresence(

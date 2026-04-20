@@ -14,6 +14,7 @@ import java.util.List;
 public class StudentDashboardResponseDTO {
     private ProfileDTO profile;
     private List<StatDTO> stats;
+    private GradeSummaryDTO gradeSummary;
     private List<GradeRowDTO> grades;
     private List<ScheduleRowDTO> schedule;
     private List<MaterialRowDTO> materials;
@@ -45,6 +46,18 @@ public class StudentDashboardResponseDTO {
         private String value;
         private String trend;
         private String tone;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GradeSummaryDTO {
+        private String average;
+        private boolean complete;
+        private int expectedCount;
+        private int receivedCount;
+        private String message;
     }
 
     @Data

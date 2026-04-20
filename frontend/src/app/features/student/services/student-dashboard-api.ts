@@ -20,6 +20,14 @@ export interface StudentStat {
   tone: 'light' | 'warm' | 'steel' | 'sand';
 }
 
+export interface StudentGradeSummary {
+  average: string;
+  complete: boolean;
+  expectedCount: number;
+  receivedCount: number;
+  message: string;
+}
+
 export interface StudentGradeRow {
   id: number;
   subject: string;
@@ -84,6 +92,7 @@ export interface StudentAttendanceRow {
 export interface StudentDashboardResponse {
   profile: StudentProfile;
   stats: StudentStat[];
+  gradeSummary: StudentGradeSummary;
   grades: StudentGradeRow[];
   schedule: StudentScheduleRow[];
   materials: StudentMaterialRow[];
