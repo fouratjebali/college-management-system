@@ -1434,6 +1434,368 @@ Toutes les 9 User Stories ont été acceptées en Sprint Review après validatio
 \newpage
 \chapter{Sprint 2}
 
+\section{Presentation du sprint}
+
+Le Sprint 2 correspond a la phase de livraison fonctionnelle avancee de l'application de gestion d'institut. Apres la mise en place de l'environnement technique et de l'authentification pendant les sprints precedents, ce sprint avait pour objectif de rendre l'application utilisable par les trois profils principaux : administrateur, professeur et etudiant.
+
+Le sprint a donc regroupe le developpement des modules backend secondaires, la construction des espaces frontend metiers, l'integration des workflows de notes, presences, emplois du temps, annonces et supports de cours, ainsi que la mise en place d'un jeu de donnees de demonstration permettant de tester les parcours utilisateur de bout en bout.
+
+\textbf{Sprint Goal :} livrer une application web integree permettant a l'administrateur de piloter la structure pedagogique, au professeur de gerer ses seances, presences, supports et notes, et a l'etudiant de consulter son tableau de bord, son emploi du temps, ses supports, ses annonces et son bulletin de notes.
+
+\textbf{Periode estimee :} 2 semaines.
+
+\textbf{Branche principale de travail :}
+
+\begin{verbatim}
+sprint2/student-frontend-step4
+\end{verbatim}
+
+\section{Backlog du sprint}
+
+\begin{longtable}{|p{1.6cm}|p{5.3cm}|p{5.4cm}|p{1.4cm}|}
+\caption{Backlog consolide du Sprint 2}\\
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Travail realise} & \textbf{Points} \\
+\hline
+\endhead
+S2-01 & En tant qu'administrateur, je veux gerer les annonces & Module annonces, ciblage par role, dates de publication et expiration & 5 \\
+\hline
+S2-02 & En tant qu'administrateur, je veux gerer les emplois du temps & Module seances, groupes, salles, horaires et detection de conflits & 8 \\
+\hline
+S2-03 & En tant que professeur, je veux deposer des supports de cours & Upload, stockage, liste et telechargement des supports & 5 \\
+\hline
+S2-04 & En tant qu'administrateur, je veux un dashboard de pilotage & Espace \texttt{/admin}, statistiques, utilisateurs, structure et examens & 8 \\
+\hline
+S2-05 & En tant que professeur, je veux acceder a mon espace metier & Espace \texttt{/professor}, enseignements, groupes, seances et supports & 8 \\
+\hline
+S2-06 & En tant que professeur, je veux saisir les notes & Selection groupe/evaluation, saisie batch, mise a jour sans doublon & 8 \\
+\hline
+S2-07 & En tant que professeur, je veux faire l'appel & Selection groupe/seance, statuts Present, Absent et Retard & 5 \\
+\hline
+S2-08 & En tant qu'etudiant, je veux consulter mon espace personnel & Espace \texttt{/student}, profil, stats, planning, supports et annonces & 8 \\
+\hline
+S2-09 & En tant qu'etudiant, je veux consulter mes notes & Bulletin par matiere, DS, Examen TP, Examen, moyenne matiere et moyenne generale & 8 \\
+\hline
+S2-10 & En tant qu'equipe, nous voulons tester les parcours de bout en bout & Seed data riche : groupes, etudiants, professeurs, seances, notes, presences et supports & 5 \\
+\hline
+\end{longtable}
+
+\textbf{Total realise :} 68 story points.
+
+\section{Travaux realises pendant le sprint}
+
+\subsection{Analyse des besoins}
+
+L'analyse des besoins a consiste a transformer les exigences generales du projet en parcours concrets pour chaque role.
+
+\begin{itemize}[itemsep=0.3em]
+    \item \textbf{Administrateur :} suivre les indicateurs de l'institut, consulter la structure pedagogique, gerer les utilisateurs, planifier les evaluations et publier les informations utiles.
+    \item \textbf{Professeur :} consulter ses enseignements et groupes, saisir les notes, valider les presences, creer des rattrapages et deposer des supports.
+    \item \textbf{Etudiant :} consulter son profil, son emploi du temps, ses annonces, ses supports, son historique de presence et ses notes organisees par matiere.
+\end{itemize}
+
+Une attention particuliere a ete accordee a la logique de notation. Les types d'evaluation academique retenus sont uniquement \texttt{DS}, \texttt{Examen} et \texttt{Examen TP}. Une matiere sans TP contient deux evaluations : \texttt{DS} et \texttt{Examen}. Une matiere avec TP contient trois evaluations : \texttt{DS}, \texttt{Examen TP} et \texttt{Examen}. Les coefficients utilises sont :
+
+\begin{itemize}[itemsep=0.3em]
+    \item matiere sans TP : \texttt{DS = 2}, \texttt{Examen = 8} ;
+    \item matiere avec TP : \texttt{DS = 2}, \texttt{Examen TP = 2}, \texttt{Examen = 6}.
+\end{itemize}
+
+La moyenne d'une matiere est calculee par :
+
+\begin{verbatim}
+somme(note evaluation * coefficient evaluation) / 10
+\end{verbatim}
+
+La moyenne generale est calculee par :
+
+\begin{verbatim}
+somme(moyenne matiere * coefficient matiere) / somme(coefficients matieres)
+\end{verbatim}
+
+\subsection{Conception}
+
+La conception du sprint a ete organisee autour d'une architecture en couches : controllers REST, services metiers, repositories JPA, DTO de synthese et modules Angular charges en lazy loading. Les espaces frontend suivent une structure similaire afin de garantir une experience coherente entre administrateur, professeur et etudiant.
+
+\subsubsection{Diagramme de cas d'utilisation}
+
+\begin{lstlisting}[caption={Cas d'utilisation Sprint 2 en PlantUML}]
+@startuml
+left to right direction
+actor Administrateur
+actor Professeur
+actor Etudiant
+
+rectangle "College Management System - Sprint 2" {
+  Administrateur --> (Consulter dashboard admin)
+  Administrateur --> (Gerer structure pedagogique)
+  Administrateur --> (Planifier evaluations)
+  Administrateur --> (Publier annonces)
+
+  Professeur --> (Consulter enseignements)
+  Professeur --> (Saisir notes)
+  Professeur --> (Valider presences)
+  Professeur --> (Creer rattrapage)
+  Professeur --> (Deposer supports)
+
+  Etudiant --> (Consulter dashboard etudiant)
+  Etudiant --> (Consulter emploi du temps)
+  Etudiant --> (Telecharger supports)
+  Etudiant --> (Lire annonces)
+  Etudiant --> (Consulter bulletin)
+}
+@enduml
+\end{lstlisting}
+
+\subsubsection{Diagramme de sequence -- consultation du bulletin}
+
+\begin{lstlisting}[caption={Sequence consultation bulletin etudiant en PlantUML}]
+@startuml
+actor Etudiant
+participant "StudentDashboardComponent" as UI
+participant "StudentDashboardApi" as API
+participant "StudentDashboardController" as C
+participant "StudentDashboardService" as S
+database "Repositories JPA" as DB
+
+Etudiant -> UI : Ouvrir /student > Notes
+UI -> API : getDashboard()
+API -> C : GET /api/student/dashboard
+C -> S : getDashboard(email)
+S -> DB : Charger etudiant, seances, evaluations, notes
+S -> S : Calculer moyenne matiere
+S -> S : Calculer moyenne generale ponderee
+S --> C : StudentDashboardResponseDTO
+C --> API : JSON
+API --> UI : donnees dashboard
+UI --> Etudiant : Bulletin par matiere
+@enduml
+\end{lstlisting}
+
+\subsubsection{Diagramme de classes simplifie}
+
+\begin{lstlisting}[caption={Modele pedagogique Sprint 2 en PlantUML}]
+@startuml
+class User {
+  id
+  nomComplet
+  email
+  motDePasseHash
+}
+class Administrateur
+class Professeur
+class Etudiant
+class Departement
+class Matiere {
+  code
+  libelle
+  coefficient
+}
+class Groupe
+class Enseignement
+class Seance
+class Evaluation {
+  typeEvaluation
+  coefficient
+}
+class Note {
+  valeur
+  statut
+}
+class Presence
+class SupportCours
+class Annonce
+
+User <|-- Administrateur
+User <|-- Professeur
+User <|-- Etudiant
+Departement "1" --> "*" Matiere
+Departement "1" --> "*" Groupe
+Groupe "1" --> "*" Etudiant
+Professeur "1" --> "*" Enseignement
+Matiere "1" --> "*" Enseignement
+Enseignement "1" --> "*" Seance
+Groupe "1" --> "*" Seance
+Seance "1" --> "*" Evaluation
+Evaluation "1" --> "*" Note
+Etudiant "1" --> "*" Note
+Seance "1" --> "*" Presence
+Etudiant "1" --> "*" Presence
+Enseignement "1" --> "*" SupportCours
+Administrateur "1" --> "*" Annonce
+@enduml
+\end{lstlisting}
+
+\subsection{Developpement}
+
+Le developpement a ete realise en plusieurs blocs fonctionnels mais consolide dans ce sprint unique.
+
+\subsubsection{Backend}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout des modules annonces, seances, evaluations, notes, presences et supports de cours.
+    \item Ajout de l'upload/download des supports de cours avec stockage local.
+    \item Ajout de la detection de conflits horaires pour les groupes, professeurs et salles.
+    \item Ajout de dashboards API pour administrateur, professeur et etudiant.
+    \item Ajout du service \texttt{AcademicEvaluationPolicyService} pour centraliser la logique DS, Examen, Examen TP et les coefficients.
+    \item Ajout d'une sauvegarde de note idempotente afin d'eviter les doublons pour le meme etudiant et la meme evaluation.
+\end{itemize}
+
+\subsubsection{Frontend administrateur}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Route \texttt{/admin} avec dashboard, statistiques, structure, utilisateurs et examens.
+    \item Interface coherente avec le login administrateur.
+    \item Formulaires de planification limitees aux evaluations academiques : \texttt{DS}, \texttt{Examen}, \texttt{Examen TP}.
+\end{itemize}
+
+\subsubsection{Frontend professeur}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Route \texttt{/professor} protegee par role.
+    \item Dashboard professeur avec enseignements, groupes, seances, supports et indicateurs.
+    \item Saisie des notes par groupe et evaluation.
+    \item Gestion des presences par seance.
+    \item Creation de rattrapages et depot de supports.
+\end{itemize}
+
+\subsubsection{Frontend etudiant}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Route \texttt{/student} protegee par role.
+    \item Dashboard etudiant avec profil, indicateurs, dernieres notes et prochaines seances.
+    \item Emploi du temps organise par jour, horaire, salle et professeur.
+    \item Consultation et telechargement des supports.
+    \item Consultation des annonces, rattrapages et presences.
+    \item Bulletin organise par matiere avec DS, Examen TP, Examen principal, moyenne matiere et moyenne generale conditionnelle.
+\end{itemize}
+
+\subsection{Tests}
+
+Les tests et validations ont combine compilation backend, build frontend et verification manuelle des parcours utilisateurs.
+
+\begin{table}[H]
+\centering
+\caption{Tests et validations du Sprint 2}
+\begin{tabular}{|p{4cm}|p{6cm}|p{3cm}|}
+\hline
+\textbf{Categorie} & \textbf{Validation} & \textbf{Resultat} \\
+\hline
+Backend & \texttt{./mvnw.cmd -q -DskipTests compile} & \textbf{\checkmark OK} \\
+\hline
+Frontend & \texttt{npm run build} & \textbf{\checkmark OK} \\
+\hline
+Routes & \texttt{/admin}, \texttt{/professor}, \texttt{/student} accessibles selon role & \textbf{\checkmark OK} \\
+\hline
+Notes & Depot professeur, mise a jour sans doublon, calcul moyenne matiere et generale & \textbf{\checkmark OK} \\
+\hline
+Seed data & Compte etudiant demo, professeurs demo, groupes, seances, notes et supports & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Integration}
+
+L'integration a ete realisee progressivement sur des branches dediees puis consolidee sur la branche Sprint 2. Les endpoints backend ont ete consommes par les services Angular des trois espaces. Les guards de roles deja mis en place pendant le Sprint 1 ont ete reutilises pour proteger les routes metiers.
+
+\begin{itemize}[itemsep=0.3em]
+    \item \texttt{/api/admin/dashboard} pour l'espace administrateur.
+    \item \texttt{/api/professor/dashboard} pour l'espace professeur.
+    \item \texttt{/api/student/dashboard} pour l'espace etudiant.
+    \item \texttt{/api/supports} et \texttt{/api/course-materials} pour les supports.
+    \item \texttt{/api/notes} pour le depot et la mise a jour des notes.
+    \item \texttt{/api/presences} pour l'appel.
+\end{itemize}
+
+\section{Reunions Scrum associees}
+
+\begin{table}[H]
+\centering
+\caption{Reunions Scrum du Sprint 2}
+\begin{tabular}{|p{3.5cm}|p{6cm}|p{4cm}|}
+\hline
+\textbf{Reunion} & \textbf{Objectif} & \textbf{Decision / Resultat} \\
+\hline
+Sprint Planning & Selectionner les modules a livrer et definir le Sprint Goal & Priorite aux espaces admin, professeur, etudiant et aux workflows notes/presences/supports \\
+\hline
+Daily Scrum & Suivre l'avancement, identifier les blocages et synchroniser backend/frontend & Decoupage technique par branches et integration progressive \\
+\hline
+Backlog Refinement & Clarifier les regles de notation et les donnees de test & Regle DS/Examen/Examen TP centralisee cote backend \\
+\hline
+Sprint Review & Presenter les espaces metiers et les parcours de bout en bout & Fonctionnalites acceptees apres validation des builds \\
+\hline
+Sprint Retrospective & Identifier les ameliorations de processus & Besoin d'un seed data plus riche et de regles metiers centralisees \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Resultats du sprint}
+
+Le Sprint 2 a livre une version fonctionnelle de l'application avec trois espaces metiers connectes au backend.
+
+\begin{itemize}[itemsep=0.3em]
+    \item L'administrateur dispose d'un tableau de bord et d'interfaces pour consulter la structure, les utilisateurs et les evaluations.
+    \item Le professeur peut consulter ses enseignements, saisir les notes, faire l'appel, creer des rattrapages et deposer des supports.
+    \item L'etudiant peut consulter son tableau de bord, son planning, ses supports, ses annonces, ses presences et son bulletin.
+    \item La logique de moyenne respecte les coefficients d'evaluation et les coefficients de matiere.
+    \item Les donnees de demonstration permettent de tester un parcours complet sans saisie manuelle initiale.
+\end{itemize}
+
+\section{Difficultes rencontrees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Risque de duplication des notes lors de plusieurs sauvegardes par le professeur.
+    \item Donnees de seed insuffisantes au debut pour tester correctement l'espace etudiant.
+    \item Necessite de distinguer le coefficient d'une evaluation du coefficient d'une matiere.
+    \item Complexite du calcul de moyenne lorsque certaines matieres possedent un TP et d'autres non.
+    \item Besoin de conserver une interface coherente entre les espaces admin, professeur et etudiant.
+\end{itemize}
+
+\section{Solutions apportees}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Ajout d'une sauvegarde idempotente dans \texttt{NoteService} pour eviter les doublons.
+    \item Enrichissement du seed avec 20 etudiants GI-3A, plusieurs groupes, professeurs demo, seances, evaluations, presences et supports.
+    \item Centralisation de la logique de notation dans \texttt{AcademicEvaluationPolicyService}.
+    \item Ajout d'un DTO de synthese etudiant avec \texttt{subjectGrades} pour afficher le bulletin par matiere.
+    \item Normalisation des types d'evaluation dans les dashboards admin, professeur et etudiant.
+    \item Reutilisation du meme style visuel sombre et des memes patterns de panels, tableaux et cartes.
+\end{itemize}
+
+\section{Bilan du sprint}
+
+Le Sprint 2 est considere comme reussi. Il transforme l'application d'un socle technique authentifie en une plateforme fonctionnelle exploitable par les trois roles principaux. Les modules backend sont disponibles, les espaces Angular sont charges en lazy loading et les workflows critiques sont integres.
+
+Le sprint a egalement permis de stabiliser une regle metier importante : le calcul des notes et des moyennes. Cette regle est maintenant centralisee cote backend, ce qui reduit les incoherences entre les interfaces et facilite les evolutions futures.
+
+\begin{table}[H]
+\centering
+\caption{Synthese du Sprint 2}
+\begin{tabular}{|p{5cm}|p{7cm}|p{2cm}|}
+\hline
+\textbf{Element} & \textbf{Resultat} & \textbf{Statut} \\
+\hline
+Modules backend secondaires & Annonces, seances, supports, notes, presences et dashboards API & \textbf{\checkmark OK} \\
+\hline
+Frontend administrateur & Dashboard, structure, utilisateurs, examens et notes & \textbf{\checkmark OK} \\
+\hline
+Frontend professeur & Enseignements, notes, presences, rattrapages et supports & \textbf{\checkmark OK} \\
+\hline
+Frontend etudiant & Dashboard, planning, supports, annonces, presences et bulletin & \textbf{\checkmark OK} \\
+\hline
+Regle de moyenne & Moyenne matiere et moyenne generale ponderee & \textbf{\checkmark OK} \\
+\hline
+Integration et validation & Compilation backend et build frontend reussis & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\iffalse
+
 \section{Decoupage du Sprint 2}
 
 Le Sprint 2 correspond a la phase \textbf{Modules \& Frontend}. Afin de reduire le risque d'integration et de garder une strategie GitHub claire, nous avons decoupe ce sprint en plusieurs etapes incrementales :
@@ -2485,5 +2847,7 @@ Supports et annonces & Les supports, annonces, rattrapages et presences sont acc
 \section{Conclusion Sprint 2 -- Etape 4}
 
 Cette etape livre l'espace etudiant du Sprint 2. La route \texttt{/student} est maintenant disponible, protegee par role, chargee en lazy loading et connectee a un endpoint backend de synthese. L'etudiant peut consulter son profil, ses statistiques, ses notes, son emploi du temps, ses supports de cours, les annonces, les rattrapages et son historique de presence dans une interface coherente avec les espaces administrateur et professeur.
+
+\fi
 
 \end{document}
