@@ -2230,6 +2230,231 @@ Rattrapages et supports & Les formulaires utilisent les endpoints backend exista
 
 \section{Conclusion Sprint 2 -- Etape 3}
 
-Cette etape livre l'espace professeur du Sprint 2. La route \texttt{/professor} est maintenant disponible, protegee par role, chargee en lazy loading et connectee a un endpoint de synthese backend. Le professeur peut consulter ses enseignements, groupes et seances, saisir les notes, enregistrer les presences, creer des rattrapages et uploader des supports, avec une interface coherente avec l'espace administrateur. L'espace etudiant pourra etre traite dans la prochaine sous-etape du Sprint 2.
+Cette etape livre l'espace professeur du Sprint 2. La route \texttt{/professor} est maintenant disponible, protegee par role, chargee en lazy loading et connectee a un endpoint de synthese backend. Le professeur peut consulter ses enseignements, groupes et seances, saisir les notes, enregistrer les presences, creer des rattrapages et uploader des supports, avec une interface coherente avec l'espace administrateur.
+
+\section{Sprint Goal -- Etape 4 Frontend Etudiant}
+
+La quatrieme etape du Sprint 2 consiste a livrer l'espace etudiant. L'objectif est de donner a chaque etudiant une interface simple et centralisee pour consulter son profil academique, ses notes, son emploi du temps, les supports de cours, les annonces, les rattrapages et son historique de presence.
+
+\textbf{Sprint Goal :} developper une interface frontend etudiant protegee par role, connectee au backend, avec la meme coherence graphique que les espaces administrateur et professeur.
+
+\subsection{Definition of Done -- Etape 4}
+
+\begin{itemize}[itemsep=0.3em]
+    \item Route \texttt{/student} disponible en lazy loading.
+    \item Acces protege par \texttt{roleGuard} avec le role \texttt{STUDENT}.
+    \item Endpoint backend \texttt{GET /api/student/dashboard} disponible pour alimenter l'interface.
+    \item Dashboard etudiant affichant profil, indicateurs, notes recentes et prochaines seances.
+    \item Consultation des notes, de l'emploi du temps, des supports, des annonces et des rattrapages.
+    \item Telechargement des supports via les URLs exposees par le backend.
+    \item Interface responsive et coherente avec le theme admin/professeur.
+    \item Compilation backend et build frontend termines sans erreur.
+\end{itemize}
+
+\section{Sprint Backlog -- Etape 4 Frontend Etudiant}
+
+\begin{table}[H]
+\centering
+\caption{Backlog frontend etudiant -- Sprint 2 Etape 4}
+\begin{tabular}{|p{1.5cm}|p{5cm}|p{5.5cm}|p{1.5cm}|}
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Taches realisees} & \textbf{Points} \\
+\hline
+S2-E4-01 & En tant qu'etudiant, je veux acceder a mon espace personnel & Route \texttt{/student}, module lazy, guard role \texttt{STUDENT}, redirection login existante & 3 \\
+\hline
+S2-E4-02 & En tant qu'etudiant, je veux voir une synthese de ma situation academique & Dashboard profil, moyenne, nombre de seances, supports, taux de presence et annonces & 3 \\
+\hline
+S2-E4-03 & En tant qu'etudiant, je veux consulter mes notes et evaluations & Tableau des notes, recherche, evaluation, type, date, coefficient, statut et remarque & 3 \\
+\hline
+S2-E4-04 & En tant qu'etudiant, je veux consulter mon emploi du temps & Tableau organise par jour, horaire, matiere, type, professeur, salle et groupe de l'etudiant & 3 \\
+\hline
+S2-E4-05 & En tant qu'etudiant, je veux consulter les supports, annonces et rattrapages & Cartes supports avec telechargement, annonces visibles, rattrapages et historique de presence & 4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Total estime :} 16 story points.
+
+\section{Implementation Backend -- Dashboard Etudiant}
+
+Pour eviter de multiplier les appels HTTP cote Angular, un endpoint de synthese a ete ajoute au backend :
+
+\begin{verbatim}
+GET /api/student/dashboard
+\end{verbatim}
+
+Cet endpoint est expose par le controller \texttt{StudentDashboardController}. Il utilise l'utilisateur authentifie pour retrouver l'etudiant correspondant par email, puis construit une reponse complete via \texttt{StudentDashboardService}.
+
+\subsection{DTO de Synthese}
+
+Le DTO \texttt{StudentDashboardResponseDTO} regroupe toutes les donnees necessaires au frontend :
+
+\begin{itemize}[itemsep=0.3em]
+    \item profil etudiant : identite, email, matricule, niveau, groupe, departement et annee ;
+    \item statistiques principales : moyenne, seances, supports, presence et annonces ;
+    \item notes et evaluations ;
+    \item emploi du temps du groupe de l'etudiant ;
+    \item supports de cours des enseignements suivis ;
+    \item annonces visibles par les etudiants ;
+    \item seances de rattrapage ;
+    \item historique de presence.
+\end{itemize}
+
+\subsection{Service de Recuperation}
+
+Le service \texttt{StudentDashboardService} centralise la recuperation des donnees depuis les repositories existants :
+
+\begin{itemize}[itemsep=0.3em]
+    \item \texttt{EtudiantRepository} pour identifier l'etudiant connecte ;
+    \item \texttt{SeanceRepository} pour recuperer l'emploi du temps du groupe ;
+    \item \texttt{NoteRepository} pour charger les notes de l'etudiant ;
+    \item \texttt{PresenceRepository} pour calculer l'historique et le taux de presence ;
+    \item \texttt{SupportCoursRepository} pour filtrer les supports des enseignements suivis ;
+    \item \texttt{AnnonceRepository} pour les annonces destinees au role etudiant.
+\end{itemize}
+
+\section{Implementation Frontend -- Espace Etudiant}
+
+L'espace etudiant a ete ajoute sous \texttt{frontend/src/app/features/student}. Il reprend la structure Angular deja utilisee pour les autres espaces metiers : module dedie, routing dedie, service HTTP et composant standalone de dashboard.
+
+\subsection{Routing et Protection}
+
+La route globale est declaree dans \texttt{app.routes.ts} :
+
+\begin{verbatim}
+/student
+\end{verbatim}
+
+Le module etudiant est charge en lazy loading. Le fichier \texttt{student-routing-module.ts} applique le guard existant avec le role \texttt{UserRole.STUDENT}, afin que seuls les comptes etudiants puissent acceder a cet espace.
+
+\subsection{Service Angular}
+
+Le service \texttt{StudentDashboardApi} encapsule les appels frontend :
+
+\begin{itemize}[itemsep=0.3em]
+    \item \texttt{getDashboard()} pour charger toutes les donnees de l'espace etudiant ;
+    \item \texttt{downloadMaterial()} pour recuperer un support sous forme de fichier.
+\end{itemize}
+
+\subsection{Composant Dashboard Etudiant}
+
+Le composant \texttt{StudentDashboardComponent} utilise les signaux Angular pour gerer l'etat de l'interface : section active, chargement, recherche, profil, statistiques, notes, seances, supports, annonces, rattrapages et presences.
+
+Les sections disponibles sont :
+
+\begin{itemize}[itemsep=0.3em]
+    \item \textbf{Dashboard} : profil, statistiques, actions rapides, notes recentes et prochaines seances ;
+    \item \textbf{Notes} : tableau detaille des notes avec recherche ;
+    \item \textbf{Emploi du temps} : planning organise par jour et par horaire ;
+    \item \textbf{Supports} : liste des supports disponibles avec telechargement ;
+    \item \textbf{Annonces} : annonces, rattrapages et historique de presence.
+\end{itemize}
+
+\section{Interfaces Livrees -- Frontend Etudiant}
+
+\begin{table}[H]
+\centering
+\caption{Interfaces frontend livrees -- Sprint 2 Etudiant}
+\begin{tabular}{|p{4cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Interface} & \textbf{Route / Section} & \textbf{Objectif} \\
+\hline
+Dashboard Etudiant & \texttt{/student} / Dashboard & Profil, indicateurs, notes recentes et prochaines seances \\
+\hline
+Notes & \texttt{/student} / Notes & Consultation des evaluations, coefficients, statuts et remarques \\
+\hline
+Emploi du temps & \texttt{/student} / Emploi du temps & Planning hebdomadaire par jour, horaire, salle et professeur \\
+\hline
+Supports & \texttt{/student} / Supports & Consultation et telechargement des supports de cours \\
+\hline
+Annonces & \texttt{/student} / Annonces & Annonces, rattrapages et historique de presence \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Tests et Validation -- Frontend Etudiant}
+
+\textbf{Commande de validation backend executee :}
+
+\begin{verbatim}
+cd backend
+./mvnw.cmd -q -DskipTests compile
+\end{verbatim}
+
+\textbf{Resultat :} compilation backend terminee avec succes apres ajout du DTO, du service, du repository method et du controller de dashboard etudiant.
+
+\textbf{Commande de validation frontend executee :}
+
+\begin{verbatim}
+cd frontend
+npm run build
+\end{verbatim}
+
+\textbf{Resultat :} build Angular termine avec succes. Le bundle genere contient les chunks lazy \texttt{student-module} et \texttt{student-dashboard}, confirmant le chargement a la demande de l'espace etudiant.
+
+\begin{table}[H]
+\centering
+\caption{Validation de l'etape frontend etudiant}
+\begin{tabular}{|p{5cm}|p{5.5cm}|p{2.5cm}|}
+\hline
+\textbf{Element} & \textbf{Critere de validation} & \textbf{Statut} \\
+\hline
+Route etudiant & \texttt{/student} charge le module etudiant & \textbf{\checkmark OK} \\
+\hline
+Protection role & Acces limite a \texttt{UserRole.STUDENT} & \textbf{\checkmark OK} \\
+\hline
+Compilation backend & \texttt{./mvnw.cmd -q -DskipTests compile} sans erreur & \textbf{\checkmark OK} \\
+\hline
+Compilation Angular & \texttt{npm run build} sans erreur & \textbf{\checkmark OK} \\
+\hline
+Dashboard API & \texttt{GET /api/student/dashboard} retourne les donnees etudiant & \textbf{\checkmark OK} \\
+\hline
+Palette UI & Meme structure visuelle que les espaces admin et professeur & \textbf{\checkmark OK} \\
+\hline
+Workflows etudiant & Notes, planning, supports, annonces, rattrapages et presences presents & \textbf{\checkmark OK} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Organisation GitHub -- Etape 4}
+
+Le travail frontend etudiant a ete isole sur la branche :
+
+\begin{verbatim}
+sprint2/student-frontend-step4
+\end{verbatim}
+
+La strategie de commits retenue est :
+
+\begin{itemize}[itemsep=0.3em]
+    \item un commit pour l'API backend de dashboard etudiant ;
+    \item un commit pour l'espace frontend etudiant et ses interfaces ;
+    \item un commit pour la mise a jour du rapport et la validation finale ;
+    \item push de la branche distante pour revue avant integration.
+\end{itemize}
+
+\section{Sprint Review -- Etape 4}
+
+\begin{table}[H]
+\centering
+\caption{Review de l'etape frontend etudiant}
+\begin{tabular}{|p{5cm}|p{5cm}|p{3cm}|}
+\hline
+\textbf{Element} & \textbf{Observation} & \textbf{Decision} \\
+\hline
+Dashboard & L'etudiant dispose d'une vue synthetique de son profil, de ses indicateurs et de ses prochaines seances & \textbf{Accepte} \\
+\hline
+Notes & Les evaluations et les remarques sont consultables dans un tableau dedie & \textbf{Accepte} \\
+\hline
+Emploi du temps & Le planning hebdomadaire est organise par jour, horaire, salle et professeur & \textbf{Accepte} \\
+\hline
+Supports et annonces & Les supports, annonces, rattrapages et presences sont accessibles dans l'espace etudiant & \textbf{Accepte} \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion Sprint 2 -- Etape 4}
+
+Cette etape livre l'espace etudiant du Sprint 2. La route \texttt{/student} est maintenant disponible, protegee par role, chargee en lazy loading et connectee a un endpoint backend de synthese. L'etudiant peut consulter son profil, ses statistiques, ses notes, son emploi du temps, ses supports de cours, les annonces, les rattrapages et son historique de presence dans une interface coherente avec les espaces administrateur et professeur.
 
 \end{document}
