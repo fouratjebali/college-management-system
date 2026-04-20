@@ -1,23 +1,31 @@
 package MiniProjet_Backend.Backend.Config;
 
 import MiniProjet_Backend.Backend.Model.Administrateur;
+import MiniProjet_Backend.Backend.Model.Annonce;
 import MiniProjet_Backend.Backend.Model.Departement;
 import MiniProjet_Backend.Backend.Model.Enseignement;
 import MiniProjet_Backend.Backend.Model.Etudiant;
 import MiniProjet_Backend.Backend.Model.Evaluation;
 import MiniProjet_Backend.Backend.Model.Groupe;
 import MiniProjet_Backend.Backend.Model.Matiere;
+import MiniProjet_Backend.Backend.Model.Note;
+import MiniProjet_Backend.Backend.Model.Presence;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.Seance;
+import MiniProjet_Backend.Backend.Model.SupportCours;
 import MiniProjet_Backend.Backend.Model.User;
+import MiniProjet_Backend.Backend.Repository.AnnonceRepository;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
 import MiniProjet_Backend.Backend.Repository.EnseignementRepository;
 import MiniProjet_Backend.Backend.Repository.EtudiantRepository;
 import MiniProjet_Backend.Backend.Repository.EvaluationRepository;
 import MiniProjet_Backend.Backend.Repository.GroupeRepository;
 import MiniProjet_Backend.Backend.Repository.MatiereRepository;
+import MiniProjet_Backend.Backend.Repository.NoteRepository;
+import MiniProjet_Backend.Backend.Repository.PresenceRepository;
 import MiniProjet_Backend.Backend.Repository.ProfesseurRepository;
 import MiniProjet_Backend.Backend.Repository.SeanceRepository;
+import MiniProjet_Backend.Backend.Repository.SupportCoursRepository;
 import MiniProjet_Backend.Backend.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -26,6 +34,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -54,7 +66,11 @@ public class SeedDataConfig {
             EtudiantRepository etudiantRepository,
             EnseignementRepository enseignementRepository,
             SeanceRepository seanceRepository,
-            EvaluationRepository evaluationRepository
+            EvaluationRepository evaluationRepository,
+            NoteRepository noteRepository,
+            PresenceRepository presenceRepository,
+            SupportCoursRepository supportCoursRepository,
+            AnnonceRepository annonceRepository
     ) {
         return args -> {
             seedAdmin(passwordEncoder, userRepository);
@@ -78,6 +94,20 @@ public class SeedDataConfig {
                     professeur,
                     academicData.subjects(),
                     academicData.groups()
+            );
+            seedStudentDashboardDemoData(
+                    userRepository,
+                    etudiantRepository,
+                    enseignementRepository,
+                    seanceRepository,
+                    evaluationRepository,
+                    noteRepository,
+                    presenceRepository,
+                    supportCoursRepository,
+                    annonceRepository,
+                    professeur,
+                    academicData.subjects(),
+                    academicData.gi3a()
             );
         };
     }
@@ -428,9 +458,249 @@ public class SeedDataConfig {
         evaluationRepository.save(evaluation);
     }
 
+    private void seedStudentDashboardDemoData(
+            UserRepository userRepository,
+            EtudiantRepository etudiantRepository,
+            EnseignementRepository enseignementRepository,
+            SeanceRepository seanceRepository,
+            EvaluationRepository evaluationRepository,
+            NoteRepository noteRepository,
+            PresenceRepository presenceRepository,
+            SupportCoursRepository supportCoursRepository,
+            AnnonceRepository annonceRepository,
+            Professeur professeur,
+            List<Matiere> subjects,
+            Groupe group
+    ) throws IOException {
+        Etudiant student = etudiantRepository.findByEmail("student.demo@issatso.tn")
+                .orElseThrow(() -> new IllegalStateException("Demo student missing"));
+        Administrateur admin = userRepository.findByEmail(adminEmail)
+                .filter(Administrateur.class::isInstance)
+                .map(Administrateur.class::cast)
+                .orElseThrow(() -> new IllegalStateException("Demo admin missing"));
+        List<Enseignement> teachings = subjects.stream()
+                .map(subject -> ensureTeaching(enseignementRepository, professeur, subject))
+                .toList();
+        List<StudentDemoSession> demoSessions = List.of(
+                new StudentDemoSession(0, "Lundi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "Cours", "Bloc A", "Salle 101", "Controle continu Architecture Logicielle",
+                        "Controle continu", 15.5F, "Valide", "Tres bon travail", "Present"),
+                new StudentDemoSession(1, "Mardi", LocalTime.of(10, 15), LocalTime.of(11, 45),
+                        "TD", "Bloc B", "Salle 203", "DS Bases de Donnees",
+                        "Devoir Surveille", 13.75F, "Valide", "Revoir les jointures", "Present"),
+                new StudentDemoSession(2, "Mercredi", LocalTime.of(13, 30), LocalTime.of(15, 0),
+                        "TP", "Lab Web", "Salle TP 2", "TP Angular Components",
+                        "Travaux Pratiques", 16.25F, "Valide", "Interface propre", "Retard"),
+                new StudentDemoSession(3, "Jeudi", LocalTime.of(10, 15), LocalTime.of(11, 45),
+                        "TD", "Bloc C", "Salle 305", "Quiz APIs REST Spring Boot",
+                        "Quiz", 14.5F, "Valide", "Bonne maitrise des endpoints", "Present"),
+                new StudentDemoSession(4, "Vendredi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "Cours", "Bloc D", "Salle 402", "Mini projet DevOps",
+                        "Projet", 17.0F, "Valide", "Pipeline bien structure", "Present"),
+                new StudentDemoSession(2, "Vendredi", LocalTime.of(15, 15), LocalTime.of(16, 45),
+                        "Rattrapage", "Lab Web", "Salle TP 1", "Rattrapage Angular Routing",
+                        "Rattrapage", 12.5F, "En attente", "Seance de consolidation", "Absent")
+        );
+
+        for (int index = 0; index < demoSessions.size(); index++) {
+            StudentDemoSession demoSession = demoSessions.get(index);
+            Enseignement teaching = teachings.get(demoSession.subjectIndex());
+            Seance seance = ensureSession(
+                    seanceRepository,
+                    teaching,
+                    group,
+                    demoSession.day(),
+                    new TimeSlot(demoSession.start(), demoSession.end(), demoSession.type()),
+                    demoSession.building(),
+                    demoSession.room()
+            );
+            Evaluation evaluation = ensureStudentEvaluation(
+                    evaluationRepository,
+                    seance,
+                    demoSession.evaluationLabel(),
+                    demoSession.evaluationType(),
+                    index
+            );
+            ensureStudentNote(noteRepository, evaluation, student, demoSession);
+            ensureStudentPresence(presenceRepository, seance, student, demoSession, index);
+        }
+
+        ensureStudentSupport(
+                supportCoursRepository,
+                teachings.get(0),
+                "Chapitre 1 - Architecture en couches",
+                "architecture-couches.txt",
+                "Rappels sur la separation des responsabilites, DTO, services et repositories."
+        );
+        ensureStudentSupport(
+                supportCoursRepository,
+                teachings.get(2),
+                "Guide TP Angular - Dashboard",
+                "tp-angular-dashboard.txt",
+                "Consignes pour construire un dashboard Angular avec services HTTP et signals."
+        );
+        ensureStudentSupport(
+                supportCoursRepository,
+                teachings.get(3),
+                "Fiche pratique REST Spring Boot",
+                "fiche-rest-spring.txt",
+                "Exemples de controllers, DTO, services et validation des endpoints REST."
+        );
+
+        ensureStudentAnnouncement(
+                annonceRepository,
+                admin,
+                "Planning GI-3A publie",
+                "L'emploi du temps de la semaine GI-3A est disponible dans l'espace etudiant."
+        );
+        ensureStudentAnnouncement(
+                annonceRepository,
+                admin,
+                "Depot des supports de cours",
+                "Les nouveaux supports Angular et Spring Boot sont disponibles en telechargement."
+        );
+    }
+
+    private Evaluation ensureStudentEvaluation(
+            EvaluationRepository evaluationRepository,
+            Seance seance,
+            String label,
+            String type,
+            int index
+    ) {
+        return evaluationRepository.findBySeanceId(seance.getId()).stream()
+                .filter(evaluation -> evaluation.getLibelle().equalsIgnoreCase(label))
+                .findFirst()
+                .orElseGet(() -> {
+                    Evaluation evaluation = new Evaluation();
+                    evaluation.setLibelle(label);
+                    evaluation.setTypeEvaluation(type);
+                    evaluation.setDateEvaluation(LocalDateTime.now()
+                            .minusDays(20L - (index * 3L))
+                            .withHour(seance.getHeureDebut().getHour())
+                            .withMinute(seance.getHeureDebut().getMinute())
+                            .withSecond(0)
+                            .withNano(0));
+                    evaluation.setCoefficient("Projet".equalsIgnoreCase(type) ? 2.0F : 1.0F);
+                    evaluation.setSeance(seance);
+                    return evaluationRepository.save(evaluation);
+                });
+    }
+
+    private void ensureStudentNote(
+            NoteRepository noteRepository,
+            Evaluation evaluation,
+            Etudiant student,
+            StudentDemoSession demoSession
+    ) {
+        Note note = noteRepository.findByEvaluationId(evaluation.getId()).stream()
+                .filter(existingNote -> existingNote.getEtudiant().getId().equals(student.getId()))
+                .findFirst()
+                .orElseGet(Note::new);
+
+        note.setEvaluation(evaluation);
+        note.setEtudiant(student);
+        note.setValeur(demoSession.grade());
+        note.setStatut(demoSession.gradeStatus());
+        note.setRemarque(demoSession.remark());
+        noteRepository.save(note);
+    }
+
+    private void ensureStudentPresence(
+            PresenceRepository presenceRepository,
+            Seance seance,
+            Etudiant student,
+            StudentDemoSession demoSession,
+            int index
+    ) {
+        Presence presence = presenceRepository.findBySeanceId(seance.getId()).stream()
+                .filter(existingPresence -> existingPresence.getEtudiant().getId().equals(student.getId()))
+                .findFirst()
+                .orElseGet(Presence::new);
+
+        presence.setSeance(seance);
+        presence.setEtudiant(student);
+        presence.setStatut(demoSession.presenceStatus());
+        presence.setDateSaisie(LocalDateTime.now()
+                .minusDays(6L - index)
+                .withHour(seance.getHeureDebut().getHour())
+                .withMinute(seance.getHeureDebut().getMinute())
+                .withSecond(0)
+                .withNano(0));
+        presenceRepository.save(presence);
+    }
+
+    private void ensureStudentSupport(
+            SupportCoursRepository supportCoursRepository,
+            Enseignement teaching,
+            String title,
+            String fileName,
+            String content
+    ) throws IOException {
+        SupportCours supportCours = supportCoursRepository.findByEnseignementId(teaching.getId()).stream()
+                .filter(existingSupport -> existingSupport.getTitre().equalsIgnoreCase(title))
+                .findFirst()
+                .orElseGet(SupportCours::new);
+        Path uploadDirectory = Path.of("uploads", "course-materials").toAbsolutePath().normalize();
+        Files.createDirectories(uploadDirectory);
+        Path supportPath = uploadDirectory.resolve(fileName).normalize();
+
+        if (!supportPath.startsWith(uploadDirectory)) {
+            throw new IllegalArgumentException("Chemin de support invalide");
+        }
+
+        Files.writeString(supportPath, content, StandardCharsets.UTF_8);
+        supportCours.setTitre(title);
+        supportCours.setCheminFichier(fileName);
+        supportCours.setNomFichierOriginal(fileName);
+        supportCours.setTypeFichier("text/plain");
+        supportCours.setTailleOctets(Files.size(supportPath));
+        supportCours.setDateDepot(LocalDateTime.now().minusDays(2));
+        supportCours.setEnseignement(teaching);
+        supportCoursRepository.save(supportCours);
+    }
+
+    private void ensureStudentAnnouncement(
+            AnnonceRepository annonceRepository,
+            Administrateur admin,
+            String title,
+            String content
+    ) {
+        Annonce annonce = annonceRepository.findAll().stream()
+                .filter(existingAnnonce -> existingAnnonce.getTitre().equalsIgnoreCase(title))
+                .findFirst()
+                .orElseGet(Annonce::new);
+
+        annonce.setTitre(title);
+        annonce.setContenu(content);
+        annonce.setDatePublication(LocalDateTime.now().minusDays(1));
+        annonce.setDateExpiration(LocalDateTime.now().plusDays(21));
+        annonce.setCibleGlobale(false);
+        annonce.setCibleRole("STUDENT");
+        annonce.setAdministrateur(admin);
+        annonceRepository.save(annonce);
+    }
+
     private record SeedAcademicData(List<Matiere> subjects, List<Groupe> groups, Groupe gi3a) {
     }
 
     private record TimeSlot(LocalTime start, LocalTime end, String type) {
+    }
+
+    private record StudentDemoSession(
+            int subjectIndex,
+            String day,
+            LocalTime start,
+            LocalTime end,
+            String type,
+            String building,
+            String room,
+            String evaluationLabel,
+            String evaluationType,
+            Float grade,
+            String gradeStatus,
+            String remark,
+            String presenceStatus
+    ) {
     }
 }

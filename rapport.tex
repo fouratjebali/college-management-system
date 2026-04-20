@@ -2247,6 +2247,7 @@ La quatrieme etape du Sprint 2 consiste a livrer l'espace etudiant. L'objectif e
     \item Dashboard etudiant affichant profil, indicateurs, notes recentes et prochaines seances.
     \item Consultation des notes, de l'emploi du temps, des supports, des annonces et des rattrapages.
     \item Telechargement des supports via les URLs exposees par le backend.
+    \item Jeu de donnees de demonstration disponible pour tester le dashboard etudiant.
     \item Interface responsive et coherente avec le theme admin/professeur.
     \item Compilation backend et build frontend termines sans erreur.
 \end{itemize}
@@ -2312,6 +2313,10 @@ Le service \texttt{StudentDashboardService} centralise la recuperation des donne
     \item \texttt{SupportCoursRepository} pour filtrer les supports des enseignements suivis ;
     \item \texttt{AnnonceRepository} pour les annonces destinees au role etudiant.
 \end{itemize}
+
+\subsection{Donnees de Demonstration Etudiant}
+
+Le seed backend a ete enrichi pour garantir un test complet avec le compte \texttt{student.demo@issatso.tn}. Le groupe \texttt{GI-3A} dispose maintenant de seances reparties sur la semaine, d'evaluations, de notes, de presences, de supports de cours telechargeables et d'annonces ciblees etudiant. Ces donnees permettent de verifier directement les statistiques, les prochaines seances et les differentes sections du dashboard.
 
 \section{Implementation Frontend -- Espace Etudiant}
 
