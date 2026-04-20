@@ -194,25 +194,47 @@
         <article class="panel table-panel full-span">
           <div class="panel-heading inline-heading">
             <div>
-              <span class="eyebrow">Notes publiees</span>
-              <h2>Consultation des resultats</h2>
+              <span class="eyebrow">Bulletin par matiere</span>
+              <h2>DS, Examen TP et Examen principal</h2>
             </div>
-            <span class="counter">{{ filteredGrades().length }} resultat(s)</span>
+            <span class="counter">{{ filteredSubjectGrades().length }} matiere(s)</span>
           </div>
 
-          <div class="grade-table">
-            @if (filteredGrades().length > 0) {
-              @for (grade of filteredGrades(); track grade.id) {
-                <div class="grade-row">
-                  <span class="grade-value">{{ grade.value }}</span>
-                  <div>
-                    <strong>{{ grade.subject }}</strong>
-                    <small>{{ grade.evaluation }} - {{ grade.type }}</small>
+          <div class="subject-grade-list">
+            @if (filteredSubjectGrades().length > 0) {
+              @for (subjectGrade of filteredSubjectGrades(); track subjectGrade.subject) {
+                <article class="subject-grade-card" [class.incomplete]="!subjectGrade.complete">
+                  <div class="subject-grade-heading">
+                    <div>
+                      <strong>{{ subjectGrade.subject }}</strong>
+                      <small>{{ subjectGrade.professor }} - Coef matiere {{ subjectGrade.subjectCoefficient }}</small>
+                    </div>
+                    <div class="subject-average">
+                      <span>{{ subjectGrade.complete ? subjectGrade.average : '--' }}</span>
+                      <small>{{ subjectGrade.receivedCount }}/{{ subjectGrade.expectedCount }} notes</small>
+                    </div>
                   </div>
-                  <span>{{ grade.date }}</span>
-                  <span>Coef {{ grade.coefficient }}</span>
-                  <span class="status-pill">{{ grade.status }}</span>
-                </div>
+
+                  <div class="subject-grade-grid">
+                    @for (evaluation of subjectGrade.evaluations; track evaluation.type) {
+                      <div class="evaluation-cell" [class.pending]="!evaluation.published">
+                        <div class="evaluation-cell-heading">
+                          <span>{{ evaluation.type }}</span>
+                          <strong>{{ evaluation.value }}</strong>
+                        </div>
+                        <small>{{ evaluation.label }}</small>
+                        <small>{{ evaluation.date }}</small>
+                        <div class="evaluation-meta">
+                          <span>Coef {{ evaluation.coefficient }}</span>
+                          <span>{{ evaluation.status }}</span>
+                        </div>
+                        @if (evaluation.remark) {
+                          <p>{{ evaluation.remark }}</p>
+                        }
+                      </div>
+                    }
+                  </div>
+                </article>
               }
             } @else {
               <p class="empty-state">

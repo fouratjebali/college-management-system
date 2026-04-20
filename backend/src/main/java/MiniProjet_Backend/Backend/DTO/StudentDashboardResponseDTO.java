@@ -15,6 +15,7 @@ public class StudentDashboardResponseDTO {
     private ProfileDTO profile;
     private List<StatDTO> stats;
     private GradeSummaryDTO gradeSummary;
+    private List<SubjectGradeDTO> subjectGrades;
     private List<GradeRowDTO> grades;
     private List<ScheduleRowDTO> schedule;
     private List<MaterialRowDTO> materials;
@@ -58,6 +59,36 @@ public class StudentDashboardResponseDTO {
         private int expectedCount;
         private int receivedCount;
         private String message;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SubjectGradeDTO {
+        private String subject;
+        private String professor;
+        private String subjectCoefficient;
+        private String average;
+        private boolean complete;
+        private int expectedCount;
+        private int receivedCount;
+        private List<EvaluationGradeDTO> evaluations;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EvaluationGradeDTO {
+        private String type;
+        private String label;
+        private String value;
+        private String coefficient;
+        private String date;
+        private String status;
+        private String remark;
+        private boolean published;
     }
 
     @Data

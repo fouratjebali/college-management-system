@@ -2317,7 +2317,7 @@ Le service \texttt{StudentDashboardService} centralise la recuperation des donne
 
 \subsection{Donnees de Demonstration Etudiant}
 
-Le seed backend a ete enrichi pour garantir un test complet avec le compte \texttt{student.demo@issatso.tn}. Le groupe \texttt{GI-3A} dispose maintenant de seances reparties sur la semaine, d'evaluations, de notes, de presences, de supports de cours telechargeables et d'annonces ciblees etudiant. Ces donnees permettent de verifier directement les statistiques, les prochaines seances et les differentes sections du dashboard.
+Le seed backend a ete enrichi pour garantir un test complet avec le compte \texttt{student.demo@issatso.tn}. Le groupe \texttt{GI-3A} dispose maintenant de seances reparties sur la semaine, d'evaluations, de notes, de presences, de supports de cours telechargeables et d'annonces ciblees etudiant. Plusieurs professeurs de demonstration sont affectes aux matieres du semestre afin de simuler un depot de notes par enseignant. Les notes DS, Examen TP et Examen sont renseignees pour toutes les evaluations attendues, ce qui permet de verifier directement les statistiques, les prochaines seances, les moyennes par matiere et la moyenne generale.
 
 \subsection{Regle de Calcul des Moyennes}
 
@@ -2373,7 +2373,7 @@ Les sections disponibles sont :
 
 \begin{itemize}[itemsep=0.3em]
     \item \textbf{Dashboard} : profil, statistiques, actions rapides, notes recentes et prochaines seances ;
-    \item \textbf{Notes} : tableau detaille des notes avec recherche et moyenne conditionnelle du semestre ;
+    \item \textbf{Notes} : bulletin organise par matiere avec DS, Examen TP, Examen principal, moyenne matiere et moyenne generale conditionnelle ;
     \item \textbf{Emploi du temps} : planning organise par jour et par horaire ;
     \item \textbf{Supports} : liste des supports disponibles avec telechargement ;
     \item \textbf{Annonces} : annonces, rattrapages et historique de presence.
@@ -2390,7 +2390,7 @@ Les sections disponibles sont :
 \hline
 Dashboard Etudiant & \texttt{/student} / Dashboard & Profil, indicateurs, notes recentes et prochaines seances \\
 \hline
-Notes & \texttt{/student} / Notes & Consultation des evaluations, coefficients, statuts, remarques et moyenne semestrielle conditionnelle \\
+Notes & \texttt{/student} / Notes & Bulletin par matiere avec notes DS, Examen TP, Examen, coefficient evaluation, coefficient matiere et moyenne calculee \\
 \hline
 Emploi du temps & \texttt{/student} / Emploi du temps & Planning hebdomadaire par jour, horaire, salle et professeur \\
 \hline
@@ -2473,7 +2473,7 @@ La strategie de commits retenue est :
 \hline
 Dashboard & L'etudiant dispose d'une vue synthetique de son profil, de ses indicateurs et de ses prochaines seances & \textbf{Accepte} \\
 \hline
-Notes & Les evaluations, les remarques et la moyenne conditionnelle DS/Examen/Examen TP sont consultables dans un tableau dedie & \textbf{Accepte} \\
+Notes & Le bulletin affiche les notes DS, Examen TP, Examen principal, les moyennes matieres et la moyenne generale & \textbf{Accepte} \\
 \hline
 Emploi du temps & Le planning hebdomadaire est organise par jour, horaire, salle et professeur & \textbf{Accepte} \\
 \hline

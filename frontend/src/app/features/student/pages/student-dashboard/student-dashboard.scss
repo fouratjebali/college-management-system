@@ -80,6 +80,7 @@ small {
 .data-list,
 .timeline,
 .grade-table,
+.subject-grade-list,
 .schedule-board,
 .announcement-list,
 .attendance-list {
@@ -349,6 +350,8 @@ button {
 .timeline-item,
 .average-card,
 .grade-row,
+.subject-grade-card,
+.evaluation-cell,
 .schedule-day,
 .material-card,
 .announcement-card,
@@ -400,6 +403,73 @@ button {
 
 .average-card span {
   font-weight: 900;
+}
+
+.subject-grade-card {
+  align-items: stretch;
+  gap: 16px;
+}
+
+.subject-grade-card.incomplete {
+  border-style: dashed;
+}
+
+.subject-grade-heading,
+.evaluation-cell-heading,
+.evaluation-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.subject-grade-heading strong {
+  display: block;
+  font-size: 1.2rem;
+}
+
+.subject-average {
+  min-width: 110px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.subject-average span {
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.subject-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.evaluation-cell {
+  min-height: 178px;
+  align-content: space-between;
+  background: rgba(57, 62, 70, 0.56);
+}
+
+.evaluation-cell.pending {
+  opacity: 0.72;
+}
+
+.evaluation-cell-heading span,
+.evaluation-meta span {
+  color: var(--student-sand);
+  font-weight: 900;
+}
+
+.evaluation-cell-heading strong {
+  font-size: 1.8rem;
+}
+
+.evaluation-cell p {
+  margin: 0;
+  color: var(--student-soft);
+  line-height: 1.45;
 }
 
 .grade-row {
@@ -520,9 +590,23 @@ button {
 
   .grade-row,
   .average-card,
+  .subject-grade-heading,
   .schedule-row,
   .material-card {
     grid-template-columns: 1fr;
+  }
+
+  .subject-grade-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .subject-grade-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .subject-average {
+    justify-items: start;
   }
 
   .schedule-header {

@@ -28,6 +28,28 @@ export interface StudentGradeSummary {
   message: string;
 }
 
+export interface StudentEvaluationGrade {
+  type: string;
+  label: string;
+  value: string;
+  coefficient: string;
+  date: string;
+  status: string;
+  remark: string;
+  published: boolean;
+}
+
+export interface StudentSubjectGrade {
+  subject: string;
+  professor: string;
+  subjectCoefficient: string;
+  average: string;
+  complete: boolean;
+  expectedCount: number;
+  receivedCount: number;
+  evaluations: StudentEvaluationGrade[];
+}
+
 export interface StudentGradeRow {
   id: number;
   subject: string;
@@ -93,6 +115,7 @@ export interface StudentDashboardResponse {
   profile: StudentProfile;
   stats: StudentStat[];
   gradeSummary: StudentGradeSummary;
+  subjectGrades: StudentSubjectGrade[];
   grades: StudentGradeRow[];
   schedule: StudentScheduleRow[];
   materials: StudentMaterialRow[];

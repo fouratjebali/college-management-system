@@ -13,6 +13,7 @@ import {
   StudentProfile,
   StudentScheduleRow,
   StudentStat,
+  StudentSubjectGrade,
 } from '../../services/student-dashboard-api';
 
 type StudentSection = 'overview' | 'grades' | 'schedule' | 'materials' | 'announcements';
@@ -49,6 +50,7 @@ export class StudentDashboardComponent {
   protected readonly profile = signal<StudentProfile | null>(null);
   protected readonly stats = signal<readonly StudentStat[]>([]);
   protected readonly gradeSummary = signal<StudentGradeSummary | null>(null);
+  protected readonly subjectGrades = signal<readonly StudentSubjectGrade[]>([]);
   protected readonly grades = signal<readonly StudentGradeRow[]>([]);
   protected readonly schedule = signal<readonly StudentScheduleRow[]>([]);
   protected readonly materials = signal<readonly StudentMaterialRow[]>([]);
@@ -106,6 +108,23 @@ export class StudentDashboardComponent {
         grade.type,
         grade.status,
         grade.value,
+      ])
+    );
+  });
+
+  protected readonly filteredSubjectGrades = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+    return this.subjectGrades().filter((subjectGrade) =>
+      this.matchesQuery(query, [
+        subjectGrade.subject,
+        subjectGrade.professor,
+        subjectGrade.average,
+        ...subjectGrade.evaluations.flatMap((evaluation) => [
+          evaluation.type,
+          evaluation.label,
+          evaluation.value,
+          evaluation.status,
+        ]),
       ])
     );
   });
@@ -184,6 +203,7 @@ export class StudentDashboardComponent {
         this.profile.set(dashboard.profile ?? null);
         this.stats.set(dashboard.stats ?? []);
         this.gradeSummary.set(dashboard.gradeSummary ?? null);
+        this.subjectGrades.set(dashboard.subjectGrades ?? []);
         this.grades.set(dashboard.grades ?? []);
         this.schedule.set(dashboard.schedule ?? []);
         this.materials.set(dashboard.materials ?? []);
@@ -250,6 +270,7 @@ export class StudentDashboardComponent {
     this.profile.set(null);
     this.stats.set([]);
     this.gradeSummary.set(null);
+    this.subjectGrades.set([]);
     this.grades.set([]);
     this.schedule.set([]);
     this.materials.set([]);

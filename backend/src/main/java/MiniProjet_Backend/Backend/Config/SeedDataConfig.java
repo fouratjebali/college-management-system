@@ -96,7 +96,9 @@ public class SeedDataConfig {
                     academicData.groups()
             );
             seedStudentDashboardDemoData(
+                    passwordEncoder,
                     userRepository,
+                    professeurRepository,
                     etudiantRepository,
                     enseignementRepository,
                     seanceRepository,
@@ -105,7 +107,6 @@ public class SeedDataConfig {
                     presenceRepository,
                     supportCoursRepository,
                     annonceRepository,
-                    professeur,
                     academicData.subjects(),
                     academicData.gi3a()
             );
@@ -222,6 +223,87 @@ public class SeedDataConfig {
                     professeur.setGrade("Assistant");
                     return professeurRepository.save(professeur);
                 });
+    }
+
+    private List<Professeur> seedSubjectProfessors(
+            PasswordEncoder passwordEncoder,
+            UserRepository userRepository,
+            ProfesseurRepository professeurRepository
+    ) {
+        return List.of(
+                ensureProfessor(
+                        passwordEncoder,
+                        userRepository,
+                        professeurRepository,
+                        "prof.arch@issatso.tn",
+                        "Mouna Kallel",
+                        "PRO-ARCH"
+                ),
+                ensureProfessor(
+                        passwordEncoder,
+                        userRepository,
+                        professeurRepository,
+                        "prof.bd@issatso.tn",
+                        "Hatem Trabelsi",
+                        "PRO-BD"
+                ),
+                ensureProfessor(
+                        passwordEncoder,
+                        userRepository,
+                        professeurRepository,
+                        "prof.angular@issatso.tn",
+                        "Sarra Mejri",
+                        "PRO-ANG"
+                ),
+                ensureProfessor(
+                        passwordEncoder,
+                        userRepository,
+                        professeurRepository,
+                        "prof.spring@issatso.tn",
+                        "Walid Gharbi",
+                        "PRO-SPR"
+                ),
+                ensureProfessor(
+                        passwordEncoder,
+                        userRepository,
+                        professeurRepository,
+                        "prof.devops@issatso.tn",
+                        "Nesrine Ayari",
+                        "PRO-DEV"
+                )
+        );
+    }
+
+    private Professeur ensureProfessor(
+            PasswordEncoder passwordEncoder,
+            UserRepository userRepository,
+            ProfesseurRepository professeurRepository,
+            String email,
+            String name,
+            String matricule
+    ) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user instanceof Professeur existingProfessor) {
+            existingProfessor.setNomComplet(name);
+            existingProfessor.setMatriculePro(matricule);
+            existingProfessor.setGrade("Assistant");
+            existingProfessor.setActif(true);
+            return professeurRepository.save(existingProfessor);
+        }
+
+        if (user != null) {
+            throw new IllegalStateException("Email already used by another account: " + email);
+        }
+
+        Professeur professeur = new Professeur();
+        professeur.setNomComplet(name);
+        professeur.setEmail(email);
+        professeur.setMotDePasseHash(passwordEncoder.encode("Prof@12345"));
+        professeur.setActif(true);
+        professeur.setMatriculePro(matricule);
+        professeur.setGrade("Assistant");
+        return professeurRepository.save(professeur);
     }
 
     private void seedStudents(
@@ -459,7 +541,9 @@ public class SeedDataConfig {
     }
 
     private void seedStudentDashboardDemoData(
+            PasswordEncoder passwordEncoder,
             UserRepository userRepository,
+            ProfesseurRepository professeurRepository,
             EtudiantRepository etudiantRepository,
             EnseignementRepository enseignementRepository,
             SeanceRepository seanceRepository,
@@ -468,7 +552,6 @@ public class SeedDataConfig {
             PresenceRepository presenceRepository,
             SupportCoursRepository supportCoursRepository,
             AnnonceRepository annonceRepository,
-            Professeur professeur,
             List<Matiere> subjects,
             Groupe group
     ) throws IOException {
@@ -478,25 +561,52 @@ public class SeedDataConfig {
                 .filter(Administrateur.class::isInstance)
                 .map(Administrateur.class::cast)
                 .orElseThrow(() -> new IllegalStateException("Demo admin missing"));
-        List<Enseignement> teachings = subjects.stream()
-                .map(subject -> ensureTeaching(enseignementRepository, professeur, subject))
-                .toList();
+        List<Professeur> professors = seedSubjectProfessors(passwordEncoder, userRepository, professeurRepository);
+        List<Enseignement> teachings = List.of(
+                ensureTeaching(enseignementRepository, professors.get(0), subjects.get(0)),
+                ensureTeaching(enseignementRepository, professors.get(1), subjects.get(1)),
+                ensureTeaching(enseignementRepository, professors.get(2), subjects.get(2)),
+                ensureTeaching(enseignementRepository, professors.get(3), subjects.get(3)),
+                ensureTeaching(enseignementRepository, professors.get(4), subjects.get(4))
+        );
+        reassignGroupSubjectSessions(seanceRepository, group, teachings);
         List<StudentDemoSession> demoSessions = List.of(
-                new StudentDemoSession(0, "Lundi", LocalTime.of(8, 30), LocalTime.of(10, 0),
-                        "Cours", "Bloc A", "Salle 101", "DS Architecture Logicielle",
-                        "DS", 15.5F, "Valide", "Tres bon travail", "Present"),
+                new StudentDemoSession(0, "Lundi", LocalTime.of(10, 15), LocalTime.of(11, 45),
+                        "Cours", "Bloc A", "Salle 101", "Seance Architecture Logicielle",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(0, "Mardi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "TD", "Bloc A", "Salle 102", "TD Architecture Logicielle",
+                        "Seance", 0F, "Planifiee", "", "Present"),
                 new StudentDemoSession(1, "Mardi", LocalTime.of(10, 15), LocalTime.of(11, 45),
-                        "TD", "Bloc B", "Salle 203", "DS Bases de Donnees",
-                        "DS", 13.75F, "Valide", "Revoir les jointures", "Present"),
+                        "Cours", "Bloc B", "Salle 203", "Cours Bases de Donnees",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(1, "Mercredi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "TD", "Bloc B", "Salle 204", "TD Bases de Donnees",
+                        "Seance", 0F, "Planifiee", "", "Present"),
                 new StudentDemoSession(2, "Mercredi", LocalTime.of(13, 30), LocalTime.of(15, 0),
-                        "TP", "Lab Web", "Salle TP 2", "Examen TP Angular",
-                        "Examen TP", 16.25F, "Valide", "Interface propre", "Retard"),
+                        "Cours", "Lab Web", "Salle 301", "Cours Angular",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(2, "Jeudi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "TD", "Lab Web", "Salle 302", "TD Angular",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(2, "Jeudi", LocalTime.of(13, 30), LocalTime.of(15, 0),
+                        "TP", "Lab Web", "Salle TP 2", "TP Angular",
+                        "Seance", 0F, "Planifiee", "", "Retard"),
                 new StudentDemoSession(3, "Jeudi", LocalTime.of(10, 15), LocalTime.of(11, 45),
-                        "TD", "Bloc C", "Salle 305", "DS APIs REST Spring Boot",
-                        "DS", 14.5F, "Valide", "Bonne maitrise des endpoints", "Present"),
-                new StudentDemoSession(4, "Vendredi", LocalTime.of(8, 30), LocalTime.of(10, 0),
-                        "Cours", "Bloc D", "Salle 402", "Examen DevOps",
-                        "Examen", 17.0F, "Valide", "Pipeline bien structure", "Present"),
+                        "Cours", "Bloc C", "Salle 305", "Cours APIs REST Spring Boot",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(3, "Vendredi", LocalTime.of(8, 30), LocalTime.of(10, 0),
+                        "TD", "Bloc C", "Salle 306", "TD APIs REST Spring Boot",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(3, "Vendredi", LocalTime.of(13, 30), LocalTime.of(15, 0),
+                        "TP", "Lab API", "Salle TP 3", "TP APIs REST Spring Boot",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(4, "Lundi", LocalTime.of(15, 15), LocalTime.of(16, 45),
+                        "Cours", "Bloc D", "Salle 402", "Cours DevOps",
+                        "Seance", 0F, "Planifiee", "", "Present"),
+                new StudentDemoSession(4, "Mardi", LocalTime.of(15, 15), LocalTime.of(16, 45),
+                        "TD", "Bloc D", "Salle 403", "TD DevOps",
+                        "Seance", 0F, "Planifiee", "", "Present"),
                 new StudentDemoSession(2, "Vendredi", LocalTime.of(15, 15), LocalTime.of(16, 45),
                         "Rattrapage", "Lab Web", "Salle TP 1", "Rattrapage Angular Routing",
                         "Rattrapage", 12.5F, "En attente", "Seance de consolidation", "Absent")
@@ -596,6 +706,20 @@ public class SeedDataConfig {
         evaluation.setCoefficient(seedEvaluationCoefficient(evaluation.getTypeEvaluation(), seance));
         evaluation.setSeance(seance);
         return evaluationRepository.save(evaluation);
+    }
+
+    private void reassignGroupSubjectSessions(
+            SeanceRepository seanceRepository,
+            Groupe group,
+            List<Enseignement> teachings
+    ) {
+        seanceRepository.findByGroupeId(group.getId()).forEach(seance -> teachings.stream()
+                .filter(teaching -> teaching.getMatiere().getId().equals(seance.getEnseignement().getMatiere().getId()))
+                .findFirst()
+                .ifPresent(teaching -> {
+                    seance.setEnseignement(teaching);
+                    seanceRepository.save(seance);
+                }));
     }
 
     private void ensureStudentNote(

@@ -88,11 +88,13 @@ public class StudentDashboardService {
         List<Seance> makeups = schedule.stream()
                 .filter(seance -> seance.getTypeSeance().equalsIgnoreCase("Rattrapage"))
                 .toList();
+        List<SubjectAverage> subjectAverages = resolveSubjectAverages(schedule, grades);
 
         return StudentDashboardResponseDTO.builder()
                 .profile(toProfile(student))
                 .stats(buildStats(schedule, materials, announcements, attendance))
-                .gradeSummary(buildGradeSummary(schedule, grades))
+                .gradeSummary(buildGradeSummary(subjectAverages))
+                .subjectGrades(subjectAverages.stream().map(SubjectAverage::row).toList())
                 .grades(grades.stream().map(this::toGradeRow).toList())
                 .schedule(schedule.stream().map(this::toScheduleRow).toList())
                 .materials(materials.stream().map(this::toMaterialRow).toList())
@@ -155,11 +157,7 @@ public class StudentDashboardService {
         return rate + "%";
     }
 
-    private StudentDashboardResponseDTO.GradeSummaryDTO buildGradeSummary(
-            List<Seance> schedule,
-            List<Note> grades
-    ) {
-        List<SubjectAverage> subjectAverages = resolveSubjectAverages(schedule, grades);
+    private StudentDashboardResponseDTO.GradeSummaryDTO buildGradeSummary(List<SubjectAverage> subjectAverages) {
         int expectedCount = subjectAverages.stream()
                 .mapToInt(SubjectAverage::expectedCount)
                 .sum();
@@ -209,7 +207,7 @@ public class StudentDashboardService {
     }
 
     private List<SubjectAverage> resolveSubjectAverages(List<Seance> schedule, List<Note> grades) {
-        List<Enseignement> teachings = uniqueTeachings(schedule);
+        List<Enseignement> teachings = uniqueTeachingsBySubject(schedule);
         Map<Integer, Note> gradesByEvaluation = new LinkedHashMap<>();
         grades.forEach(note -> gradesByEvaluation.putIfAbsent(note.getEvaluation().getId(), note));
 
@@ -224,15 +222,22 @@ public class StudentDashboardService {
             Map<Integer, Note> gradesByEvaluation
     ) {
         Seance referenceSession = schedule.stream()
-                .filter(seance -> seance.getEnseignement().getId().equals(enseignement.getId()))
+                .filter(seance -> sameSubject(seance.getEnseignement(), enseignement))
                 .findFirst()
                 .orElseThrow();
-        List<String> requiredTypes = academicEvaluationPolicyService.requiredTypes(
-                enseignement,
-                referenceSession.getGroupe()
-        );
+        List<Seance> subjectSessions = schedule.stream()
+                .filter(seance -> sameSubject(seance.getEnseignement(), enseignement))
+                .toList();
+        boolean hasTp = hasTpComponent(subjectSessions);
+        List<String> requiredTypes = hasTp
+                ? List.of(
+                AcademicEvaluationPolicyService.TYPE_DS,
+                AcademicEvaluationPolicyService.TYPE_EXAMEN_TP,
+                AcademicEvaluationPolicyService.TYPE_EXAMEN
+        )
+                : List.of(AcademicEvaluationPolicyService.TYPE_DS, AcademicEvaluationPolicyService.TYPE_EXAMEN);
         List<Evaluation> evaluations = schedule.stream()
-                .filter(seance -> seance.getEnseignement().getId().equals(enseignement.getId()))
+                .filter(seance -> sameSubject(seance.getEnseignement(), enseignement))
                 .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
                 .filter(academicEvaluationPolicyService::isAcademicEvaluation)
                 .toList();
@@ -241,6 +246,9 @@ public class StudentDashboardService {
                 academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()),
                 evaluation
         ));
+        List<StudentDashboardResponseDTO.EvaluationGradeDTO> evaluationGrades = requiredTypes.stream()
+                .map(type -> toEvaluationGrade(type, hasTp, evaluationsByType.get(type), gradesByEvaluation))
+                .toList();
         List<Note> subjectNotes = requiredTypes.stream()
                 .map(evaluationsByType::get)
                 .filter(evaluation -> evaluation != null)
@@ -254,17 +262,61 @@ public class StudentDashboardService {
         double subjectCoefficient = enseignement.getMatiere().getCoefficient() == null
                 ? 0
                 : enseignement.getMatiere().getCoefficient();
+        StudentDashboardResponseDTO.SubjectGradeDTO row = StudentDashboardResponseDTO.SubjectGradeDTO.builder()
+                .subject(enseignement.getMatiere().getLibelle())
+                .professor(referenceSession.getEnseignement().getProfesseur().getNomComplet())
+                .subjectCoefficient(formatNumber(subjectCoefficient))
+                .average(complete ? String.format(Locale.US, "%.2f", average) : "--")
+                .complete(complete)
+                .expectedCount(expectedCount)
+                .receivedCount(receivedCount)
+                .evaluations(evaluationGrades)
+                .build();
 
-        return new SubjectAverage(average, subjectCoefficient, expectedCount, receivedCount, complete);
+        return new SubjectAverage(average, subjectCoefficient, expectedCount, receivedCount, complete, row);
     }
 
-    private List<Enseignement> uniqueTeachings(List<Seance> schedule) {
+    private StudentDashboardResponseDTO.EvaluationGradeDTO toEvaluationGrade(
+            String type,
+            boolean hasTp,
+            Evaluation evaluation,
+            Map<Integer, Note> gradesByEvaluation
+    ) {
+        Note note = evaluation == null ? null : gradesByEvaluation.get(evaluation.getId());
+
+        return StudentDashboardResponseDTO.EvaluationGradeDTO.builder()
+                .type(type)
+                .label(evaluation == null ? type + " non planifie" : evaluation.getLibelle())
+                .value(note == null ? "--" : Float.toString(note.getValeur()))
+                .coefficient(formatNumber(academicEvaluationPolicyService.effectiveCoefficient(type, hasTp)))
+                .date(evaluation == null ? "--" : evaluation.getDateEvaluation().format(DATE_TIME_FORMATTER))
+                .status(note == null ? "En attente" : note.getStatut())
+                .remark(note == null ? "" : note.getRemarque())
+                .published(note != null)
+                .build();
+    }
+
+    private boolean hasTpComponent(List<Seance> subjectSessions) {
+        return subjectSessions.stream().anyMatch(seance -> "TP".equalsIgnoreCase(seance.getTypeSeance()))
+                || subjectSessions.stream()
+                .flatMap(seance -> evaluationRepository.findBySeanceId(seance.getId()).stream())
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .anyMatch(evaluation -> AcademicEvaluationPolicyService.TYPE_EXAMEN_TP.equals(
+                        academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation())
+                ));
+    }
+
+    private List<Enseignement> uniqueTeachingsBySubject(List<Seance> schedule) {
         Map<Integer, Enseignement> teachings = new LinkedHashMap<>();
         schedule.forEach(seance -> teachings.putIfAbsent(
-                seance.getEnseignement().getId(),
+                seance.getEnseignement().getMatiere().getId(),
                 seance.getEnseignement()
         ));
         return teachings.values().stream().toList();
+    }
+
+    private boolean sameSubject(Enseignement first, Enseignement second) {
+        return first.getMatiere().getId().equals(second.getMatiere().getId());
     }
 
     private double calculateSubjectAverage(List<Note> grades) {
@@ -272,6 +324,13 @@ public class StudentDashboardService {
                 .mapToDouble(note -> note.getValeur()
                         * academicEvaluationPolicyService.effectiveCoefficient(note.getEvaluation()))
                 .sum() / 10.0;
+    }
+
+    private String formatNumber(double value) {
+        if (value == Math.rint(value)) {
+            return Integer.toString((int) value);
+        }
+        return String.format(Locale.US, "%.2f", value);
     }
 
     private List<SupportCours> resolveMaterials(List<Seance> schedule) {
@@ -381,7 +440,8 @@ public class StudentDashboardService {
             double subjectCoefficient,
             int expectedCount,
             int receivedCount,
-            boolean complete
+            boolean complete,
+            StudentDashboardResponseDTO.SubjectGradeDTO row
     ) {
     }
 }
