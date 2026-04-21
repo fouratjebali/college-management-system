@@ -127,6 +127,199 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'academic-year') {
+      <section class="content-grid academic-year-layout">
+        <article class="panel full-span academic-summary">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annee active</span>
+              <h2>{{ activeAcademicYear()?.label || 'Aucune annee active' }}</h2>
+            </div>
+            <span class="counter">{{ semesterCount() }} semestre(s)</span>
+          </div>
+
+          <div class="summary-grid">
+            <div>
+              <small>Annee universitaire</small>
+              <strong>{{ activeAcademicYear()?.status || 'Non configuree' }}</strong>
+              <span>
+                {{ activeAcademicYear()?.startDate || '--' }} - {{ activeAcademicYear()?.endDate || '--' }}
+              </span>
+            </div>
+            <div>
+              <small>Semestre courant</small>
+              <strong>{{ activeSemester()?.name || 'Aucun semestre actif' }}</strong>
+              <span>
+                {{ activeSemester()?.startDate || '--' }} - {{ activeSemester()?.endDate || '--' }}
+              </span>
+            </div>
+            <div>
+              <small>Verrouillage</small>
+              <strong>{{ activeSemester()?.locked ? 'Semestre verrouille' : 'Edition ouverte' }}</strong>
+              <span>Controle la modification des donnees du semestre.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Annee universitaire</span>
+            <h2>Creer une annee</h2>
+            <p>Une seule annee peut etre active a la fois.</p>
+          </div>
+
+          <form [formGroup]="academicYearForm" (ngSubmit)="submitAcademicYear()">
+            <label>
+              Libelle
+              <input type="text" formControlName="label" placeholder="2026-2027" />
+              @if (hasControlError(academicYearForm, 'label')) {
+                <small class="field-error">Libelle requis.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Date fin
+                <input type="date" formControlName="endDate" />
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <label>
+                <input type="checkbox" formControlName="active" />
+                Activer apres creation
+              </label>
+              <label>
+                <input type="checkbox" formControlName="locked" />
+                Verrouiller l'annee
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Creer l'annee</button>
+          </form>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Semestre</span>
+            <h2>Ajouter un semestre</h2>
+            <p>Les dates doivent rester dans l'annee universitaire choisie.</p>
+          </div>
+
+          <form [formGroup]="semesterForm" (ngSubmit)="submitSemester()">
+            <label>
+              Annee
+              <select formControlName="academicYearId">
+                <option [ngValue]="0" disabled>Choisir une annee</option>
+                @for (academicYear of academicYears(); track academicYear.id) {
+                  <option [ngValue]="academicYear.id">{{ academicYear.label }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="field-row">
+              <label>
+                Code
+                <input type="text" formControlName="code" placeholder="S1" />
+              </label>
+              <label>
+                Nom
+                <input type="text" formControlName="name" placeholder="Semestre 1" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Date fin
+                <input type="date" formControlName="endDate" />
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <label>
+                <input type="checkbox" formControlName="active" />
+                Activer
+              </label>
+              <label>
+                <input type="checkbox" formControlName="locked" />
+                Verrouiller
+              </label>
+            </div>
+
+            <button class="secondary-button" type="submit">Ajouter le semestre</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Calendrier academique</span>
+              <h2>Annees et semestres</h2>
+            </div>
+            <span class="counter">{{ academicYears().length }} annee(s)</span>
+          </div>
+
+          <div class="academic-year-list">
+            @if (academicYears().length > 0) {
+              @for (academicYear of academicYears(); track academicYear.id) {
+                <div class="academic-year-row">
+                  <div class="year-heading">
+                    <div>
+                      <strong>{{ academicYear.label }}</strong>
+                      <small>{{ academicYear.startDate }} - {{ academicYear.endDate }}</small>
+                    </div>
+                    <span class="status-pill" [class.pending]="!academicYear.active">
+                      {{ academicYear.status }}
+                    </span>
+                    @if (!academicYear.active) {
+                      <button type="button" class="mini-button" (click)="activateAcademicYear(academicYear)">
+                        Activer
+                      </button>
+                    }
+                  </div>
+
+                  <div class="semester-list">
+                    @for (semester of academicYear.semesters; track semester.id) {
+                      <div class="semester-row">
+                        <span class="code-pill">{{ semester.code }}</span>
+                        <div>
+                          <strong>{{ semester.name }}</strong>
+                          <small>{{ semester.startDate }} - {{ semester.endDate }}</small>
+                        </div>
+                        <span class="status-pill" [class.pending]="!semester.active">
+                          {{ semester.status }}
+                        </span>
+                        <div class="row-actions">
+                          @if (!semester.active) {
+                            <button type="button" class="mini-button" (click)="activateSemester(semester)">
+                              Activer
+                            </button>
+                          }
+                          <button type="button" class="mini-button" (click)="toggleSemesterLock(semester)">
+                            {{ semester.locked ? 'Deverrouiller' : 'Verrouiller' }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isAcademicYearsLoading() ? 'Chargement du calendrier academique...' : 'Aucune annee universitaire trouvee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
     } @else if (activeSection() === 'structure') {
       <section class="content-grid two-columns">
         <article class="panel form-panel">

@@ -3,9 +3,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth';
-import { AdminDashboardApi } from '../../services/admin-dashboard-api';
+import {
+  AdminAcademicYear,
+  AdminDashboardApi,
+  AdminSemester,
+} from '../../services/admin-dashboard-api';
 
-type AdminSection = 'overview' | 'structure' | 'users' | 'calendar';
+type AdminSection = 'overview' | 'academic-year' | 'structure' | 'users' | 'calendar';
 type PlanningMode = 'single' | 'weekly';
 
 interface NavItem {
@@ -75,12 +79,18 @@ export class AdminDashboardComponent {
   protected readonly editingUserEmail = signal<string | null>(null);
   protected readonly planningMode = signal<PlanningMode>('single');
   protected readonly isDashboardLoading = signal(true);
+  protected readonly isAcademicYearsLoading = signal(true);
 
   protected readonly navItems: readonly NavItem[] = [
     {
       id: 'overview',
       label: 'Dashboard',
       description: 'Statistiques et activite recente',
+    },
+    {
+      id: 'academic-year',
+      label: 'Annees',
+      description: 'Annees, semestres et verrouillage',
     },
     {
       id: 'structure',
@@ -117,6 +127,7 @@ export class AdminDashboardComponent {
   });
 
   protected readonly quickActions = [
+    'Gerer les semestres',
     'Creer un departement',
     'Ajouter un utilisateur',
     'Planifier un examen',
@@ -128,6 +139,21 @@ export class AdminDashboardComponent {
   protected readonly users = signal<readonly UserRow[]>([]);
 
   protected readonly examRows = signal<readonly ExamRow[]>([]);
+  protected readonly academicYears = signal<readonly AdminAcademicYear[]>([]);
+
+  protected readonly activeAcademicYear = computed<AdminAcademicYear | null>(() =>
+    this.academicYears().find((academicYear) => academicYear.active) ?? this.academicYears()[0] ?? null
+  );
+
+  protected readonly activeSemester = computed<AdminSemester | null>(() =>
+    this.academicYears()
+      .flatMap((academicYear) => academicYear.semesters)
+      .find((semester) => semester.active) ?? null
+  );
+
+  protected readonly semesterCount = computed(() =>
+    this.academicYears().reduce((total, academicYear) => total + academicYear.semesters.length, 0)
+  );
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
@@ -250,8 +276,27 @@ export class AdminDashboardComponent {
     visibility: ['Etudiants concernes', [Validators.required]],
   });
 
+  protected readonly academicYearForm = this.formBuilder.nonNullable.group({
+    label: ['2026-2027', [Validators.required, Validators.minLength(9)]],
+    startDate: ['2026-09-01', [Validators.required]],
+    endDate: ['2027-06-30', [Validators.required]],
+    active: [false],
+    locked: [false],
+  });
+
+  protected readonly semesterForm = this.formBuilder.nonNullable.group({
+    academicYearId: [0, [Validators.required, Validators.min(1)]],
+    code: ['S1', [Validators.required, Validators.maxLength(8)]],
+    name: ['Semestre 1', [Validators.required, Validators.minLength(3)]],
+    startDate: ['2026-09-01', [Validators.required]],
+    endDate: ['2027-01-31', [Validators.required]],
+    active: [false],
+    locked: [false],
+  });
+
   constructor() {
     this.loadDashboard();
+    this.loadAcademicYears();
   }
 
   private loadDashboard(): void {
@@ -398,9 +443,95 @@ export class AdminDashboardComponent {
     this.toastMessage.set(`Publication des notes "${evaluation}" validee.`);
   }
 
+  protected submitAcademicYear(): void {
+    if (this.academicYearForm.invalid) {
+      this.academicYearForm.markAllAsTouched();
+      return;
+    }
+
+    this.dashboardApi.createAcademicYear(this.academicYearForm.getRawValue()).subscribe({
+      next: () => {
+        this.toastMessage.set('Annee universitaire creee avec succes.');
+        this.loadAcademicYears();
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de creer l'annee universitaire.");
+      },
+    });
+  }
+
+  protected submitSemester(): void {
+    if (this.semesterForm.invalid) {
+      this.semesterForm.markAllAsTouched();
+      return;
+    }
+
+    const { academicYearId, code, name, startDate, endDate, active, locked } =
+      this.semesterForm.getRawValue();
+
+    this.dashboardApi
+      .createSemester(academicYearId, {
+        code,
+        name,
+        startDate,
+        endDate,
+        active,
+        locked,
+      })
+      .subscribe({
+        next: () => {
+          this.toastMessage.set('Semestre cree avec succes.');
+          this.loadAcademicYears();
+        },
+        error: () => {
+          this.toastMessage.set('Impossible de creer le semestre pour cette annee.');
+        },
+      });
+  }
+
+  protected activateAcademicYear(academicYear: AdminAcademicYear): void {
+    this.dashboardApi.activateAcademicYear(academicYear.id).subscribe({
+      next: () => {
+        this.toastMessage.set(`${academicYear.label} est maintenant l'annee active.`);
+        this.loadAcademicYears();
+      },
+      error: () => {
+        this.toastMessage.set("Impossible d'activer cette annee universitaire.");
+      },
+    });
+  }
+
+  protected activateSemester(semester: AdminSemester): void {
+    this.dashboardApi.activateSemester(semester.id).subscribe({
+      next: () => {
+        this.toastMessage.set(`${semester.name} est maintenant le semestre actif.`);
+        this.loadAcademicYears();
+      },
+      error: () => {
+        this.toastMessage.set("Impossible d'activer ce semestre.");
+      },
+    });
+  }
+
+  protected toggleSemesterLock(semester: AdminSemester): void {
+    const locked = !semester.locked;
+
+    this.dashboardApi.setSemesterLocked(semester.id, locked).subscribe({
+      next: () => {
+        this.toastMessage.set(`${semester.name} ${locked ? 'verrouille' : 'deverrouille'}.`);
+        this.loadAcademicYears();
+      },
+      error: () => {
+        this.toastMessage.set('Impossible de modifier le verrouillage du semestre.');
+      },
+    });
+  }
+
   protected activateQuickAction(action: string): void {
     const target: AdminSection = action.includes('utilisateur')
       ? 'users'
+      : action.includes('semestre') || action.includes('annee')
+        ? 'academic-year'
       : action.includes('examen') || action.includes('notes')
         ? 'calendar'
         : 'structure';
@@ -484,6 +615,27 @@ export class AdminDashboardComponent {
 
   private readSelectValue(event: Event): string {
     return (event.target as HTMLSelectElement).value;
+  }
+
+  private loadAcademicYears(): void {
+    this.isAcademicYearsLoading.set(true);
+
+    this.dashboardApi.getAcademicYears().subscribe({
+      next: (academicYears) => {
+        this.academicYears.set(academicYears ?? []);
+        this.isAcademicYearsLoading.set(false);
+
+        const currentYear = this.activeAcademicYear();
+        if (currentYear && this.semesterForm.controls.academicYearId.value === 0) {
+          this.semesterForm.controls.academicYearId.setValue(currentYear.id);
+        }
+      },
+      error: () => {
+        this.academicYears.set([]);
+        this.isAcademicYearsLoading.set(false);
+        this.toastMessage.set('Impossible de charger les annees universitaires.');
+      },
+    });
   }
 
   protected hasControlError(

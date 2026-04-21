@@ -42,6 +42,46 @@ export interface AdminDashboardResponse {
   exams: AdminExamRow[];
 }
 
+export interface AdminSemester {
+  id: number;
+  academicYearId: number;
+  code: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  locked: boolean;
+  status: string;
+}
+
+export interface AdminAcademicYear {
+  id: number;
+  label: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  locked: boolean;
+  status: string;
+  semesters: AdminSemester[];
+}
+
+export interface AdminAcademicYearRequest {
+  label: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  locked: boolean;
+}
+
+export interface AdminSemesterRequest {
+  code: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  active: boolean;
+  locked: boolean;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -51,5 +91,38 @@ export class AdminDashboardApi {
 
   getDashboard(): Observable<AdminDashboardResponse> {
     return this.http.get<AdminDashboardResponse>(`${this.apiUrl}/dashboard`);
+  }
+
+  getAcademicYears(): Observable<AdminAcademicYear[]> {
+    return this.http.get<AdminAcademicYear[]>(`${this.apiUrl}/academic-years`);
+  }
+
+  createAcademicYear(request: AdminAcademicYearRequest): Observable<AdminAcademicYear> {
+    return this.http.post<AdminAcademicYear>(`${this.apiUrl}/academic-years`, request);
+  }
+
+  activateAcademicYear(id: number): Observable<AdminAcademicYear> {
+    return this.http.patch<AdminAcademicYear>(`${this.apiUrl}/academic-years/${id}/activate`, {});
+  }
+
+  createSemester(academicYearId: number, request: AdminSemesterRequest): Observable<AdminAcademicYear> {
+    return this.http.post<AdminAcademicYear>(
+      `${this.apiUrl}/academic-years/${academicYearId}/semesters`,
+      request
+    );
+  }
+
+  activateSemester(id: number): Observable<AdminAcademicYear> {
+    return this.http.patch<AdminAcademicYear>(
+      `${this.apiUrl}/academic-years/semesters/${id}/activate`,
+      {}
+    );
+  }
+
+  setSemesterLocked(id: number, locked: boolean): Observable<AdminAcademicYear> {
+    return this.http.patch<AdminAcademicYear>(
+      `${this.apiUrl}/academic-years/semesters/${id}/lock?locked=${locked}`,
+      {}
+    );
   }
 }

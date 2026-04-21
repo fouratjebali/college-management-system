@@ -471,11 +471,38 @@ button {
   grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
 }
 
+.academic-year-layout {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
 .filter-grid,
-.professor-grid {
+.professor-grid,
+.summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.summary-grid > div,
+.academic-year-row,
+.semester-row {
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.46);
+}
+
+.summary-grid > div {
+  display: grid;
+  gap: 0.5rem;
+  padding: 16px;
+}
+
+.summary-grid strong {
+  font-size: 1.2rem;
+}
+
+.summary-grid span {
+  color: var(--admin-soft);
 }
 
 form {
@@ -501,10 +528,30 @@ label {
 }
 
 .form-actions,
-.row-actions {
+.row-actions,
+.toggle-row {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.toggle-row label {
+  width: fit-content;
+  display: inline-flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 999px;
+  background: rgba(34, 40, 49, 0.36);
+}
+
+.toggle-row input {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  accent-color: var(--admin-sand);
 }
 
 .data-row {
@@ -593,6 +640,34 @@ label {
   grid-template-columns: auto 1fr;
 }
 
+.academic-year-list,
+.semester-list {
+  display: grid;
+  gap: 12px;
+}
+
+.academic-year-row {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.year-heading,
+.semester-row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+}
+
+.year-heading {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.semester-row {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  padding: 12px;
+}
+
 .timeline-dot {
   width: 14px;
   height: 14px;
@@ -617,12 +692,14 @@ label {
 
   .overview-grid,
   .two-columns,
-  .users-layout {
+  .users-layout,
+  .academic-year-layout {
     grid-template-columns: 1fr;
   }
 
   .filter-grid,
-  .professor-grid {
+  .professor-grid,
+  .summary-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -647,11 +724,14 @@ label {
   .stats-grid,
   .field-row,
   .filter-grid,
-  .professor-grid {
+  .professor-grid,
+  .summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .user-row {
+  .user-row,
+  .year-heading,
+  .semester-row {
     grid-template-columns: auto 1fr;
   }
 

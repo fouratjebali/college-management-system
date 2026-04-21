@@ -1,6 +1,7 @@
 package MiniProjet_Backend.Backend.Config;
 
 import MiniProjet_Backend.Backend.Model.Administrateur;
+import MiniProjet_Backend.Backend.Model.AcademicYear;
 import MiniProjet_Backend.Backend.Model.Annonce;
 import MiniProjet_Backend.Backend.Model.Departement;
 import MiniProjet_Backend.Backend.Model.Enseignement;
@@ -12,8 +13,10 @@ import MiniProjet_Backend.Backend.Model.Note;
 import MiniProjet_Backend.Backend.Model.Presence;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.Seance;
+import MiniProjet_Backend.Backend.Model.Semester;
 import MiniProjet_Backend.Backend.Model.SupportCours;
 import MiniProjet_Backend.Backend.Model.User;
+import MiniProjet_Backend.Backend.Repository.AcademicYearRepository;
 import MiniProjet_Backend.Backend.Repository.AnnonceRepository;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
 import MiniProjet_Backend.Backend.Repository.EnseignementRepository;
@@ -25,6 +28,7 @@ import MiniProjet_Backend.Backend.Repository.NoteRepository;
 import MiniProjet_Backend.Backend.Repository.PresenceRepository;
 import MiniProjet_Backend.Backend.Repository.ProfesseurRepository;
 import MiniProjet_Backend.Backend.Repository.SeanceRepository;
+import MiniProjet_Backend.Backend.Repository.SemesterRepository;
 import MiniProjet_Backend.Backend.Repository.SupportCoursRepository;
 import MiniProjet_Backend.Backend.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +42,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -70,10 +75,13 @@ public class SeedDataConfig {
             NoteRepository noteRepository,
             PresenceRepository presenceRepository,
             SupportCoursRepository supportCoursRepository,
-            AnnonceRepository annonceRepository
+            AnnonceRepository annonceRepository,
+            AcademicYearRepository academicYearRepository,
+            SemesterRepository semesterRepository
     ) {
         return args -> {
             seedAdmin(passwordEncoder, userRepository);
+            seedAcademicCalendar(academicYearRepository, semesterRepository);
             SeedAcademicData academicData = seedAcademicStructure(
                     departementRepository,
                     matiereRepository,
@@ -126,6 +134,71 @@ public class SeedDataConfig {
         admin.setMatriculeAdmin("ADM-0001");
         admin.setFonction("Super Administrateur");
         userRepository.save(admin);
+    }
+
+    private void seedAcademicCalendar(
+            AcademicYearRepository academicYearRepository,
+            SemesterRepository semesterRepository
+    ) {
+        AcademicYear academicYear = academicYearRepository.findByLabel(UNIVERSITY_YEAR).orElseGet(() -> {
+            AcademicYear year = new AcademicYear();
+            year.setLabel(UNIVERSITY_YEAR);
+            year.setStartDate(LocalDate.of(2025, 9, 1));
+            year.setEndDate(LocalDate.of(2026, 6, 30));
+            year.setActive(true);
+            year.setLocked(false);
+            return academicYearRepository.save(year);
+        });
+
+        academicYear.setActive(true);
+        academicYearRepository.save(academicYear);
+
+        ensureSemester(
+                semesterRepository,
+                academicYear,
+                "S1",
+                "Semestre 1",
+                LocalDate.of(2025, 9, 1),
+                LocalDate.of(2026, 1, 31),
+                true,
+                false
+        );
+        ensureSemester(
+                semesterRepository,
+                academicYear,
+                "S2",
+                "Semestre 2",
+                LocalDate.of(2026, 2, 1),
+                LocalDate.of(2026, 6, 30),
+                false,
+                false
+        );
+    }
+
+    private Semester ensureSemester(
+            SemesterRepository semesterRepository,
+            AcademicYear academicYear,
+            String code,
+            String name,
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean active,
+            boolean locked
+    ) {
+        return semesterRepository.findByAcademicYearIdOrderByStartDateAsc(academicYear.getId()).stream()
+                .filter(semester -> semester.getCode().equalsIgnoreCase(code))
+                .findFirst()
+                .orElseGet(() -> {
+                    Semester semester = new Semester();
+                    semester.setAcademicYear(academicYear);
+                    semester.setCode(code);
+                    semester.setName(name);
+                    semester.setStartDate(startDate);
+                    semester.setEndDate(endDate);
+                    semester.setActive(active);
+                    semester.setLocked(locked);
+                    return semesterRepository.save(semester);
+                });
     }
 
     private SeedAcademicData seedAcademicStructure(
