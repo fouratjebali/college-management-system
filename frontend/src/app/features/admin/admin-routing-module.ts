@@ -5,14 +5,6 @@ import { roleGuard } from '../../core/guards/role-guard';
 
 const routes: Routes = [
   {
-    path: 'login',
-    title: 'Admin Login',
-    loadComponent: () =>
-      import('./pages/admin-login/admin-login').then(
-        (module) => module.AdminLoginComponent
-      ),
-  },
-  {
     path: '',
     title: 'Admin Dashboard',
     canActivate: [roleGuard],

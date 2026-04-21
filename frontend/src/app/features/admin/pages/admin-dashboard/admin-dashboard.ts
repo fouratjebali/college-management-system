@@ -286,7 +286,7 @@ export class AdminDashboardComponent {
 
   protected logout(): void {
     this.authService.logout();
-    this.router.navigate(['/admin/login']);
+    this.router.navigate(['/']);
   }
 
   protected updateSearch(event: Event): void {

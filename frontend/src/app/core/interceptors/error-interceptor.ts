@@ -119,7 +119,7 @@ export class ErrorInterceptor {
       case 401:
         // Non authentifié - rediriger vers login
         console.warn('Session expirée, redirection vers login');
-        router.navigate(['/auth/login']);
+        router.navigate(['/']);
         break;
 
       case 403:

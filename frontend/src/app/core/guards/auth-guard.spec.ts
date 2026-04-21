@@ -40,7 +40,7 @@ describe('AuthGuardService', () => {
     const result = service.canActivate({} as any, { url: '/dashboard' } as any);
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(
-      ['/auth/login'],
+      ['/'],
       { queryParams: { returnUrl: '/dashboard' } }
     );
   });

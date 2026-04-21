@@ -51,7 +51,7 @@ describe('ErrorInterceptor', () => {
 
   it('should redirect to login on 401 error', () => {
     ErrorInterceptor.handleErrorByStatus(401, router);
-    expect(router.navigate).toHaveBeenCalledWith(['/auth/login']);
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
 
   it('should redirect to forbidden on 403 error', () => {

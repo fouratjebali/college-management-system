@@ -62,7 +62,7 @@ describe('RoleGuardService', () => {
     const result = service.canActivate(route, state);
     expect(result).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(
-      ['/auth/login'],
+      ['/'],
       { queryParams: { returnUrl: '/admin' } }
     );
   });

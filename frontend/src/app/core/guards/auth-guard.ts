@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { CanActivateFn, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth';
 
@@ -9,7 +9,7 @@ import { AuthService } from '../services/auth';
 export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
   return inject(AuthService).isAuthenticated() 
     ? true 
-    : inject(Router).createUrlTree(['/auth/login'], { queryParams: { returnUrl: state.url } });
+    : inject(Router).createUrlTree(['/'], { queryParams: { returnUrl: state.url } });
 };
 
 /**
@@ -30,12 +30,9 @@ export class AuthGuardService {
     }
 
     // Rediriger vers le login avec l'URL de retour
-    this.router.navigate(['/auth/login'], {
+    this.router.navigate(['/'], {
       queryParams: { returnUrl: state.url }
     });
     return false;
   }
 }
-
-// Import inject depuis @angular/core
-import { inject } from '@angular/core';

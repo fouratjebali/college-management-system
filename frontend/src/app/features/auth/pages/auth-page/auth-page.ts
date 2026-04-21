@@ -7,7 +7,7 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { UserRole } from '../../../../core/models/auth.model';
 import { AuthService } from '../../../../core/services/auth';
 
@@ -27,7 +27,7 @@ function passwordMatchValidator(control: AbstractControl): ValidationErrors | nu
 @Component({
   selector: 'app-auth-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +36,7 @@ export class AuthPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   protected readonly mode = signal<AuthMode>('login');
   protected readonly feedbackMessage = signal('');
   protected readonly isSubmitting = signal(false);
@@ -100,7 +101,7 @@ export class AuthPageComponent {
     this.authService.login(email, password).subscribe({
       next: (response) => {
         this.isSubmitting.set(false);
-        this.router.navigate([this.dashboardForRole(response.user.role)]);
+        this.router.navigateByUrl(this.resolvePostLoginUrl(response.user.role));
       },
       error: (error) => {
         this.isSubmitting.set(false);
@@ -155,5 +156,31 @@ export class AuthPageComponent {
     }
 
     return '/student';
+  }
+
+  private resolvePostLoginUrl(role: UserRole): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+
+    if (returnUrl && this.canRoleAccessReturnUrl(role, returnUrl)) {
+      return returnUrl;
+    }
+
+    return this.dashboardForRole(role);
+  }
+
+  private canRoleAccessReturnUrl(role: UserRole, returnUrl: string): boolean {
+    if (returnUrl.startsWith('/admin')) {
+      return role === UserRole.ADMIN;
+    }
+
+    if (returnUrl.startsWith('/professor')) {
+      return role === UserRole.PROFESSOR;
+    }
+
+    if (returnUrl.startsWith('/student')) {
+      return role === UserRole.STUDENT;
+    }
+
+    return false;
   }
 }

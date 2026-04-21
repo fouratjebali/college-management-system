@@ -98,7 +98,7 @@ export class JwtInterceptorClass implements HttpInterceptor {
       console.warn('Token expiré, déconnexion...');
       this.authService.logout();
       // Optionel : rediriger
-      // this.router.navigate(['/auth/login']);
+      // this.router.navigate(['/']);
     }
 
     if (error.status === 403) {

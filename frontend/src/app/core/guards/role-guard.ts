@@ -12,7 +12,9 @@ export const roleGuard: CanActivateFn = (
   const requiredRoles: UserRole[] = route.data['roles'] || [];
 
   if (!authService.isAuthenticated()) {
-    return redirectToLogin(router, state.url);
+    return router.createUrlTree(['/'], {
+      queryParams: { returnUrl: state.url },
+    });
   }
 
   if (requiredRoles.length === 0 || authService.hasRole(requiredRoles)) {
@@ -36,7 +38,7 @@ export class RoleGuardService {
     const requiredRoles: UserRole[] = route.data['roles'] || [];
 
     if (!this.authService.isAuthenticated()) {
-      this.router.navigate([this.loginPathFor(state.url)], {
+      this.router.navigate(['/'], {
         queryParams: { returnUrl: state.url },
       });
       return false;
@@ -49,17 +51,4 @@ export class RoleGuardService {
     this.router.navigate(['/forbidden']);
     return false;
   }
-
-  private loginPathFor(returnUrl: string): string {
-    return returnUrl.startsWith('/admin') ? '/admin/login' : '/';
-  }
-}
-
-function redirectToLogin(router: Router, returnUrl: string): boolean {
-  const loginPath = returnUrl.startsWith('/admin') ? '/admin/login' : '/';
-
-  router.navigate([loginPath], {
-    queryParams: { returnUrl },
-  });
-  return false;
 }
