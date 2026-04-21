@@ -7,6 +7,9 @@ import {
   AdminAcademicYear,
   AdminDashboardApi,
   AdminExamPlanningOptions,
+  AdminExamPlanningRequest,
+  AdminNoteValidationDetail,
+  AdminNoteValidationEvaluation,
   AdminPlannedExam,
   AdminSemester,
 } from '../../services/admin-dashboard-api';
@@ -57,6 +60,23 @@ interface ProfessorDepartmentGroup {
   professors: readonly UserRow[];
 }
 
+interface ExamDraftRow extends AdminExamPlanningRequest {
+  id: number;
+}
+
+interface ExamDayGroup {
+  key: string;
+  label: string;
+  exams: readonly AdminPlannedExam[];
+}
+
+interface ExamWeekGroup {
+  weekStart: string;
+  label: string;
+  status: string;
+  days: readonly ExamDayGroup[];
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -81,6 +101,7 @@ export class AdminDashboardComponent {
   protected readonly isDashboardLoading = signal(true);
   protected readonly isAcademicYearsLoading = signal(true);
   protected readonly isExamPlanningLoading = signal(true);
+  protected readonly isNoteValidationLoading = signal(true);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -143,6 +164,10 @@ export class AdminDashboardComponent {
   protected readonly academicYears = signal<readonly AdminAcademicYear[]>([]);
   protected readonly examPlanningOptions = signal<AdminExamPlanningOptions | null>(null);
   protected readonly plannedExams = signal<readonly AdminPlannedExam[]>([]);
+  protected readonly examDrafts = signal<readonly ExamDraftRow[]>([]);
+  protected readonly noteValidationEvaluations = signal<readonly AdminNoteValidationEvaluation[]>([]);
+  protected readonly selectedNoteValidationDetail = signal<AdminNoteValidationDetail | null>(null);
+  private examDraftCounter = 0;
 
   protected readonly activeAcademicYear = computed<AdminAcademicYear | null>(() =>
     this.academicYears().find((academicYear) => academicYear.active) ?? this.academicYears()[0] ?? null
@@ -158,8 +183,39 @@ export class AdminDashboardComponent {
     this.academicYears().reduce((total, academicYear) => total + academicYear.semesters.length, 0)
   );
 
-  protected readonly plannedExamDays = computed(() =>
-    Array.from(new Set(this.plannedExams().map((exam) => `${exam.day} ${exam.date}`)))
+  protected readonly plannedExamWeeks = computed<readonly ExamWeekGroup[]>(() => {
+    const exams = [...this.plannedExams()].sort((first, second) =>
+      `${first.isoDate} ${first.startTime}`.localeCompare(`${second.isoDate} ${second.startTime}`)
+    );
+    const weeks = new Map<string, AdminPlannedExam[]>();
+
+    exams.forEach((exam) => {
+      const weekStart = exam.weekStart || exam.isoDate;
+      weeks.set(weekStart, [...(weeks.get(weekStart) ?? []), exam]);
+    });
+
+    return Array.from(weeks.entries()).map(([weekStart, weekExams]) => {
+      const days = new Map<string, AdminPlannedExam[]>();
+      weekExams.forEach((exam) => {
+        const dayKey = `${exam.day} ${exam.date}`;
+        days.set(dayKey, [...(days.get(dayKey) ?? []), exam]);
+      });
+
+      return {
+        weekStart,
+        label: `Semaine du ${this.formatIsoDate(weekStart)}`,
+        status: weekExams.every((exam) => this.isPublishedExam(exam)) ? 'Publiee' : 'Brouillon',
+        days: Array.from(days.entries()).map(([key, dayExams]) => ({
+          key,
+          label: key,
+          exams: dayExams,
+        })),
+      };
+    });
+  });
+
+  protected readonly selectedNoteEvaluation = computed(() =>
+    this.selectedNoteValidationDetail()?.evaluation ?? null
   );
 
   protected readonly filteredUsers = computed(() => {
@@ -276,10 +332,8 @@ export class AdminDashboardComponent {
     details: [''],
   });
 
-  protected readonly gradeForm = this.formBuilder.nonNullable.group({
-    evaluation: ['', [Validators.required, Validators.minLength(3)]],
-    group: ['', [Validators.required]],
-    visibility: ['Etudiants concernes', [Validators.required]],
+  protected readonly noteValidationForm = this.formBuilder.nonNullable.group({
+    remark: [''],
   });
 
   protected readonly academicYearForm = this.formBuilder.nonNullable.group({
@@ -304,6 +358,7 @@ export class AdminDashboardComponent {
     this.loadDashboard();
     this.loadAcademicYears();
     this.loadExamPlanning();
+    this.loadNoteValidation();
   }
 
   private loadDashboard(): void {
@@ -424,25 +479,11 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const { evaluationType, subjectId, groupId, professorId, startDate, startTime, endTime, building, room, details } =
-      this.examForm.getRawValue();
-
     this.dashboardApi
-      .createPlannedExam({
-        evaluationType,
-        subjectId,
-        groupId,
-        professorId,
-        examDate: startDate,
-        startTime,
-        endTime,
-        building,
-        room,
-        details,
-      })
+      .createPlannedExam(this.buildExamPlanningRequest())
       .subscribe({
         next: (exam) => {
-          this.toastMessage.set(`${exam.type} ${exam.subject} planifie pour ${exam.group}.`);
+          this.toastMessage.set(`${exam.type} ${exam.subject} ajoute en brouillon pour ${exam.group}.`);
           this.loadExamPlanning();
           this.loadDashboard();
         },
@@ -456,14 +497,115 @@ export class AdminDashboardComponent {
       });
   }
 
-  protected publishGrades(): void {
-    if (this.gradeForm.invalid) {
-      this.gradeForm.markAllAsTouched();
+  protected addExamDraft(): void {
+    if (this.examForm.invalid) {
+      this.examForm.markAllAsTouched();
       return;
     }
 
-    const { evaluation } = this.gradeForm.getRawValue();
-    this.toastMessage.set(`Publication des notes "${evaluation}" validee.`);
+    const draft = {
+      ...this.buildExamPlanningRequest(),
+      id: ++this.examDraftCounter,
+    };
+
+    this.examDrafts.update((drafts) => [...drafts, draft]);
+    this.toastMessage.set(`${this.optionLabel('subject', draft.subjectId)} ajoute au lot hebdomadaire.`);
+  }
+
+  protected removeExamDraft(draftId: number): void {
+    this.examDrafts.update((drafts) => drafts.filter((draft) => draft.id !== draftId));
+  }
+
+  protected submitExamDrafts(): void {
+    const drafts = this.examDrafts();
+
+    if (drafts.length === 0) {
+      this.toastMessage.set('Ajoutez au moins un examen au lot avant de planifier la semaine.');
+      return;
+    }
+
+    this.dashboardApi
+      .createPlannedExams({ exams: drafts.map(({ id, ...request }) => request) })
+      .subscribe({
+        next: (exams) => {
+          this.examDrafts.set([]);
+          this.toastMessage.set(`${exams.length} examen(s) planifie(s) en brouillon.`);
+          this.loadExamPlanning();
+          this.loadDashboard();
+        },
+        error: (error) => {
+          this.toastMessage.set(
+            error.error?.message ||
+              error.error?.error ||
+              'Impossible de planifier ce lot. Verifiez les conflits de salle, groupe ou professeur.'
+          );
+        },
+      });
+  }
+
+  protected publishPlannedExam(exam: AdminPlannedExam): void {
+    this.dashboardApi.publishPlannedExam(exam.evaluationId).subscribe({
+      next: (publishedExam) => {
+        this.toastMessage.set(`${publishedExam.type} ${publishedExam.subject} publie pour ${publishedExam.group}.`);
+        this.loadExamPlanning();
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de publier cet examen.");
+      },
+    });
+  }
+
+  protected publishExamWeek(weekStart: string): void {
+    this.dashboardApi.publishExamWeek(weekStart).subscribe({
+      next: (exams) => {
+        this.toastMessage.set(`${exams.length} examen(s) publie(s) pour la semaine.`);
+        this.loadExamPlanning();
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de publier cette semaine d'examens.");
+      },
+    });
+  }
+
+  protected isPublishedExam(exam: AdminPlannedExam): boolean {
+    return exam.status.toLowerCase() === 'publie';
+  }
+
+  protected optionLabel(kind: 'subject' | 'group' | 'professor', id: number): string {
+    const options = this.examPlanningOptions();
+    const source =
+      kind === 'subject'
+        ? options?.subjects
+        : kind === 'group'
+          ? options?.groups
+          : options?.professors;
+
+    return source?.find((option) => option.id === id)?.label ?? 'Non renseigne';
+  }
+
+  protected selectNoteEvaluation(evaluationId: number): void {
+    this.dashboardApi.getNoteValidationDetail(evaluationId).subscribe({
+      next: (detail) => {
+        this.selectedNoteValidationDetail.set(detail);
+        this.noteValidationForm.reset({ remark: '' });
+      },
+      error: () => {
+        this.selectedNoteValidationDetail.set(null);
+        this.toastMessage.set('Impossible de charger les notes de cette evaluation.');
+      },
+    });
+  }
+
+  protected validateSelectedNotes(): void {
+    this.applyNoteDecision('validate');
+  }
+
+  protected rejectSelectedNotes(): void {
+    this.applyNoteDecision('reject');
+  }
+
+  protected publishSelectedNotes(): void {
+    this.applyNoteDecision('publish');
   }
 
   protected submitAcademicYear(): void {
@@ -688,6 +830,77 @@ export class AdminDashboardComponent {
     });
   }
 
+  private loadNoteValidation(): void {
+    this.isNoteValidationLoading.set(true);
+
+    this.dashboardApi.getNoteValidationEvaluations().subscribe({
+      next: (evaluations) => {
+        this.noteValidationEvaluations.set(evaluations ?? []);
+        this.isNoteValidationLoading.set(false);
+
+        const selectedId = this.selectedNoteEvaluation()?.evaluationId;
+        const nextSelection = selectedId
+          ? evaluations.find((evaluation) => evaluation.evaluationId === selectedId)
+          : evaluations[0];
+
+        if (nextSelection) {
+          this.selectNoteEvaluation(nextSelection.evaluationId);
+        } else {
+          this.selectedNoteValidationDetail.set(null);
+        }
+      },
+      error: () => {
+        this.noteValidationEvaluations.set([]);
+        this.selectedNoteValidationDetail.set(null);
+        this.isNoteValidationLoading.set(false);
+        this.toastMessage.set('Impossible de charger le workflow de validation des notes.');
+      },
+    });
+  }
+
+  private applyNoteDecision(action: 'validate' | 'reject' | 'publish'): void {
+    const evaluation = this.selectedNoteEvaluation();
+
+    if (!evaluation) {
+      this.toastMessage.set('Selectionnez une evaluation avant de continuer.');
+      return;
+    }
+
+    const remark = this.noteValidationForm.controls.remark.value;
+    const request =
+      action === 'validate'
+        ? this.dashboardApi.validateNotes(evaluation.evaluationId, remark)
+        : action === 'reject'
+          ? this.dashboardApi.rejectNotes(evaluation.evaluationId, remark)
+          : this.dashboardApi.publishNotes(evaluation.evaluationId, remark);
+
+    request.subscribe({
+      next: (detail) => {
+        this.selectedNoteValidationDetail.set(detail);
+        this.noteValidationForm.reset({ remark: '' });
+        this.loadNoteValidation();
+        this.toastMessage.set(this.noteDecisionMessage(action, detail.evaluation.label));
+      },
+      error: (error) => {
+        this.toastMessage.set(
+          error.error?.message ||
+            error.error?.error ||
+            'Impossible de traiter les notes selectionnees.'
+        );
+      },
+    });
+  }
+
+  private noteDecisionMessage(action: 'validate' | 'reject' | 'publish', label: string): string {
+    if (action === 'validate') {
+      return `Notes "${label}" validees.`;
+    }
+    if (action === 'reject') {
+      return `Notes "${label}" retournees au professeur.`;
+    }
+    return `Notes "${label}" publiees aux etudiants.`;
+  }
+
   private prefillExamPlanningForm(options: AdminExamPlanningOptions): void {
     if (this.examForm.controls.subjectId.value === 0 && options.subjects[0]) {
       this.examForm.controls.subjectId.setValue(options.subjects[0].id);
@@ -700,6 +913,29 @@ export class AdminDashboardComponent {
     if (this.examForm.controls.professorId.value === 0 && options.professors[0]) {
       this.examForm.controls.professorId.setValue(options.professors[0].id);
     }
+  }
+
+  private buildExamPlanningRequest(): AdminExamPlanningRequest {
+    const { evaluationType, subjectId, groupId, professorId, startDate, startTime, endTime, building, room, details } =
+      this.examForm.getRawValue();
+
+    return {
+      evaluationType,
+      subjectId,
+      groupId,
+      professorId,
+      examDate: startDate,
+      startTime,
+      endTime,
+      building,
+      room,
+      details,
+    };
+  }
+
+  private formatIsoDate(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 
   protected hasControlError(

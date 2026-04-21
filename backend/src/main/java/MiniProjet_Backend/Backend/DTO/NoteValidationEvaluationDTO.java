@@ -9,22 +9,19 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExamPlanningResponseDTO {
+public class NoteValidationEvaluationDTO {
     private Integer evaluationId;
-    private Integer seanceId;
+    private String label;
+    private String type;
     private String subject;
-    private String subjectCode;
     private String group;
     private String professor;
     private String date;
-    private String isoDate;
-    private String day;
-    private String weekStart;
-    private String startTime;
-    private String endTime;
-    private String room;
-    private String type;
-    private String scope;
+    private Integer totalNotes;
+    private Integer draftCount;
+    private Integer submittedCount;
+    private Integer validatedCount;
+    private Integer rejectedCount;
+    private Integer publishedCount;
     private String status;
-    private String publishedAt;
 }

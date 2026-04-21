@@ -682,7 +682,10 @@
               <input type="text" formControlName="details" placeholder="Oral, TP machine, salle speciale..." />
             </label>
 
-            <button class="primary-button" type="submit">Planifier l'examen</button>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Planifier seul</button>
+              <button class="secondary-button" type="button" (click)="addExamDraft()">Ajouter au lot</button>
+            </div>
           </form>
         </article>
 
@@ -709,6 +712,37 @@
               <span>Examens academiques dans le calendrier.</span>
             </div>
           </div>
+
+          <div class="draft-stack">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Lot semaine</span>
+                <h3>Brouillons a planifier</h3>
+              </div>
+              <span class="counter">{{ examDrafts().length }}</span>
+            </div>
+
+            @if (examDrafts().length > 0) {
+              @for (draft of examDrafts(); track draft.id) {
+                <div class="draft-row">
+                  <span class="code-pill">{{ draft.evaluationType }}</span>
+                  <div>
+                    <strong>{{ optionLabel('subject', draft.subjectId) }}</strong>
+                    <small>{{ optionLabel('group', draft.groupId) }} - {{ optionLabel('professor', draft.professorId) }}</small>
+                    <small>{{ draft.examDate }} - {{ draft.startTime }} / {{ draft.endTime }} - {{ draft.building }} {{ draft.room }}</small>
+                  </div>
+                  <button type="button" class="mini-button" (click)="removeExamDraft(draft.id)">Retirer</button>
+                </div>
+              }
+              <button class="primary-button" type="button" (click)="submitExamDrafts()">
+                Planifier le lot
+              </button>
+            } @else {
+              <p class="empty-state">
+                Ajoutez les examens depuis le formulaire pour construire une semaine en une seule validation.
+              </p>
+            }
+          </div>
         </article>
 
         <article class="panel table-panel full-span">
@@ -722,24 +756,46 @@
 
           <div class="exam-calendar">
             @if (plannedExams().length > 0) {
-              @for (day of plannedExamDays(); track day) {
-                <div class="exam-day">
-                  <div class="exam-day-heading">
-                    <strong>{{ day }}</strong>
+              @for (week of plannedExamWeeks(); track week.weekStart) {
+                <div class="exam-week">
+                  <div class="week-heading">
+                    <div>
+                      <strong>{{ week.label }}</strong>
+                      <small>{{ week.days.length }} jour(s) planifie(s)</small>
+                    </div>
+                    <span class="status-pill" [class.pending]="week.status !== 'Publiee'">
+                      {{ week.status }}
+                    </span>
+                    @if (week.status !== 'Publiee') {
+                      <button type="button" class="mini-button" (click)="publishExamWeek(week.weekStart)">
+                        Publier semaine
+                      </button>
+                    }
                   </div>
 
-                  @for (exam of plannedExams(); track exam.evaluationId) {
-                    @if ((exam.day + ' ' + exam.date) === day) {
-                      <div class="exam-card-row">
-                        <span class="code-pill">{{ exam.type }}</span>
-                        <div>
-                          <strong>{{ exam.subject }}</strong>
-                          <small>{{ exam.group }} - {{ exam.scope }} - {{ exam.professor }}</small>
-                          <small>{{ exam.startTime }} - {{ exam.endTime }} - {{ exam.room }}</small>
-                        </div>
-                        <span class="status-pill">{{ exam.status }}</span>
+                  @for (day of week.days; track day.key) {
+                    <div class="exam-day">
+                      <div class="exam-day-heading">
+                        <strong>{{ day.label }}</strong>
                       </div>
-                    }
+
+                      @for (exam of day.exams; track exam.evaluationId) {
+                        <div class="exam-card-row">
+                          <span class="code-pill">{{ exam.type }}</span>
+                          <div>
+                            <strong>{{ exam.subject }}</strong>
+                            <small>{{ exam.group }} - {{ exam.scope }} - {{ exam.professor }}</small>
+                            <small>{{ exam.startTime }} - {{ exam.endTime }} - {{ exam.room }}</small>
+                          </div>
+                          <span class="status-pill">{{ exam.status }}</span>
+                          @if (!isPublishedExam(exam)) {
+                            <button type="button" class="mini-button" (click)="publishPlannedExam(exam)">
+                              Publier
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
                   }
                 </div>
               }
@@ -751,50 +807,89 @@
           </div>
         </article>
 
-        <article class="panel form-panel full-span">
+        <article class="panel table-panel full-span">
           <div class="panel-heading">
-            <span class="eyebrow">Publication notes</span>
-            <h2>Publier les notes</h2>
+            <span class="eyebrow">Validation notes</span>
+            <h2>Workflow de validation</h2>
           </div>
 
-          <form [formGroup]="gradeForm" (ngSubmit)="publishGrades()">
-            <div class="field-row">
-              <label>
-                Evaluation
-                <input type="text" formControlName="evaluation" placeholder="DS Architecture" />
-                @if (hasControlError(gradeForm, 'evaluation')) {
-                  <small class="field-error">Evaluation requise.</small>
+          <div class="validation-layout">
+            <div class="validation-list">
+              @if (noteValidationEvaluations().length > 0) {
+                @for (evaluation of noteValidationEvaluations(); track evaluation.evaluationId) {
+                  <button
+                    type="button"
+                    class="validation-item"
+                    [class.active]="selectedNoteEvaluation()?.evaluationId === evaluation.evaluationId"
+                    (click)="selectNoteEvaluation(evaluation.evaluationId)"
+                  >
+                    <span class="code-pill">{{ evaluation.type }}</span>
+                    <span>
+                      <strong>{{ evaluation.subject }}</strong>
+                      <small>{{ evaluation.group }} - {{ evaluation.professor }}</small>
+                      <small>
+                        {{ evaluation.submittedCount }} soumise(s), {{ evaluation.validatedCount }} validee(s),
+                        {{ evaluation.publishedCount }} publiee(s)
+                      </small>
+                    </span>
+                    <span class="status-pill" [class.pending]="evaluation.status !== 'Publiee'">
+                      {{ evaluation.status }}
+                    </span>
+                  </button>
                 }
-              </label>
+              } @else {
+                <p class="empty-state">
+                  {{ isNoteValidationLoading() ? 'Chargement des notes...' : 'Aucune note soumise pour validation.' }}
+                </p>
+              }
+            </div>
 
-              <label>
-                Groupe
-                <select formControlName="group">
-                  <option value="" disabled>Choisir un groupe</option>
-                  @for (group of groupFormOptions(); track group) {
-                    <option [value]="group">{{ group }}</option>
+            <div class="validation-detail">
+              @if (selectedNoteValidationDetail(); as detail) {
+                <div class="panel-heading inline-heading">
+                  <div>
+                    <span class="eyebrow">{{ detail.evaluation.type }}</span>
+                    <h3>{{ detail.evaluation.label }}</h3>
+                    <small>{{ detail.evaluation.group }} - {{ detail.evaluation.date }}</small>
+                  </div>
+                  <span class="counter">{{ detail.evaluation.totalNotes }} note(s)</span>
+                </div>
+
+                <form [formGroup]="noteValidationForm">
+                  <label>
+                    Decision / remarque
+                    <input type="text" formControlName="remark" placeholder="Controle effectue, correction demandee..." />
+                  </label>
+                  <div class="form-actions">
+                    <button type="button" class="primary-button" (click)="validateSelectedNotes()">Valider</button>
+                    <button type="button" class="secondary-button" (click)="publishSelectedNotes()">Publier</button>
+                    <button type="button" class="mini-button" (click)="rejectSelectedNotes()">Rejeter</button>
+                  </div>
+                </form>
+
+                <div class="note-table">
+                  @for (note of detail.notes; track note.noteId) {
+                    <div class="note-row">
+                      <div class="avatar">{{ note.studentName.charAt(0) }}</div>
+                      <div>
+                        <strong>{{ note.studentName }}</strong>
+                        <small>{{ note.matricule }} - {{ note.remark || 'Sans remarque professeur' }}</small>
+                        @if (note.validationRemark) {
+                          <small>{{ note.validationRemark }}</small>
+                        }
+                      </div>
+                      <strong>{{ note.value }}/20</strong>
+                      <span class="status-pill" [class.pending]="note.status !== 'Publiee'">
+                        {{ note.status }}
+                      </span>
+                    </div>
                   }
-                </select>
-              </label>
+                </div>
+              } @else {
+                <p class="empty-state">Selectionnez une evaluation pour consulter les notes.</p>
+              }
             </div>
-
-            <div class="field-row">
-              <label>
-                Visibilite
-                <select formControlName="visibility">
-                  <option>Etudiants concernes</option>
-                  <option>Professeurs responsables</option>
-                  <option>Administration seulement</option>
-                </select>
-              </label>
-
-              <div class="helper-card">
-                La publication reste separee de la planification afin de valider les notes avant affichage.
-              </div>
-            </div>
-
-            <button class="secondary-button" type="submit">Publier les notes</button>
-          </form>
+          </div>
         </article>
       </section>
     }

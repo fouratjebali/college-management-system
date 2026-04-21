@@ -1,5 +1,6 @@
 package MiniProjet_Backend.Backend.Service;
 
+import MiniProjet_Backend.Backend.DTO.ExamPlanningBulkRequestDTO;
 import MiniProjet_Backend.Backend.DTO.ExamPlanningOptionDTO;
 import MiniProjet_Backend.Backend.DTO.ExamPlanningRequestDTO;
 import MiniProjet_Backend.Backend.DTO.ExamPlanningResponseDTO;
@@ -21,13 +22,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 
 @Service
 public class ExamPlanningService {
+    private static final String STATUS_DRAFT = "BROUILLON";
+    private static final String STATUS_PUBLISHED = "PUBLIE";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -129,6 +134,8 @@ public class ExamPlanningService {
         evaluation.setTypeEvaluation(request.getEvaluationType());
         evaluation.setDateEvaluation(LocalDateTime.of(request.getExamDate(), request.getStartTime()));
         evaluation.setCoefficient(1.0F);
+        evaluation.setPlanningStatus(STATUS_DRAFT);
+        evaluation.setPublishedAt(null);
         evaluation.setSeance(savedSeance);
 
         Evaluation savedEvaluation = evaluationRepository.save(
@@ -136,6 +143,49 @@ public class ExamPlanningService {
         );
 
         return toResponse(savedEvaluation);
+    }
+
+    @Transactional
+    public List<ExamPlanningResponseDTO> createExams(ExamPlanningBulkRequestDTO request) {
+        return request.getExams().stream()
+                .map(this::createExam)
+                .toList();
+    }
+
+    @Transactional
+    public ExamPlanningResponseDTO publishExam(Integer evaluationId) {
+        Evaluation evaluation = evaluationRepository.findById(evaluationId)
+                .orElseThrow(() -> new RuntimeException("Evaluation not found"));
+
+        if (!academicEvaluationPolicyService.isAcademicEvaluation(evaluation)) {
+            throw new RuntimeException("Only academic evaluations can be published from exam planning");
+        }
+
+        publish(evaluation);
+        return toResponse(evaluationRepository.save(evaluation));
+    }
+
+    @Transactional
+    public List<ExamPlanningResponseDTO> publishWeek(LocalDate weekStart) {
+        LocalDate normalizedWeekStart = weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekEnd = normalizedWeekStart.plusDays(6);
+        List<Evaluation> evaluations = evaluationRepository.findAll().stream()
+                .filter(academicEvaluationPolicyService::isAcademicEvaluation)
+                .filter(evaluation -> {
+                    LocalDate examDate = evaluation.getDateEvaluation().toLocalDate();
+                    return !examDate.isBefore(normalizedWeekStart) && !examDate.isAfter(weekEnd);
+                })
+                .sorted(Comparator.comparing(Evaluation::getDateEvaluation))
+                .toList();
+
+        if (evaluations.isEmpty()) {
+            throw new RuntimeException("No exams found for this week");
+        }
+
+        evaluations.forEach(this::publish);
+        return evaluationRepository.saveAll(evaluations).stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     private Enseignement findOrCreateTeaching(Matiere subject, Professeur professor) {
@@ -183,6 +233,7 @@ public class ExamPlanningService {
         Matiere subject = teaching.getMatiere();
         Groupe group = seance.getGroupe();
         Professeur professor = teaching.getProfesseur();
+        LocalDate examDate = evaluation.getDateEvaluation().toLocalDate();
 
         return ExamPlanningResponseDTO.builder()
                 .evaluationId(evaluation.getId())
@@ -192,14 +243,31 @@ public class ExamPlanningService {
                 .group(group.getLibelle())
                 .professor(professor.getNomComplet())
                 .date(evaluation.getDateEvaluation().format(DATE_FORMATTER))
+                .isoDate(examDate.toString())
                 .day(seance.getJoursemaine())
+                .weekStart(examDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toString())
                 .startTime(seance.getHeureDebut().format(TIME_FORMATTER))
                 .endTime(seance.getHeureFin().format(TIME_FORMATTER))
                 .room(seance.getBatiment() + " / " + seance.getSalle())
                 .type(academicEvaluationPolicyService.normalizeEvaluationType(evaluation.getTypeEvaluation()))
                 .scope(group.getDepartement().getNom())
-                .status("Planifie")
+                .status(displayStatus(evaluation.getPlanningStatus()))
+                .publishedAt(evaluation.getPublishedAt() == null
+                        ? ""
+                        : evaluation.getPublishedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")))
                 .build();
+    }
+
+    private void publish(Evaluation evaluation) {
+        evaluation.setPlanningStatus(STATUS_PUBLISHED);
+        evaluation.setPublishedAt(LocalDateTime.now());
+    }
+
+    private String displayStatus(String status) {
+        if (STATUS_PUBLISHED.equalsIgnoreCase(status)) {
+            return "Publie";
+        }
+        return "Brouillon";
     }
 
     private ExamPlanningOptionDTO.OptionDTO option(Integer id, String label, String meta) {

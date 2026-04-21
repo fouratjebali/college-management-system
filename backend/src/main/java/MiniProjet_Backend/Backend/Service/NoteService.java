@@ -12,6 +12,9 @@ public class NoteService {
     @Autowired
     private NoteRepository noteRepository;
 
+    @Autowired
+    private NoteWorkflowService noteWorkflowService;
+
     public List<Note> getAllNotes() {
         return noteRepository.findAll();
     }
@@ -37,25 +40,29 @@ public class NoteService {
                     .findByEvaluationIdAndEtudiantId(note.getEvaluation().getId(), note.getEtudiant().getId())
                     .map(existingNote -> {
                         existingNote.setValeur(note.getValeur());
-                        existingNote.setStatut(note.getStatut());
                         existingNote.setRemarque(note.getRemarque());
                         existingNote.setEvaluation(note.getEvaluation());
                         existingNote.setEtudiant(note.getEtudiant());
+                        noteWorkflowService.markSubmitted(existingNote, note.getStatut());
                         return noteRepository.save(existingNote);
                     })
-                    .orElseGet(() -> noteRepository.save(note));
+                    .orElseGet(() -> {
+                        noteWorkflowService.markSubmitted(note, note.getStatut());
+                        return noteRepository.save(note);
+                    });
         }
 
+        noteWorkflowService.markSubmitted(note, note.getStatut());
         return noteRepository.save(note);
     }
 
     public Note updateNote(Integer id, Note noteDetails) {
         return noteRepository.findById(id).map(note -> {
             note.setValeur(noteDetails.getValeur());
-            note.setStatut(noteDetails.getStatut());
             note.setRemarque(noteDetails.getRemarque());
             note.setEvaluation(noteDetails.getEvaluation());
             note.setEtudiant(noteDetails.getEtudiant());
+            noteWorkflowService.markSubmitted(note, noteDetails.getStatut());
             return noteRepository.save(note);
         }).orElseThrow(() -> new RuntimeException("Note not found"));
     }

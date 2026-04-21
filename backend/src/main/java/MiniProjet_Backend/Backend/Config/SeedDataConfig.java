@@ -828,10 +828,19 @@ public class SeedDataConfig {
 
         for (int index = 0; index < majorEvaluations.size(); index++) {
             Evaluation evaluation = majorEvaluations.get(index);
-            boolean alreadyGraded = noteRepository.findByEvaluationId(evaluation.getId()).stream()
-                    .anyMatch(note -> note.getEtudiant().getId().equals(student.getId()));
+            Note existingNote = noteRepository.findByEvaluationId(evaluation.getId()).stream()
+                    .filter(note -> note.getEtudiant().getId().equals(student.getId()))
+                    .findFirst()
+                    .orElse(null);
 
-            if (alreadyGraded) {
+            if (existingNote != null) {
+                if (!"Publiee".equalsIgnoreCase(existingNote.getStatut())) {
+                    existingNote.setStatut("Publiee");
+                    existingNote.setSubmittedAt(LocalDateTime.now().minusDays(5));
+                    existingNote.setValidatedAt(LocalDateTime.now().minusDays(3));
+                    existingNote.setPublishedAt(LocalDateTime.now().minusDays(1));
+                    noteRepository.save(existingNote);
+                }
                 continue;
             }
 
@@ -839,7 +848,10 @@ public class SeedDataConfig {
             note.setEvaluation(evaluation);
             note.setEtudiant(student);
             note.setValeur(12.5F + (index % 5));
-            note.setStatut("Valide");
+            note.setStatut("Publiee");
+            note.setSubmittedAt(LocalDateTime.now().minusDays(5));
+            note.setValidatedAt(LocalDateTime.now().minusDays(3));
+            note.setPublishedAt(LocalDateTime.now().minusDays(1));
             note.setRemarque("Note ajoutee pour completer le calcul de la moyenne.");
             noteRepository.save(note);
         }

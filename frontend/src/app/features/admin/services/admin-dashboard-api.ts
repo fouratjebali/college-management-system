@@ -110,6 +110,10 @@ export interface AdminExamPlanningRequest {
   details: string;
 }
 
+export interface AdminExamPlanningBulkRequest {
+  exams: AdminExamPlanningRequest[];
+}
+
 export interface AdminPlannedExam {
   evaluationId: number;
   seanceId: number;
@@ -118,13 +122,49 @@ export interface AdminPlannedExam {
   group: string;
   professor: string;
   date: string;
+  isoDate: string;
   day: string;
+  weekStart: string;
   startTime: string;
   endTime: string;
   room: string;
   type: string;
   scope: string;
   status: string;
+  publishedAt: string;
+}
+
+export interface AdminNoteValidationEvaluation {
+  evaluationId: number;
+  label: string;
+  type: string;
+  subject: string;
+  group: string;
+  professor: string;
+  date: string;
+  totalNotes: number;
+  draftCount: number;
+  submittedCount: number;
+  validatedCount: number;
+  rejectedCount: number;
+  publishedCount: number;
+  status: string;
+}
+
+export interface AdminNoteValidationStudent {
+  noteId: number;
+  studentId: number;
+  studentName: string;
+  matricule: string;
+  value: string;
+  status: string;
+  remark: string;
+  validationRemark: string;
+}
+
+export interface AdminNoteValidationDetail {
+  evaluation: AdminNoteValidationEvaluation;
+  notes: AdminNoteValidationStudent[];
 }
 
 @Injectable({
@@ -181,5 +221,54 @@ export class AdminDashboardApi {
 
   createPlannedExam(request: AdminExamPlanningRequest): Observable<AdminPlannedExam> {
     return this.http.post<AdminPlannedExam>(`${this.apiUrl}/exam-planning/exams`, request);
+  }
+
+  createPlannedExams(request: AdminExamPlanningBulkRequest): Observable<AdminPlannedExam[]> {
+    return this.http.post<AdminPlannedExam[]>(`${this.apiUrl}/exam-planning/exams/bulk`, request);
+  }
+
+  publishPlannedExam(evaluationId: number): Observable<AdminPlannedExam> {
+    return this.http.patch<AdminPlannedExam>(
+      `${this.apiUrl}/exam-planning/exams/${evaluationId}/publish`,
+      {}
+    );
+  }
+
+  publishExamWeek(weekStart: string): Observable<AdminPlannedExam[]> {
+    return this.http.patch<AdminPlannedExam[]>(
+      `${this.apiUrl}/exam-planning/weeks/publish`,
+      { weekStart }
+    );
+  }
+
+  getNoteValidationEvaluations(): Observable<AdminNoteValidationEvaluation[]> {
+    return this.http.get<AdminNoteValidationEvaluation[]>(`${this.apiUrl}/note-validation/evaluations`);
+  }
+
+  getNoteValidationDetail(evaluationId: number): Observable<AdminNoteValidationDetail> {
+    return this.http.get<AdminNoteValidationDetail>(
+      `${this.apiUrl}/note-validation/evaluations/${evaluationId}`
+    );
+  }
+
+  validateNotes(evaluationId: number, remark: string): Observable<AdminNoteValidationDetail> {
+    return this.http.patch<AdminNoteValidationDetail>(
+      `${this.apiUrl}/note-validation/evaluations/${evaluationId}/validate`,
+      { remark }
+    );
+  }
+
+  rejectNotes(evaluationId: number, remark: string): Observable<AdminNoteValidationDetail> {
+    return this.http.patch<AdminNoteValidationDetail>(
+      `${this.apiUrl}/note-validation/evaluations/${evaluationId}/reject`,
+      { remark }
+    );
+  }
+
+  publishNotes(evaluationId: number, remark: string): Observable<AdminNoteValidationDetail> {
+    return this.http.patch<AdminNoteValidationDetail>(
+      `${this.apiUrl}/note-validation/evaluations/${evaluationId}/publish`,
+      { remark }
+    );
   }
 }

@@ -248,7 +248,7 @@
           <div class="panel-heading">
             <span class="eyebrow">Saisie des notes</span>
             <h2>Choisir un groupe et une evaluation</h2>
-            <p>Les notes sont preparees dans le tableau puis envoyees en batch.</p>
+            <p>Les notes sont preparees dans le tableau puis soumises a l'administration.</p>
           </div>
 
           <form [formGroup]="gradeForm" (ngSubmit)="submitGrades()">
@@ -281,7 +281,7 @@
               </div>
             }
 
-            <button class="primary-button" type="submit">Envoyer les notes</button>
+            <button class="primary-button" type="submit">Soumettre les notes</button>
           </form>
         </article>
 
@@ -321,8 +321,7 @@
                       (change)="updateGradeStatus(student.id, $event)"
                     >
                       <option>Brouillon</option>
-                      <option>Validee</option>
-                      <option>Absence</option>
+                      <option>Soumise</option>
                     </select>
                   </label>
                   <label>

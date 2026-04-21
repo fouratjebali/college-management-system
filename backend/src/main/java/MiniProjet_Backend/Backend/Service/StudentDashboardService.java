@@ -41,6 +41,7 @@ public class StudentDashboardService {
     private final SupportCoursRepository supportCoursRepository;
     private final AnnonceRepository annonceRepository;
     private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
+    private final NoteWorkflowService noteWorkflowService;
 
     public StudentDashboardService(
             EtudiantRepository etudiantRepository,
@@ -50,7 +51,8 @@ public class StudentDashboardService {
             PresenceRepository presenceRepository,
             SupportCoursRepository supportCoursRepository,
             AnnonceRepository annonceRepository,
-            AcademicEvaluationPolicyService academicEvaluationPolicyService
+            AcademicEvaluationPolicyService academicEvaluationPolicyService,
+            NoteWorkflowService noteWorkflowService
     ) {
         this.etudiantRepository = etudiantRepository;
         this.seanceRepository = seanceRepository;
@@ -60,6 +62,7 @@ public class StudentDashboardService {
         this.supportCoursRepository = supportCoursRepository;
         this.annonceRepository = annonceRepository;
         this.academicEvaluationPolicyService = academicEvaluationPolicyService;
+        this.noteWorkflowService = noteWorkflowService;
     }
 
     @Transactional(readOnly = true)
@@ -72,10 +75,12 @@ public class StudentDashboardService {
         List<Seance> schedule = student.getGroupe() == null
                 ? List.of()
                 : seanceRepository.findByGroupeId(student.getGroupe().getId()).stream()
+                .filter(this::isVisibleForStudentSchedule)
                 .sorted(Comparator.comparing(Seance::getJoursemaine).thenComparing(Seance::getHeureDebut))
                 .toList();
         List<Note> grades = noteRepository.findByEtudiantId(student.getId()).stream()
                 .filter(note -> academicEvaluationPolicyService.isAcademicEvaluation(note.getEvaluation()))
+                .filter(noteWorkflowService::isPublished)
                 .sorted(Comparator.comparing(note -> note.getEvaluation().getDateEvaluation()))
                 .toList();
         List<Presence> attendance = presenceRepository.findByEtudiantId(student.getId()).stream()
@@ -373,6 +378,15 @@ public class StudentDashboardService {
                 .room(seance.getBatiment() + " / " + seance.getSalle())
                 .type(seance.getTypeSeance())
                 .build();
+    }
+
+    private boolean isVisibleForStudentSchedule(Seance seance) {
+        if (!"EXAMEN".equalsIgnoreCase(seance.getTypeSeance())) {
+            return true;
+        }
+
+        return evaluationRepository.findBySeanceId(seance.getId()).stream()
+                .anyMatch(evaluation -> "PUBLIE".equalsIgnoreCase(evaluation.getPlanningStatus()));
     }
 
     private StudentDashboardResponseDTO.MaterialRowDTO toMaterialRow(SupportCours supportCours) {

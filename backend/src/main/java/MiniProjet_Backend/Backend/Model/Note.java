@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name="note")
@@ -25,6 +26,18 @@ public class Note {
 
     @Column
     private String remarque;
+
+    @Column
+    private String validationRemark;
+
+    @Column
+    private LocalDateTime submittedAt;
+
+    @Column
+    private LocalDateTime validatedAt;
+
+    @Column
+    private LocalDateTime publishedAt;
 
     @ManyToOne
     @JoinColumn(name="evaluation_id", nullable = false)

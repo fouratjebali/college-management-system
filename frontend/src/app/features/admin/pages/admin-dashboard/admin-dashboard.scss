@@ -17,10 +17,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
-  background:
-    radial-gradient(circle at 14% 12%, rgba(223, 208, 184, 0.11), transparent 30%),
-    radial-gradient(circle at 86% 6%, rgba(148, 137, 121, 0.16), transparent 28%),
-    linear-gradient(135deg, #171b21 0%, var(--admin-bg) 54%, #252b34 100%);
+  background: linear-gradient(135deg, #171b21 0%, var(--admin-bg) 54%, #252b34 100%);
 }
 
 .sidebar {
@@ -38,7 +35,6 @@
 
 .brand-block,
 .nav-item,
-.sidebar-card,
 .panel,
 .stat-card,
 .toast {
@@ -69,7 +65,6 @@
 }
 
 .brand-block span,
-.sidebar-card p,
 .panel-heading p,
 .topbar span,
 small {
@@ -120,16 +115,6 @@ small {
   display: block;
 }
 
-.sidebar-card {
-  margin-top: auto;
-  padding: 18px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(223, 208, 184, 0.16), transparent 45%),
-    rgba(57, 62, 70, 0.68);
-}
-
-.card-kicker,
 .eyebrow {
   color: var(--admin-sand);
   font-size: 0.74rem;
@@ -338,35 +323,6 @@ button {
   padding: 20px;
   display: grid;
   align-content: space-between;
-  overflow: hidden;
-  position: relative;
-}
-
-.stat-card::after {
-  content: '';
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  right: -26px;
-  top: -24px;
-  border-radius: 50%;
-  opacity: 0.4;
-}
-
-.tone-light::after {
-  background: var(--admin-sand);
-}
-
-.tone-warm::after {
-  background: var(--admin-accent);
-}
-
-.tone-steel::after {
-  background: #59616d;
-}
-
-.tone-sand::after {
-  background: #c7b99f;
 }
 
 .stat-card span {
@@ -421,7 +377,10 @@ button {
 
 .quick-list,
 .data-list,
-.user-table {
+.user-table,
+.validation-list,
+.validation-detail,
+.note-table {
   display: grid;
   gap: 12px;
 }
@@ -445,7 +404,9 @@ button {
 
 .quick-list button,
 .data-row,
-.user-row {
+.user-row,
+.validation-item,
+.note-row {
   display: grid;
   align-items: center;
   gap: 14px;
@@ -459,6 +420,28 @@ button {
 .quick-list button {
   grid-template-columns: 1fr auto;
   cursor: pointer;
+}
+
+.validation-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+}
+
+.validation-item {
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  text-align: left;
+  cursor: pointer;
+}
+
+.validation-item.active {
+  border-color: rgba(223, 208, 184, 0.32);
+  background: rgba(148, 137, 121, 0.18);
+}
+
+.note-row {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
 }
 
 .two-columns {
@@ -640,13 +623,16 @@ label {
 
 .academic-year-list,
 .semester-list,
-.exam-calendar {
+.exam-calendar,
+.draft-stack {
   display: grid;
   gap: 12px;
 }
 
 .academic-year-row,
-.exam-day {
+.exam-week,
+.exam-day,
+.draft-row {
   display: grid;
   gap: 12px;
   padding: 14px;
@@ -657,13 +643,16 @@ label {
 
 .year-heading,
 .semester-row,
-.exam-card-row {
+.week-heading,
+.exam-card-row,
+.draft-row {
   display: grid;
   align-items: center;
   gap: 12px;
 }
 
-.year-heading {
+.year-heading,
+.week-heading {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
@@ -673,11 +662,15 @@ label {
 }
 
 .exam-card-row {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   padding: 12px;
   border: 1px solid rgba(223, 208, 184, 0.08);
   border-radius: 16px;
   background: rgba(57, 62, 70, 0.46);
+}
+
+.draft-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 @media (max-width: 1100px) {
@@ -698,7 +691,8 @@ label {
   .two-columns,
   .users-layout,
   .academic-year-layout,
-  .exam-calendar-layout {
+  .exam-calendar-layout,
+  .validation-layout {
     grid-template-columns: 1fr;
   }
 
@@ -735,8 +729,12 @@ label {
   }
 
   .user-row,
+  .note-row,
+  .validation-item,
   .year-heading,
   .semester-row,
+  .week-heading,
+  .draft-row,
   .exam-card-row {
     grid-template-columns: auto 1fr;
   }

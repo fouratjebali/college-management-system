@@ -504,7 +504,7 @@ export class ProfessorDashboardComponent {
   protected getGradeDraft(studentId: number): GradeDraft {
     return this.gradeDrafts()[studentId] ?? {
       value: '',
-      status: 'Brouillon',
+      status: 'Soumise',
       remark: '',
     };
   }
@@ -582,7 +582,7 @@ export class ProfessorDashboardComponent {
 
       drafts[student.id] = {
         value: existingGrade?.value ?? '',
-        status: existingGrade?.status ?? 'Brouillon',
+        status: existingGrade?.status ?? 'Soumise',
         remark: existingGrade?.remark ?? '',
       };
     });

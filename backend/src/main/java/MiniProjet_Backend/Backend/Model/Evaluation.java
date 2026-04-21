@@ -31,6 +31,12 @@ public class Evaluation {
     @Column(nullable = false)
     private Float coefficient;
 
+    @Column
+    private String planningStatus = "BROUILLON";
+
+    @Column
+    private LocalDateTime publishedAt;
+
     @ManyToOne
     @JoinColumn(name="seance_id", nullable = false)
     @EqualsAndHashCode.Exclude
