@@ -54,7 +54,7 @@
       <section class="content-grid overview-grid">
         <article class="hero-card">
           <span class="eyebrow">Suivi academique</span>
-          <h2>Consulter notes, planning, supports et annonces sans friction.</h2>
+          <h2>Consulter notes, planning, supports et annonces.</h2>
           @if (profile(); as student) {
             <p>
               {{ student.name }} - {{ student.group }} - {{ student.level }} - {{ student.year }}
@@ -169,7 +169,7 @@
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Moyenne</span>
-              <h2>Semestre courant</h2>
+              <h2>Semestre 1</h2>
             </div>
             @if (gradeSummary(); as summary) {
               <span class="counter">{{ summary.receivedCount }}/{{ summary.expectedCount }} evaluations</span>
@@ -180,8 +180,7 @@
             <div class="average-card" [class.incomplete]="!summary.complete">
               <strong>{{ summary.complete ? summary.average : '--' }}</strong>
               <div>
-                <span>{{ summary.complete ? 'Moyenne disponible' : 'Moyenne en attente' }}</span>
-                <small>{{ summary.message }}</small>
+                <span>{{ summary.complete ? 'Moyenne' : 'Moyenne en attente' }}</span>
               </div>
             </div>
           } @else {
@@ -194,8 +193,8 @@
         <article class="panel table-panel full-span">
           <div class="panel-heading inline-heading">
             <div>
-              <span class="eyebrow">Bulletin par matiere</span>
-              <h2>DS, Examen TP et Examen principal</h2>
+              <span class="eyebrow">Notes par matiere</span>
+              <h2></h2>
             </div>
             <span class="counter">{{ filteredSubjectGrades().length }} matiere(s)</span>
           </div>
@@ -229,7 +228,6 @@
                           <span>{{ evaluation.status }}</span>
                         </div>
                         @if (evaluation.remark) {
-                          <p>{{ evaluation.remark }}</p>
                         }
                       </div>
                     }
