@@ -82,6 +82,51 @@ export interface AdminSemesterRequest {
   locked: boolean;
 }
 
+export interface AdminPlanningOption {
+  id: number;
+  label: string;
+  meta: string;
+}
+
+export interface AdminExamPlanningOptions {
+  departments: AdminPlanningOption[];
+  groups: AdminPlanningOption[];
+  subjects: AdminPlanningOption[];
+  professors: AdminPlanningOption[];
+  activeAcademicYear: string;
+  activeSemester: string;
+}
+
+export interface AdminExamPlanningRequest {
+  evaluationType: string;
+  subjectId: number;
+  groupId: number;
+  professorId: number;
+  examDate: string;
+  startTime: string;
+  endTime: string;
+  building: string;
+  room: string;
+  details: string;
+}
+
+export interface AdminPlannedExam {
+  evaluationId: number;
+  seanceId: number;
+  subject: string;
+  subjectCode: string;
+  group: string;
+  professor: string;
+  date: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  type: string;
+  scope: string;
+  status: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -124,5 +169,17 @@ export class AdminDashboardApi {
       `${this.apiUrl}/academic-years/semesters/${id}/lock?locked=${locked}`,
       {}
     );
+  }
+
+  getExamPlanningOptions(): Observable<AdminExamPlanningOptions> {
+    return this.http.get<AdminExamPlanningOptions>(`${this.apiUrl}/exam-planning/options`);
+  }
+
+  getPlannedExams(): Observable<AdminPlannedExam[]> {
+    return this.http.get<AdminPlannedExam[]>(`${this.apiUrl}/exam-planning/exams`);
+  }
+
+  createPlannedExam(request: AdminExamPlanningRequest): Observable<AdminPlannedExam> {
+    return this.http.post<AdminPlannedExam>(`${this.apiUrl}/exam-planning/exams`, request);
   }
 }

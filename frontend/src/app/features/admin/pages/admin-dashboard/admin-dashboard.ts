@@ -6,11 +6,12 @@ import { AuthService } from '../../../../core/services/auth';
 import {
   AdminAcademicYear,
   AdminDashboardApi,
+  AdminExamPlanningOptions,
+  AdminPlannedExam,
   AdminSemester,
 } from '../../services/admin-dashboard-api';
 
 type AdminSection = 'overview' | 'academic-year' | 'structure' | 'users' | 'calendar';
-type PlanningMode = 'single' | 'weekly';
 
 interface NavItem {
   id: AdminSection;
@@ -77,9 +78,9 @@ export class AdminDashboardComponent {
   protected readonly selectedGroup = signal('Tous');
   protected readonly selectedRole = signal('Tous');
   protected readonly editingUserEmail = signal<string | null>(null);
-  protected readonly planningMode = signal<PlanningMode>('single');
   protected readonly isDashboardLoading = signal(true);
   protected readonly isAcademicYearsLoading = signal(true);
+  protected readonly isExamPlanningLoading = signal(true);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -140,6 +141,8 @@ export class AdminDashboardComponent {
 
   protected readonly examRows = signal<readonly ExamRow[]>([]);
   protected readonly academicYears = signal<readonly AdminAcademicYear[]>([]);
+  protected readonly examPlanningOptions = signal<AdminExamPlanningOptions | null>(null);
+  protected readonly plannedExams = signal<readonly AdminPlannedExam[]>([]);
 
   protected readonly activeAcademicYear = computed<AdminAcademicYear | null>(() =>
     this.academicYears().find((academicYear) => academicYear.active) ?? this.academicYears()[0] ?? null
@@ -153,6 +156,10 @@ export class AdminDashboardComponent {
 
   protected readonly semesterCount = computed(() =>
     this.academicYears().reduce((total, academicYear) => total + academicYear.semesters.length, 0)
+  );
+
+  protected readonly plannedExamDays = computed(() =>
+    Array.from(new Set(this.plannedExams().map((exam) => `${exam.day} ${exam.date}`)))
   );
 
   protected readonly filteredUsers = computed(() => {
@@ -257,16 +264,15 @@ export class AdminDashboardComponent {
   });
 
   protected readonly examForm = this.formBuilder.nonNullable.group({
-    planningMode: ['single', [Validators.required]],
     evaluationType: ['DS', [Validators.required]],
-    subject: ['', [Validators.required, Validators.minLength(3)]],
-    department: ['', [Validators.required]],
-    group: ['', [Validators.required]],
+    subjectId: [0, [Validators.required, Validators.min(1)]],
+    groupId: [0, [Validators.required, Validators.min(1)]],
+    professorId: [0, [Validators.required, Validators.min(1)]],
     startDate: ['', [Validators.required]],
-    day: ['Lundi', [Validators.required]],
-    time: ['09:00', [Validators.required]],
+    startTime: ['09:00', [Validators.required]],
+    endTime: ['11:00', [Validators.required]],
+    building: ['Bloc B', [Validators.required]],
     room: ['', [Validators.required]],
-    supervisor: ['', [Validators.required]],
     details: [''],
   });
 
@@ -297,6 +303,7 @@ export class AdminDashboardComponent {
   constructor() {
     this.loadDashboard();
     this.loadAcademicYears();
+    this.loadExamPlanning();
   }
 
   private loadDashboard(): void {
@@ -350,12 +357,6 @@ export class AdminDashboardComponent {
 
   protected updateRoleFilter(event: Event): void {
     this.selectedRole.set(this.readSelectValue(event));
-  }
-
-  protected updatePlanningMode(event: Event): void {
-    const mode = this.readSelectValue(event) as PlanningMode;
-    this.planningMode.set(mode);
-    this.examForm.controls.planningMode.setValue(mode);
   }
 
   protected submitStructure(): void {
@@ -423,14 +424,36 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const { evaluationType, group, planningMode, subject } = this.examForm.getRawValue();
-    const isWeekly = planningMode === 'weekly';
+    const { evaluationType, subjectId, groupId, professorId, startDate, startTime, endTime, building, room, details } =
+      this.examForm.getRawValue();
 
-    this.toastMessage.set(
-      isWeekly
-        ? `Semaine de ${evaluationType} pour ${group} validee.`
-        : `${evaluationType} ${subject} pour ${group} valide.`
-    );
+    this.dashboardApi
+      .createPlannedExam({
+        evaluationType,
+        subjectId,
+        groupId,
+        professorId,
+        examDate: startDate,
+        startTime,
+        endTime,
+        building,
+        room,
+        details,
+      })
+      .subscribe({
+        next: (exam) => {
+          this.toastMessage.set(`${exam.type} ${exam.subject} planifie pour ${exam.group}.`);
+          this.loadExamPlanning();
+          this.loadDashboard();
+        },
+        error: (error) => {
+          this.toastMessage.set(
+            error.error?.message ||
+              error.error?.error ||
+              'Impossible de planifier cet examen. Verifiez les conflits de salle, groupe ou professeur.'
+          );
+        },
+      });
   }
 
   protected publishGrades(): void {
@@ -636,6 +659,47 @@ export class AdminDashboardComponent {
         this.toastMessage.set('Impossible de charger les annees universitaires.');
       },
     });
+  }
+
+  private loadExamPlanning(): void {
+    this.isExamPlanningLoading.set(true);
+
+    this.dashboardApi.getExamPlanningOptions().subscribe({
+      next: (options) => {
+        this.examPlanningOptions.set(options);
+        this.prefillExamPlanningForm(options);
+      },
+      error: () => {
+        this.examPlanningOptions.set(null);
+        this.toastMessage.set('Impossible de charger les options de planification des examens.');
+      },
+    });
+
+    this.dashboardApi.getPlannedExams().subscribe({
+      next: (exams) => {
+        this.plannedExams.set(exams ?? []);
+        this.isExamPlanningLoading.set(false);
+      },
+      error: () => {
+        this.plannedExams.set([]);
+        this.isExamPlanningLoading.set(false);
+        this.toastMessage.set('Impossible de charger le calendrier des examens.');
+      },
+    });
+  }
+
+  private prefillExamPlanningForm(options: AdminExamPlanningOptions): void {
+    if (this.examForm.controls.subjectId.value === 0 && options.subjects[0]) {
+      this.examForm.controls.subjectId.setValue(options.subjects[0].id);
+    }
+
+    if (this.examForm.controls.groupId.value === 0 && options.groups[0]) {
+      this.examForm.controls.groupId.setValue(options.groups[0].id);
+    }
+
+    if (this.examForm.controls.professorId.value === 0 && options.professors[0]) {
+      this.examForm.controls.professorId.setValue(options.professors[0].id);
+    }
   }
 
   protected hasControlError(

@@ -590,23 +590,19 @@
         </article>
       </section>
     } @else {
-      <section class="content-grid two-columns">
+      <section class="content-grid exam-calendar-layout">
         <article class="panel form-panel">
           <div class="panel-heading">
             <span class="eyebrow">Calendrier examens</span>
-            <h2>Planifier une evaluation ou une semaine complete</h2>
+            <h2>Planifier une evaluation</h2>
+            <p>
+              Le backend cree la seance d'examen, applique les coefficients academiques et bloque les conflits
+              de groupe, salle ou professeur.
+            </p>
           </div>
 
           <form [formGroup]="examForm" (ngSubmit)="submitExam()">
             <div class="field-row">
-              <label>
-                Mode
-                <select formControlName="planningMode" (change)="updatePlanningMode($event)">
-                  <option value="single">Un seul devoir</option>
-                  <option value="weekly">Toute la semaine</option>
-                </select>
-              </label>
-
               <label>
                 Type
                 <select formControlName="evaluationType">
@@ -618,22 +614,157 @@
             </div>
 
             <label>
-              Matiere ou theme
-              <input type="text" formControlName="subject" placeholder="Architecture Logicielle, TP reseaux..." />
-              @if (hasControlError(examForm, 'subject')) {
+              Matiere
+              <select formControlName="subjectId">
+                <option [ngValue]="0" disabled>Choisir une matiere</option>
+                @for (subject of examPlanningOptions()?.subjects ?? []; track subject.id) {
+                  <option [ngValue]="subject.id">{{ subject.label }} - {{ subject.meta }}</option>
+                }
+              </select>
+              @if (hasControlError(examForm, 'subjectId')) {
                 <small class="field-error">Matiere requise.</small>
               }
             </label>
 
             <div class="field-row">
               <label>
-                Departement
-                <select formControlName="department">
-                  <option value="" disabled>Choisir un departement</option>
-                  @for (department of departmentFormOptions(); track department) {
-                    <option [value]="department">{{ department }}</option>
+                Groupe concerne
+                <select formControlName="groupId">
+                  <option [ngValue]="0" disabled>Choisir un groupe</option>
+                  @for (group of examPlanningOptions()?.groups ?? []; track group.id) {
+                    <option [ngValue]="group.id">{{ group.label }} - {{ group.meta }}</option>
                   }
                 </select>
+              </label>
+
+              <label>
+                Professeur / surveillant
+                <select formControlName="professorId">
+                  <option [ngValue]="0" disabled>Choisir un professeur</option>
+                  @for (professor of examPlanningOptions()?.professors ?? []; track professor.id) {
+                    <option [ngValue]="professor.id">{{ professor.label }} - {{ professor.meta }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Date
+                <input type="date" formControlName="startDate" />
+              </label>
+
+              <label>
+                Batiment
+                <input type="text" formControlName="building" placeholder="Bloc B" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Heure debut
+                <input type="time" formControlName="startTime" />
+              </label>
+
+              <label>
+                Heure fin
+                <input type="time" formControlName="endTime" />
+              </label>
+            </div>
+
+            <label>
+              Salle
+              <input type="text" formControlName="room" placeholder="Salle 204" />
+            </label>
+
+            <label>
+              Notes internes
+              <input type="text" formControlName="details" placeholder="Oral, TP machine, salle speciale..." />
+            </label>
+
+            <button class="primary-button" type="submit">Planifier l'examen</button>
+          </form>
+        </article>
+
+        <article class="panel form-panel calendar-context-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Contexte</span>
+            <h2>Session academique</h2>
+          </div>
+
+          <div class="summary-grid compact-summary">
+            <div>
+              <small>Annee active</small>
+              <strong>{{ examPlanningOptions()?.activeAcademicYear || 'Non definie' }}</strong>
+              <span>Les nouvelles planifications utilisent cette annee.</span>
+            </div>
+            <div>
+              <small>Semestre actif</small>
+              <strong>{{ examPlanningOptions()?.activeSemester || 'Non defini' }}</strong>
+              <span>Les nouveaux enseignements crees y sont attaches.</span>
+            </div>
+            <div>
+              <small>Evaluations</small>
+              <strong>{{ plannedExams().length }}</strong>
+              <span>Examens academiques dans le calendrier.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Planning</span>
+              <h2>Calendrier des examens</h2>
+            </div>
+            <span class="counter">{{ plannedExams().length }} examen(s)</span>
+          </div>
+
+          <div class="exam-calendar">
+            @if (plannedExams().length > 0) {
+              @for (day of plannedExamDays(); track day) {
+                <div class="exam-day">
+                  <div class="exam-day-heading">
+                    <strong>{{ day }}</strong>
+                  </div>
+
+                  @for (exam of plannedExams(); track exam.evaluationId) {
+                    @if ((exam.day + ' ' + exam.date) === day) {
+                      <div class="exam-card-row">
+                        <span class="code-pill">{{ exam.type }}</span>
+                        <div>
+                          <strong>{{ exam.subject }}</strong>
+                          <small>{{ exam.group }} - {{ exam.scope }} - {{ exam.professor }}</small>
+                          <small>{{ exam.startTime }} - {{ exam.endTime }} - {{ exam.room }}</small>
+                        </div>
+                        <span class="status-pill">{{ exam.status }}</span>
+                      </div>
+                    }
+                  }
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isExamPlanningLoading() ? 'Chargement des examens...' : 'Aucun examen planifie dans le calendrier.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel form-panel full-span">
+          <div class="panel-heading">
+            <span class="eyebrow">Publication notes</span>
+            <h2>Publier les notes</h2>
+          </div>
+
+          <form [formGroup]="gradeForm" (ngSubmit)="publishGrades()">
+            <div class="field-row">
+              <label>
+                Evaluation
+                <input type="text" formControlName="evaluation" placeholder="DS Architecture" />
+                @if (hasControlError(gradeForm, 'evaluation')) {
+                  <small class="field-error">Evaluation requise.</small>
+                }
               </label>
 
               <label>
@@ -648,120 +779,22 @@
             </div>
 
             <div class="field-row">
-              @if (planningMode() === 'single') {
-                <label>
-                  Jour
-                  <select formControlName="day">
-                    <option>Lundi</option>
-                    <option>Mardi</option>
-                    <option>Mercredi</option>
-                    <option>Jeudi</option>
-                    <option>Vendredi</option>
-                    <option>Samedi</option>
-                  </select>
-                </label>
-              } @else {
-                <div class="helper-card">
-                  La semaine sera creee automatiquement du lundi au vendredi.
-                </div>
-              }
-
               <label>
-                Date debut
-                <input type="date" formControlName="startDate" />
+                Visibilite
+                <select formControlName="visibility">
+                  <option>Etudiants concernes</option>
+                  <option>Professeurs responsables</option>
+                  <option>Administration seulement</option>
+                </select>
               </label>
+
+              <div class="helper-card">
+                La publication reste separee de la planification afin de valider les notes avant affichage.
+              </div>
             </div>
-
-            <div class="field-row">
-              <label>
-                Heure
-                <input type="time" formControlName="time" />
-              </label>
-
-              <label>
-                Surveillant / Professeur
-                <input type="text" formControlName="supervisor" placeholder="Professeur surveillant" />
-              </label>
-            </div>
-
-            <label>
-              Salle
-              <input type="text" formControlName="room" placeholder="Bloc B / Salle 204" />
-            </label>
-
-            <label>
-              Notes internes
-              <input type="text" formControlName="details" placeholder="Oral, TP machine, salle speciale..." />
-            </label>
-
-            <button class="primary-button" type="submit">
-              {{ planningMode() === 'weekly' ? 'Planifier la semaine' : 'Planifier le devoir' }}
-            </button>
-          </form>
-        </article>
-
-        <article class="panel form-panel">
-          <div class="panel-heading">
-            <span class="eyebrow">Publication notes</span>
-            <h2>Publier les notes</h2>
-          </div>
-
-          <form [formGroup]="gradeForm" (ngSubmit)="publishGrades()">
-            <label>
-              Evaluation
-              <input type="text" formControlName="evaluation" placeholder="DS Architecture" />
-              @if (hasControlError(gradeForm, 'evaluation')) {
-                <small class="field-error">Evaluation requise.</small>
-              }
-            </label>
-
-            <label>
-              Groupe
-              <select formControlName="group">
-                <option value="" disabled>Choisir un groupe</option>
-                @for (group of groupFormOptions(); track group) {
-                  <option [value]="group">{{ group }}</option>
-                }
-              </select>
-            </label>
-
-            <label>
-              Visibilite
-              <select formControlName="visibility">
-                <option>Etudiants concernes</option>
-                <option>Professeurs responsables</option>
-                <option>Administration seulement</option>
-              </select>
-            </label>
 
             <button class="secondary-button" type="submit">Publier les notes</button>
           </form>
-        </article>
-
-        <article class="panel table-panel full-span">
-          <div class="panel-heading">
-            <span class="eyebrow">Planning</span>
-            <h2>Examens a venir</h2>
-          </div>
-
-          <div class="timeline">
-            @if (examRows().length > 0) {
-              @for (exam of examRows(); track exam.subject) {
-                <div class="timeline-item">
-                  <span class="timeline-dot"></span>
-                  <div>
-                    <strong>{{ exam.subject }}</strong>
-                    <small>{{ exam.type }} - {{ exam.scope }} - {{ exam.group }}</small>
-                    <small>{{ exam.date }} - {{ exam.room }}</small>
-                  </div>
-                </div>
-              }
-            } @else {
-              <p class="empty-state">
-                {{ isDashboardLoading() ? 'Chargement des evaluations...' : 'Aucune evaluation planifiee dans la base.' }}
-              </p>
-            }
-          </div>
         </article>
       </section>
     }

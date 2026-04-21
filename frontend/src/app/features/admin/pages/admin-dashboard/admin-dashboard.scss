@@ -421,8 +421,7 @@ button {
 
 .quick-list,
 .data-list,
-.user-table,
-.timeline {
+.user-table {
   display: grid;
   gap: 12px;
 }
@@ -446,8 +445,7 @@ button {
 
 .quick-list button,
 .data-row,
-.user-row,
-.timeline-item {
+.user-row {
   display: grid;
   align-items: center;
   gap: 14px;
@@ -473,6 +471,10 @@ button {
 
 .academic-year-layout {
   grid-template-columns: repeat(2, minmax(320px, 1fr));
+}
+
+.exam-calendar-layout {
+  grid-template-columns: minmax(360px, 0.74fr) minmax(0, 1.26fr);
 }
 
 .filter-grid,
@@ -636,24 +638,26 @@ label {
   grid-column: 1 / -1;
 }
 
-.timeline-item {
-  grid-template-columns: auto 1fr;
-}
-
 .academic-year-list,
-.semester-list {
+.semester-list,
+.exam-calendar {
   display: grid;
   gap: 12px;
 }
 
-.academic-year-row {
+.academic-year-row,
+.exam-day {
   display: grid;
   gap: 12px;
   padding: 14px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.46);
 }
 
 .year-heading,
-.semester-row {
+.semester-row,
+.exam-card-row {
   display: grid;
   align-items: center;
   gap: 12px;
@@ -668,12 +672,12 @@ label {
   padding: 12px;
 }
 
-.timeline-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--admin-sand);
-  box-shadow: 0 0 0 8px rgba(223, 208, 184, 0.08);
+.exam-card-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 12px;
+  border: 1px solid rgba(223, 208, 184, 0.08);
+  border-radius: 16px;
+  background: rgba(57, 62, 70, 0.46);
 }
 
 @media (max-width: 1100px) {
@@ -693,7 +697,8 @@ label {
   .overview-grid,
   .two-columns,
   .users-layout,
-  .academic-year-layout {
+  .academic-year-layout,
+  .exam-calendar-layout {
     grid-template-columns: 1fr;
   }
 
@@ -731,7 +736,8 @@ label {
 
   .user-row,
   .year-heading,
-  .semester-row {
+  .semester-row,
+  .exam-card-row {
     grid-template-columns: auto 1fr;
   }
 
