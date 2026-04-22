@@ -229,8 +229,10 @@ export class AdminDashboardComponent {
     this.selectedNoteValidationDetail()?.evaluation ?? null
   );
 
+  protected readonly todayAttendanceDay = computed(() => this.currentFrenchDay());
+
   protected readonly attendanceStats = computed(() => {
-    const sessions = this.attendanceSessions();
+    const sessions = this.todayAttendanceSessions();
     const expected = sessions.reduce((total, session) => total + session.expectedCount, 0);
     const recorded = sessions.reduce((total, session) => total + session.recordedCount, 0);
     const absent = sessions.reduce((total, session) => total + session.absentCount, 0);
@@ -247,7 +249,7 @@ export class AdminDashboardComponent {
   protected readonly filteredAttendanceSessions = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
 
-    return this.attendanceSessions().filter((session) =>
+    return this.todayAttendanceSessions().filter((session) =>
       this.matchesText(query, [
         session.subject,
         session.group,
@@ -956,9 +958,10 @@ export class AdminDashboardComponent {
         this.isAttendanceLoading.set(false);
 
         const selectedId = this.selectedAttendanceDetail()?.session.sessionId;
+        const todaySessions = this.todayAttendanceSessions();
         const nextSelection = selectedId
-          ? sessions.find((session) => session.sessionId === selectedId)
-          : sessions[0];
+          ? todaySessions.find((session) => session.sessionId === selectedId)
+          : todaySessions[0];
 
         if (nextSelection) {
           this.selectAttendanceSession(nextSelection.sessionId);
@@ -1057,6 +1060,16 @@ export class AdminDashboardComponent {
 
   private matchesText(query: string, values: readonly string[]): boolean {
     return !query || values.some((value) => value.toLowerCase().includes(query));
+  }
+
+  private todayAttendanceSessions(): readonly AdminAttendanceSession[] {
+    const day = this.currentFrenchDay();
+
+    return this.attendanceSessions().filter((session) => session.day.toLowerCase() === day.toLowerCase());
+  }
+
+  private currentFrenchDay(): string {
+    return ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][new Date().getDay()];
   }
 
   protected hasControlError(

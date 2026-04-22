@@ -595,7 +595,7 @@
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Supervision presences</span>
-              <h2>Suivi des appels par seance</h2>
+              <h2>Suivi des appels du {{ todayAttendanceDay() }}</h2>
             </div>
             <span class="counter">{{ filteredAttendanceSessions().length }} seance(s)</span>
           </div>
@@ -614,7 +614,7 @@
         <article class="panel table-panel">
           <div class="panel-heading">
             <span class="eyebrow">Seances</span>
-            <h2>Appels a superviser</h2>
+            <h2>Appels a superviser aujourd'hui</h2>
           </div>
 
           <div class="attendance-session-list">
@@ -640,7 +640,7 @@
               }
             } @else {
               <p class="empty-state">
-                {{ isAttendanceLoading() ? 'Chargement des presences...' : 'Aucune seance a superviser.' }}
+                {{ isAttendanceLoading() ? 'Chargement des presences...' : 'Aucune seance a superviser pour ' + todayAttendanceDay() + '.' }}
               </p>
             }
           </div>
