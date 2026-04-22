@@ -704,11 +704,14 @@
                   Cloturer l'appel
                 </button>
               }
-              @if (hasCollectiveAbsenceSignal(detail.session)) {
-                <button type="button" class="secondary-button" (click)="markCollectiveAbsence(detail.session)">
-                  Marquer absence collective
-                </button>
-              }
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="!hasCollectiveAbsenceSignal(detail.session)"
+                (click)="markCollectiveAbsence(detail.session)"
+              >
+                Marquer absence collective
+              </button>
               <span class="helper-card">
                 Derniere saisie: {{ detail.session.lastEntryAt || 'Aucune saisie' }}
               </span>
