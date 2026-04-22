@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth';
 import {
   StudentAnnouncementRow,
+  StudentAbsenceSummary,
   StudentAttendanceRow,
   StudentDashboardApi,
   StudentGradeSummary,
@@ -16,7 +17,7 @@ import {
   StudentSubjectGrade,
 } from '../../services/student-dashboard-api';
 
-type StudentSection = 'overview' | 'grades' | 'schedule' | 'materials' | 'announcements';
+type StudentSection = 'overview' | 'grades' | 'schedule' | 'absences' | 'materials' | 'announcements';
 
 interface NavItem {
   id: StudentSection;
@@ -57,6 +58,7 @@ export class StudentDashboardComponent {
   protected readonly announcements = signal<readonly StudentAnnouncementRow[]>([]);
   protected readonly makeups = signal<readonly StudentMakeupRow[]>([]);
   protected readonly attendance = signal<readonly StudentAttendanceRow[]>([]);
+  protected readonly absenceSummaries = signal<readonly StudentAbsenceSummary[]>([]);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -75,6 +77,11 @@ export class StudentDashboardComponent {
       description: 'Seances par jour',
     },
     {
+      id: 'absences',
+      label: 'Absences',
+      description: 'Suivi par matiere',
+    },
+    {
       id: 'materials',
       label: 'Supports',
       description: 'Documents de cours',
@@ -89,6 +96,7 @@ export class StudentDashboardComponent {
   protected readonly quickActions = [
     'Voir mes notes',
     'Consulter emploi du temps',
+    'Suivre mes absences',
     'Telecharger supports',
     'Voir annonces',
   ] as const;
@@ -98,6 +106,18 @@ export class StudentDashboardComponent {
   );
   protected readonly recentGrades = computed(() => this.filteredGrades().slice(0, 4));
   protected readonly upcomingSessions = computed(() => this.filteredSchedule().slice(0, 6));
+  protected readonly filteredAbsenceSummaries = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+
+    return this.absenceSummaries().filter((summary) =>
+      this.matchesQuery(query, [
+        summary.subject,
+        summary.professor,
+        summary.typeSeance,
+        summary.status,
+      ])
+    );
+  });
 
   protected readonly filteredGrades = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
@@ -210,6 +230,7 @@ export class StudentDashboardComponent {
         this.announcements.set(dashboard.announcements ?? []);
         this.makeups.set(dashboard.makeups ?? []);
         this.attendance.set(dashboard.attendance ?? []);
+        this.absenceSummaries.set(dashboard.absenceSummaries ?? []);
         this.isDashboardLoading.set(false);
         this.toastMessage.set('Donnees etudiant synchronisees avec la base.');
       },
@@ -233,6 +254,8 @@ export class StudentDashboardComponent {
       ? 'grades'
       : action.includes('emploi')
         ? 'schedule'
+        : action.includes('absence')
+          ? 'absences'
         : action.includes('supports')
           ? 'materials'
           : 'announcements';
@@ -277,6 +300,7 @@ export class StudentDashboardComponent {
     this.announcements.set([]);
     this.makeups.set([]);
     this.attendance.set([]);
+    this.absenceSummaries.set([]);
   }
 
   private matchesQuery(query: string, values: readonly string[]): boolean {

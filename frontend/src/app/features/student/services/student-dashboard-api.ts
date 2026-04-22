@@ -111,6 +111,24 @@ export interface StudentAttendanceRow {
   date: string;
 }
 
+export interface StudentAbsenceEntry {
+  presenceId: number;
+  session: string;
+  date: string;
+  room: string;
+}
+
+export interface StudentAbsenceSummary {
+  subject: string;
+  professor: string;
+  typeSeance: string;
+  absenceCount: number;
+  threshold: number;
+  status: string;
+  notifiedAt: string;
+  absences: StudentAbsenceEntry[];
+}
+
 export interface StudentDashboardResponse {
   profile: StudentProfile;
   stats: StudentStat[];
@@ -122,6 +140,7 @@ export interface StudentDashboardResponse {
   announcements: StudentAnnouncementRow[];
   makeups: StudentMakeupRow[];
   attendance: StudentAttendanceRow[];
+  absenceSummaries: StudentAbsenceSummary[];
 }
 
 @Injectable({

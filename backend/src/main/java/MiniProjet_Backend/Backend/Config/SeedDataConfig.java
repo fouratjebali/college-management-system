@@ -140,6 +140,14 @@ public class SeedDataConfig {
             AcademicYearRepository academicYearRepository,
             SemesterRepository semesterRepository
     ) {
+        LocalDate s1Start = LocalDate.of(2025, 9, 1);
+        LocalDate s1End = LocalDate.of(2026, 1, 31);
+        LocalDate s2Start = LocalDate.of(2026, 2, 1);
+        LocalDate s2End = LocalDate.of(2026, 6, 30);
+        LocalDate today = LocalDate.now();
+        boolean s1Active = isDateWithin(today, s1Start, s1End);
+        boolean s2Active = isDateWithin(today, s2Start, s2End) || today.isAfter(s2End);
+
         AcademicYear academicYear = academicYearRepository.findByLabel(UNIVERSITY_YEAR).orElseGet(() -> {
             AcademicYear year = new AcademicYear();
             year.setLabel(UNIVERSITY_YEAR);
@@ -158,9 +166,9 @@ public class SeedDataConfig {
                 academicYear,
                 "S1",
                 "Semestre 1",
-                LocalDate.of(2025, 9, 1),
-                LocalDate.of(2026, 1, 31),
-                true,
+                s1Start,
+                s1End,
+                s1Active,
                 false
         );
         ensureSemester(
@@ -168,9 +176,9 @@ public class SeedDataConfig {
                 academicYear,
                 "S2",
                 "Semestre 2",
-                LocalDate.of(2026, 2, 1),
-                LocalDate.of(2026, 6, 30),
-                false,
+                s2Start,
+                s2End,
+                s2Active,
                 false
         );
     }
@@ -185,20 +193,31 @@ public class SeedDataConfig {
             boolean active,
             boolean locked
     ) {
-        return semesterRepository.findByAcademicYearIdOrderByStartDateAsc(academicYear.getId()).stream()
-                .filter(semester -> semester.getCode().equalsIgnoreCase(code))
+        Semester semester = semesterRepository.findByAcademicYearIdOrderByStartDateAsc(academicYear.getId()).stream()
+                .filter(existingSemester -> existingSemester.getCode().equalsIgnoreCase(code))
                 .findFirst()
                 .orElseGet(() -> {
-                    Semester semester = new Semester();
-                    semester.setAcademicYear(academicYear);
-                    semester.setCode(code);
-                    semester.setName(name);
-                    semester.setStartDate(startDate);
-                    semester.setEndDate(endDate);
-                    semester.setActive(active);
-                    semester.setLocked(locked);
-                    return semesterRepository.save(semester);
+                    Semester newSemester = new Semester();
+                    newSemester.setAcademicYear(academicYear);
+                    newSemester.setCode(code);
+                    newSemester.setName(name);
+                    newSemester.setStartDate(startDate);
+                    newSemester.setEndDate(endDate);
+                    newSemester.setActive(active);
+                    newSemester.setLocked(locked);
+                    return semesterRepository.save(newSemester);
                 });
+        semester.setName(name);
+        semester.setStartDate(startDate);
+        semester.setEndDate(endDate);
+        semester.setActive(active);
+        semester.setLocked(locked);
+        semester.setAcademicYear(academicYear);
+        return semesterRepository.save(semester);
+    }
+
+    private boolean isDateWithin(LocalDate date, LocalDate startDate, LocalDate endDate) {
+        return !date.isBefore(startDate) && !date.isAfter(endDate);
     }
 
     private SeedAcademicData seedAcademicStructure(
@@ -723,6 +742,13 @@ public class SeedDataConfig {
                 seanceRepository,
                 group
         );
+        ensureStudentEliminationDemoAbsences(
+                presenceRepository,
+                seanceRepository,
+                student,
+                group,
+                teachings
+        );
 
         ensureStudentSupport(
                 supportCoursRepository,
@@ -984,6 +1010,7 @@ public class SeedDataConfig {
         List<Etudiant> students = etudiantRepository.findByGroupeId(group.getId());
         List<Seance> sessions = seanceRepository.findByGroupeId(group.getId()).stream()
                 .filter(seance -> !"EXAMEN".equalsIgnoreCase(seance.getTypeSeance()))
+                .filter(seance -> !seance.getSalle().startsWith("ELIM-"))
                 .limit(6)
                 .toList();
 
@@ -1019,6 +1046,74 @@ public class SeedDataConfig {
             return "Retard";
         }
         return "Present";
+    }
+
+    private void ensureStudentEliminationDemoAbsences(
+            PresenceRepository presenceRepository,
+            SeanceRepository seanceRepository,
+            Etudiant student,
+            Groupe group,
+            List<Enseignement> teachings
+    ) {
+        Seance architectureTd = ensureSession(
+                seanceRepository,
+                teachings.get(0),
+                group,
+                "Mercredi",
+                new TimeSlot(LocalTime.of(17, 0), LocalTime.of(18, 30), "TD"),
+                "Bloc E",
+                "ELIM-TD-ARCH"
+        );
+        Seance angularTp = ensureSession(
+                seanceRepository,
+                teachings.get(2),
+                group,
+                "Jeudi",
+                new TimeSlot(LocalTime.of(17, 0), LocalTime.of(18, 30), "TP"),
+                "Lab Web",
+                "ELIM-TP-WEB"
+        );
+
+        LocalDate baseDate = LocalDate.now();
+        for (int week = 4; week >= 1; week--) {
+            ensureDatedStudentPresence(
+                    presenceRepository,
+                    architectureTd,
+                    student,
+                    baseDate.minusWeeks(week).atTime(architectureTd.getHeureDebut()),
+                    "Absent"
+            );
+        }
+
+        for (int week = 3; week >= 2; week--) {
+            ensureDatedStudentPresence(
+                    presenceRepository,
+                    angularTp,
+                    student,
+                    baseDate.minusWeeks(week).atTime(angularTp.getHeureDebut()),
+                    "Absent"
+            );
+        }
+    }
+
+    private void ensureDatedStudentPresence(
+            PresenceRepository presenceRepository,
+            Seance seance,
+            Etudiant student,
+            LocalDateTime dateSaisie,
+            String status
+    ) {
+        Presence presence = presenceRepository.findBySeanceId(seance.getId()).stream()
+                .filter(existingPresence -> existingPresence.getEtudiant().getId().equals(student.getId()))
+                .filter(existingPresence -> existingPresence.getDateSaisie().toLocalDate().equals(dateSaisie.toLocalDate()))
+                .findFirst()
+                .orElseGet(Presence::new);
+
+        presence.setSeance(seance);
+        presence.setEtudiant(student);
+        presence.setStatut(status);
+        presence.setDateSaisie(dateSaisie.withSecond(0).withNano(0));
+        presenceRepository.save(presence);
     }
 
     private void ensureStudentSupport(

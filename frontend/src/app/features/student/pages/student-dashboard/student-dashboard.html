@@ -289,6 +289,54 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'absences') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Suivi absences</span>
+              <h2>Absences par matiere et type de seance</h2>
+            </div>
+            <span class="counter">{{ filteredAbsenceSummaries().length }} matiere(s)</span>
+          </div>
+
+          <div class="subject-grade-list">
+            @if (filteredAbsenceSummaries().length > 0) {
+              @for (summary of filteredAbsenceSummaries(); track summary.subject + summary.typeSeance) {
+                <article class="subject-grade-card" [class.incomplete]="summary.absenceCount >= summary.threshold">
+                  <div class="subject-grade-heading">
+                    <div>
+                      <strong>{{ summary.subject }}</strong>
+                      <small>{{ summary.professor }} - {{ summary.typeSeance }}</small>
+                    </div>
+                    <div class="subject-average">
+                      <span>{{ summary.absenceCount }}/{{ summary.threshold }}</span>
+                      <small>{{ summary.status }}</small>
+                    </div>
+                  </div>
+
+                  <div class="data-list">
+                    @for (absence of summary.absences; track absence.presenceId) {
+                      <div class="data-row">
+                        <span class="code-pill">ABS</span>
+                        <div>
+                          <strong>{{ absence.session }}</strong>
+                          <small>{{ absence.date }} - {{ absence.room }}</small>
+                        </div>
+                        <span class="status-pill">Absent</span>
+                      </div>
+                    }
+                  </div>
+                </article>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des absences...' : 'Aucune absence enregistree par matiere.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
     } @else if (activeSection() === 'materials') {
       <section class="content-grid">
         <article class="panel table-panel full-span">

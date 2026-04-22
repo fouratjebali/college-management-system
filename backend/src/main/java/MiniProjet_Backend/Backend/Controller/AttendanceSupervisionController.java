@@ -2,6 +2,8 @@ package MiniProjet_Backend.Backend.Controller;
 
 import MiniProjet_Backend.Backend.DTO.AttendanceSupervisionDetailDTO;
 import MiniProjet_Backend.Backend.DTO.AttendanceSupervisionSessionDTO;
+import MiniProjet_Backend.Backend.DTO.EliminationRecordDTO;
+import MiniProjet_Backend.Backend.Service.AttendanceEliminationService;
 import MiniProjet_Backend.Backend.Service.AttendanceSupervisionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,9 +18,14 @@ import java.util.List;
 @RequestMapping("/api/admin/attendance-supervision")
 public class AttendanceSupervisionController {
     private final AttendanceSupervisionService attendanceSupervisionService;
+    private final AttendanceEliminationService attendanceEliminationService;
 
-    public AttendanceSupervisionController(AttendanceSupervisionService attendanceSupervisionService) {
+    public AttendanceSupervisionController(
+            AttendanceSupervisionService attendanceSupervisionService,
+            AttendanceEliminationService attendanceEliminationService
+    ) {
         this.attendanceSupervisionService = attendanceSupervisionService;
+        this.attendanceEliminationService = attendanceEliminationService;
     }
 
     @GetMapping("/sessions")
@@ -44,5 +51,15 @@ public class AttendanceSupervisionController {
     @PatchMapping("/sessions/{sessionId}/collective-absence")
     public ResponseEntity<AttendanceSupervisionDetailDTO> markCollectiveAbsence(@PathVariable Integer sessionId) {
         return ResponseEntity.ok(attendanceSupervisionService.markCollectiveAbsence(sessionId));
+    }
+
+    @GetMapping("/eliminations")
+    public ResponseEntity<List<EliminationRecordDTO>> getEliminations() {
+        return ResponseEntity.ok(attendanceEliminationService.getEliminations());
+    }
+
+    @PatchMapping("/eliminations/{id}/notify")
+    public ResponseEntity<EliminationRecordDTO> notifyEliminatedStudent(@PathVariable Integer id) {
+        return ResponseEntity.ok(attendanceEliminationService.notifyStudent(id));
     }
 }

@@ -545,8 +545,8 @@ label {
   accent-color: var(--admin-sand);
 }
 
-.data-row {
-  grid-template-columns: auto 1fr auto;
+.data-row.action-row {
+  grid-template-columns: auto 1fr auto auto;
 }
 
 .code-pill,

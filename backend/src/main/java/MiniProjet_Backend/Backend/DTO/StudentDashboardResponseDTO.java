@@ -22,6 +22,7 @@ public class StudentDashboardResponseDTO {
     private List<AnnouncementRowDTO> announcements;
     private List<MakeupRowDTO> makeups;
     private List<AttendanceRowDTO> attendance;
+    private List<StudentAbsenceSummaryDTO> absenceSummaries;
 
     @Data
     @Builder

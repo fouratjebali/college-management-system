@@ -735,6 +735,46 @@
             <p class="empty-state">Selectionnez une seance pour consulter le detail de l'appel.</p>
           }
         </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Eliminations</span>
+              <h2>Etudiants elimines par absence</h2>
+            </div>
+            <span class="counter">{{ filteredEliminations().length }} dossier(s)</span>
+          </div>
+
+          <div class="data-list">
+            @if (filteredEliminations().length > 0) {
+              @for (record of filteredEliminations(); track record.id) {
+                <div class="data-row action-row">
+                  <span class="code-pill">{{ record.absenceCount }}</span>
+                  <div>
+                    <strong>{{ record.studentName }}</strong>
+                    <small>{{ record.matricule }} - {{ record.group }}</small>
+                    <small>{{ record.subject }} - {{ record.typeSeance }} - detecte le {{ record.detectedAt }}</small>
+                  </div>
+                  <span class="status-pill" [class.pending]="record.status !== 'Renseigne'">
+                    {{ record.status }}
+                  </span>
+                  <button
+                    type="button"
+                    class="mini-button"
+                    [disabled]="record.status === 'Renseigne'"
+                    (click)="notifyEliminatedStudent(record)"
+                  >
+                    Renseigner
+                  </button>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                Aucun etudiant n'a atteint 4 absences dans un type de seance pour une matiere.
+              </p>
+            }
+          </div>
+        </article>
       </section>
     } @else {
       <section class="content-grid exam-calendar-layout">

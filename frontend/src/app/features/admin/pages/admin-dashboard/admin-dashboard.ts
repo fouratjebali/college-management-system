@@ -8,6 +8,7 @@ import {
   AdminAttendanceDetail,
   AdminAttendanceSession,
   AdminDashboardApi,
+  AdminEliminationRecord,
   AdminExamPlanningOptions,
   AdminExamPlanningRequest,
   AdminNoteValidationDetail,
@@ -178,6 +179,7 @@ export class AdminDashboardComponent {
   protected readonly selectedNoteValidationDetail = signal<AdminNoteValidationDetail | null>(null);
   protected readonly attendanceSessions = signal<readonly AdminAttendanceSession[]>([]);
   protected readonly selectedAttendanceDetail = signal<AdminAttendanceDetail | null>(null);
+  protected readonly eliminations = signal<readonly AdminEliminationRecord[]>([]);
   private examDraftCounter = 0;
 
   protected readonly activeAcademicYear = computed<AdminAcademicYear | null>(() =>
@@ -259,6 +261,21 @@ export class AdminDashboardComponent {
         session.room,
         session.type,
         session.status,
+      ])
+    );
+  });
+
+  protected readonly filteredEliminations = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+
+    return this.eliminations().filter((record) =>
+      this.matchesText(query, [
+        record.studentName,
+        record.matricule,
+        record.group,
+        record.subject,
+        record.typeSeance,
+        record.status,
       ])
     );
   });
@@ -698,6 +715,7 @@ export class AdminDashboardComponent {
       next: (detail) => {
         this.selectedAttendanceDetail.set(detail);
         this.loadAttendanceSupervision();
+        this.loadEliminations();
         this.toastMessage.set(`Absence collective validee pour ${detail.session.group}.`);
       },
       error: () => {
@@ -712,6 +730,20 @@ export class AdminDashboardComponent {
 
   protected hasCollectiveAbsenceSignal(session: AdminAttendanceSession): boolean {
     return session.collectiveAbsenceStatus === 'Signalee';
+  }
+
+  protected notifyEliminatedStudent(record: AdminEliminationRecord): void {
+    this.dashboardApi.notifyEliminatedStudent(record.id).subscribe({
+      next: (updatedRecord) => {
+        this.eliminations.update((records) =>
+          records.map((item) => (item.id === updatedRecord.id ? updatedRecord : item))
+        );
+        this.toastMessage.set(`${updatedRecord.studentName} est renseigne sur son elimination.`);
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de renseigner cet etudiant.");
+      },
+    });
   }
 
   protected submitAcademicYear(): void {
@@ -973,6 +1005,7 @@ export class AdminDashboardComponent {
       next: (sessions) => {
         this.attendanceSessions.set(sessions ?? []);
         this.isAttendanceLoading.set(false);
+        this.loadEliminations();
 
         const selectedId = this.selectedAttendanceDetail()?.session.sessionId;
         const todaySessions = this.todayAttendanceSessions();
@@ -991,6 +1024,18 @@ export class AdminDashboardComponent {
         this.selectedAttendanceDetail.set(null);
         this.isAttendanceLoading.set(false);
         this.toastMessage.set('Impossible de charger la supervision des presences.');
+      },
+    });
+  }
+
+  private loadEliminations(): void {
+    this.dashboardApi.getEliminations().subscribe({
+      next: (records) => {
+        this.eliminations.set(records ?? []);
+      },
+      error: () => {
+        this.eliminations.set([]);
+        this.toastMessage.set("Impossible de charger la liste des etudiants elimines.");
       },
     });
   }

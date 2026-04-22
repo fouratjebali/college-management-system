@@ -208,6 +208,20 @@ export interface AdminAttendanceDetail {
   students: AdminAttendanceStudent[];
 }
 
+export interface AdminEliminationRecord {
+  id: number;
+  studentId: number;
+  studentName: string;
+  matricule: string;
+  group: string;
+  subject: string;
+  typeSeance: string;
+  absenceCount: number;
+  status: string;
+  detectedAt: string;
+  notifiedAt: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -340,6 +354,19 @@ export class AdminDashboardApi {
   markCollectiveAbsence(sessionId: number): Observable<AdminAttendanceDetail> {
     return this.http.patch<AdminAttendanceDetail>(
       `${this.apiUrl}/attendance-supervision/sessions/${sessionId}/collective-absence`,
+      {}
+    );
+  }
+
+  getEliminations(): Observable<AdminEliminationRecord[]> {
+    return this.http.get<AdminEliminationRecord[]>(
+      `${this.apiUrl}/attendance-supervision/eliminations`
+    );
+  }
+
+  notifyEliminatedStudent(id: number): Observable<AdminEliminationRecord> {
+    return this.http.patch<AdminEliminationRecord>(
+      `${this.apiUrl}/attendance-supervision/eliminations/${id}/notify`,
       {}
     );
   }

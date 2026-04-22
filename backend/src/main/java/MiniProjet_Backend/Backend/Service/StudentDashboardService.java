@@ -42,6 +42,7 @@ public class StudentDashboardService {
     private final AnnonceRepository annonceRepository;
     private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
     private final NoteWorkflowService noteWorkflowService;
+    private final AttendanceEliminationService attendanceEliminationService;
 
     public StudentDashboardService(
             EtudiantRepository etudiantRepository,
@@ -52,7 +53,8 @@ public class StudentDashboardService {
             SupportCoursRepository supportCoursRepository,
             AnnonceRepository annonceRepository,
             AcademicEvaluationPolicyService academicEvaluationPolicyService,
-            NoteWorkflowService noteWorkflowService
+            NoteWorkflowService noteWorkflowService,
+            AttendanceEliminationService attendanceEliminationService
     ) {
         this.etudiantRepository = etudiantRepository;
         this.seanceRepository = seanceRepository;
@@ -63,9 +65,10 @@ public class StudentDashboardService {
         this.annonceRepository = annonceRepository;
         this.academicEvaluationPolicyService = academicEvaluationPolicyService;
         this.noteWorkflowService = noteWorkflowService;
+        this.attendanceEliminationService = attendanceEliminationService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public StudentDashboardResponseDTO getDashboard(String email) {
         Etudiant student = etudiantRepository.findByEmail(email)
                 .orElseGet(() -> etudiantRepository.findAll().stream()
@@ -106,6 +109,7 @@ public class StudentDashboardService {
                 .announcements(announcements.stream().map(this::toAnnouncementRow).toList())
                 .makeups(makeups.stream().map(this::toMakeupRow).toList())
                 .attendance(attendance.stream().map(this::toAttendanceRow).toList())
+                .absenceSummaries(attendanceEliminationService.getStudentAbsenceSummaries(student.getId()))
                 .build();
     }
 
