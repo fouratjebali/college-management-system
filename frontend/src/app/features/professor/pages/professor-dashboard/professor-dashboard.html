@@ -378,10 +378,18 @@
             @if (selectedSession(); as session) {
               <div class="helper-card">
                 {{ session.type }} - {{ session.room }} - {{ session.start }} a {{ session.end }}
+                @if (session.collectiveAbsenceStatus !== 'Aucune') {
+                  - absence collective {{ session.collectiveAbsenceStatus }}
+                }
               </div>
             }
 
-            <button class="primary-button" type="submit">Sauvegarder l'appel</button>
+            <div class="form-actions">
+              <button class="primary-button" type="submit">Sauvegarder l'appel</button>
+              <button class="secondary-button" type="button" (click)="reportCollectiveAbsence()">
+                Signaler aucun present
+              </button>
+            </div>
           </form>
         </article>
 

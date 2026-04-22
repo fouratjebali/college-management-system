@@ -83,6 +83,34 @@ public class AttendanceSupervisionService {
         return getSessionDetails(sessionId);
     }
 
+    @Transactional
+    public AttendanceSupervisionDetailDTO markCollectiveAbsence(Integer sessionId) {
+        Seance seance = findSession(sessionId);
+        List<Etudiant> students = etudiantRepository.findByGroupeId(seance.getGroupe().getId());
+        LocalDateTime now = LocalDateTime.now();
+
+        students.forEach(student -> {
+            Presence presence = presenceRepository.findBySeanceIdAndEtudiantId(seance.getId(), student.getId())
+                    .orElseGet(Presence::new);
+            presence.setSeance(seance);
+            presence.setEtudiant(student);
+            presence.setStatut("Absent");
+            presence.setDateSaisie(now);
+            presenceRepository.save(presence);
+        });
+
+        seance.setCollectiveAbsenceStatus("VALIDEE");
+        seance.setCollectiveAbsenceConfirmedAt(now);
+        if (seance.getCollectiveAbsenceReportedAt() == null) {
+            seance.setCollectiveAbsenceReportedAt(now);
+        }
+        seance.setAttendanceStatus(STATUS_CLOSED);
+        seance.setAttendanceClosedAt(now);
+        seanceRepository.save(seance);
+
+        return getSessionDetails(sessionId);
+    }
+
     private Seance findSession(Integer sessionId) {
         return seanceRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Seance not found"));
@@ -125,6 +153,9 @@ public class AttendanceSupervisionService {
                 .status(displayStatus(seance.getAttendanceStatus()))
                 .closedAt(formatDate(seance.getAttendanceClosedAt()))
                 .lastEntryAt(formatDate(lastEntryAt))
+                .collectiveAbsenceStatus(displayCollectiveAbsenceStatus(seance.getCollectiveAbsenceStatus()))
+                .collectiveAbsenceReportedAt(formatDate(seance.getCollectiveAbsenceReportedAt()))
+                .collectiveAbsenceConfirmedAt(formatDate(seance.getCollectiveAbsenceConfirmedAt()))
                 .build();
     }
 
@@ -166,6 +197,16 @@ public class AttendanceSupervisionService {
 
     private String displayStatus(String status) {
         return STATUS_CLOSED.equalsIgnoreCase(status) ? "Cloturee" : "Ouverte";
+    }
+
+    private String displayCollectiveAbsenceStatus(String status) {
+        if ("SIGNALEE".equalsIgnoreCase(status)) {
+            return "Signalee";
+        }
+        if ("VALIDEE".equalsIgnoreCase(status)) {
+            return "Validee";
+        }
+        return "Aucune";
     }
 
     private String formatRate(int absentCount, int expectedCount) {

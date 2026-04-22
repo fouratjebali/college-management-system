@@ -44,6 +44,15 @@ public class Seance {
     @Column
     private LocalDateTime attendanceClosedAt;
 
+    @Column
+    private String collectiveAbsenceStatus = "AUCUNE";
+
+    @Column
+    private LocalDateTime collectiveAbsenceReportedAt;
+
+    @Column
+    private LocalDateTime collectiveAbsenceConfirmedAt;
+
     @ManyToOne
     @JoinColumn(name="enseignement_id", nullable = false)
     @EqualsAndHashCode.Exclude

@@ -636,6 +636,9 @@
                   <span class="status-pill" [class.pending]="!isClosedAttendanceSession(session)">
                     {{ session.status }}
                   </span>
+                  @if (session.collectiveAbsenceStatus !== 'Aucune') {
+                    <span class="status-pill pending">Collective {{ session.collectiveAbsenceStatus }}</span>
+                  }
                 </button>
               }
             } @else {
@@ -656,6 +659,12 @@
                   {{ detail.session.day }} {{ detail.session.startTime }} - {{ detail.session.endTime }}
                   / {{ detail.session.professor }}
                 </p>
+                @if (detail.session.collectiveAbsenceStatus !== 'Aucune') {
+                  <small>
+                    Absence collective {{ detail.session.collectiveAbsenceStatus }}
+                    {{ detail.session.collectiveAbsenceReportedAt || '' }}
+                  </small>
+                }
               </div>
               <span class="status-pill" [class.pending]="!isClosedAttendanceSession(detail.session)">
                 {{ detail.session.status }}
@@ -693,6 +702,11 @@
               } @else {
                 <button type="button" class="primary-button" (click)="closeAttendanceSession(detail.session)">
                   Cloturer l'appel
+                </button>
+              }
+              @if (hasCollectiveAbsenceSignal(detail.session)) {
+                <button type="button" class="secondary-button" (click)="markCollectiveAbsence(detail.session)">
+                  Marquer absence collective
                 </button>
               }
               <span class="helper-card">

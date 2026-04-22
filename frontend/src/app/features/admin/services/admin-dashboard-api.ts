@@ -189,6 +189,9 @@ export interface AdminAttendanceSession {
   status: string;
   closedAt: string;
   lastEntryAt: string;
+  collectiveAbsenceStatus: string;
+  collectiveAbsenceReportedAt: string;
+  collectiveAbsenceConfirmedAt: string;
 }
 
 export interface AdminAttendanceStudent {
@@ -330,6 +333,13 @@ export class AdminDashboardApi {
   reopenAttendanceSession(sessionId: number): Observable<AdminAttendanceDetail> {
     return this.http.patch<AdminAttendanceDetail>(
       `${this.apiUrl}/attendance-supervision/sessions/${sessionId}/reopen`,
+      {}
+    );
+  }
+
+  markCollectiveAbsence(sessionId: number): Observable<AdminAttendanceDetail> {
+    return this.http.patch<AdminAttendanceDetail>(
+      `${this.apiUrl}/attendance-supervision/sessions/${sessionId}/collective-absence`,
       {}
     );
   }

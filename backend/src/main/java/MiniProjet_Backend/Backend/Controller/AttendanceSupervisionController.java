@@ -40,4 +40,9 @@ public class AttendanceSupervisionController {
     public ResponseEntity<AttendanceSupervisionDetailDTO> reopenSession(@PathVariable Integer sessionId) {
         return ResponseEntity.ok(attendanceSupervisionService.reopenSession(sessionId));
     }
+
+    @PatchMapping("/sessions/{sessionId}/collective-absence")
+    public ResponseEntity<AttendanceSupervisionDetailDTO> markCollectiveAbsence(@PathVariable Integer sessionId) {
+        return ResponseEntity.ok(attendanceSupervisionService.markCollectiveAbsence(sessionId));
+    }
 }

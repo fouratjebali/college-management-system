@@ -110,6 +110,26 @@ public class ProfessorDashboardService {
                 .build();
     }
 
+    @Transactional
+    public void reportCollectiveAbsence(String email, Integer sessionId) {
+        Professeur professeur = professeurRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Professeur introuvable"));
+        Seance seance = seanceRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Seance not found"));
+
+        if (!seance.getEnseignement().getProfesseur().getId().equals(professeur.getId())) {
+            throw new RuntimeException("Cette seance n'appartient pas au professeur connecte.");
+        }
+        if ("CLOTUREE".equalsIgnoreCase(seance.getAttendanceStatus())) {
+            throw new RuntimeException("Cette seance de presence est deja cloturee.");
+        }
+
+        seance.setCollectiveAbsenceStatus("SIGNALEE");
+        seance.setCollectiveAbsenceReportedAt(java.time.LocalDateTime.now());
+        seance.setCollectiveAbsenceConfirmedAt(null);
+        seanceRepository.save(seance);
+    }
+
     private List<ProfessorDashboardResponseDTO.StatDTO> buildStats(
             List<Enseignement> teachings,
             List<Groupe> groups,
@@ -187,7 +207,18 @@ public class ProfessorDashboardService {
                 .end(seance.getHeureFin().toString())
                 .room(seance.getBatiment() + " / " + seance.getSalle())
                 .type(seance.getTypeSeance())
+                .collectiveAbsenceStatus(displayCollectiveAbsenceStatus(seance.getCollectiveAbsenceStatus()))
                 .build();
+    }
+
+    private String displayCollectiveAbsenceStatus(String status) {
+        if ("SIGNALEE".equalsIgnoreCase(status)) {
+            return "Signalee";
+        }
+        if ("VALIDEE".equalsIgnoreCase(status)) {
+            return "Validee";
+        }
+        return "Aucune";
     }
 
     private ProfessorDashboardResponseDTO.EvaluationRowDTO toEvaluationRow(Evaluation evaluation) {

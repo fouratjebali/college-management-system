@@ -75,6 +75,7 @@ public class ProfessorDashboardResponseDTO {
         private String end;
         private String room;
         private String type;
+        private String collectiveAbsenceStatus;
     }
 
     @Data

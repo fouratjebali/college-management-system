@@ -693,8 +693,25 @@ export class AdminDashboardComponent {
     });
   }
 
+  protected markCollectiveAbsence(session: AdminAttendanceSession): void {
+    this.dashboardApi.markCollectiveAbsence(session.sessionId).subscribe({
+      next: (detail) => {
+        this.selectedAttendanceDetail.set(detail);
+        this.loadAttendanceSupervision();
+        this.toastMessage.set(`Absence collective validee pour ${detail.session.group}.`);
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de valider l'absence collective.");
+      },
+    });
+  }
+
   protected isClosedAttendanceSession(session: AdminAttendanceSession): boolean {
     return session.status.toLowerCase() === 'cloturee';
+  }
+
+  protected hasCollectiveAbsenceSignal(session: AdminAttendanceSession): boolean {
+    return session.collectiveAbsenceStatus === 'Signalee';
   }
 
   protected submitAcademicYear(): void {

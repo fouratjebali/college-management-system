@@ -39,6 +39,7 @@ export interface ProfessorSessionRow {
   end: string;
   room: string;
   type: string;
+  collectiveAbsenceStatus: string;
 }
 
 export interface ProfessorEvaluationRow {
@@ -144,6 +145,10 @@ export class ProfessorDashboardApi {
 
   saveAttendance(payload: SaveAttendancePayload): Observable<unknown> {
     return this.http.post('/api/presences', payload);
+  }
+
+  reportCollectiveAbsence(sessionId: number): Observable<unknown> {
+    return this.http.patch(`${this.apiUrl}/attendance/${sessionId}/collective-absence`, {});
   }
 
   createMakeupSession(payload: CreateSessionPayload): Observable<unknown> {

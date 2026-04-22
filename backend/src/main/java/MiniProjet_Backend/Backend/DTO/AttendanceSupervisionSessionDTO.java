@@ -31,4 +31,7 @@ public class AttendanceSupervisionSessionDTO {
     private String status;
     private String closedAt;
     private String lastEntryAt;
+    private String collectiveAbsenceStatus;
+    private String collectiveAbsenceReportedAt;
+    private String collectiveAbsenceConfirmedAt;
 }

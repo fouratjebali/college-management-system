@@ -442,6 +442,29 @@ export class ProfessorDashboardComponent {
     });
   }
 
+  protected reportCollectiveAbsence(): void {
+    const session = this.selectedSession();
+
+    if (!session) {
+      this.toastMessage.set('Selectionnez une seance avant de signaler une absence collective.');
+      return;
+    }
+
+    this.dashboardApi.reportCollectiveAbsence(session.id).subscribe({
+      next: () => {
+        this.toastMessage.set(`Absence collective signalee pour ${session.subject} - ${session.group}.`);
+        this.loadDashboard();
+      },
+      error: (error) => {
+        this.toastMessage.set(
+          error.error?.message ||
+            error.error?.error ||
+            "Impossible de signaler l'absence collective."
+        );
+      },
+    });
+  }
+
   protected submitMakeupSession(): void {
     if (this.makeupForm.invalid) {
       this.makeupForm.markAllAsTouched();
