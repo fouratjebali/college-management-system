@@ -25,11 +25,33 @@ interface NavItem {
   description: string;
 }
 
-interface StatCard {
+interface OverviewMetric {
   label: string;
   value: string;
-  trend: string;
-  tone: 'light' | 'warm' | 'steel' | 'sand';
+  meta: string;
+}
+
+interface ChartSegment {
+  label: string;
+  value: number;
+  percent: number;
+  color: string;
+}
+
+interface DepartmentKpi {
+  name: string;
+  students: number;
+  professors: number;
+  groups: number;
+  subjects: number;
+  load: number;
+}
+
+interface SystemKpi {
+  label: string;
+  value: string;
+  meta: string;
+  progress: number;
 }
 
 interface AcademicRow {
@@ -140,21 +162,148 @@ export class AdminDashboardComponent {
     },
   ];
 
-  protected readonly stats = signal<readonly StatCard[]>([]);
+  protected readonly overviewMetrics = computed<readonly OverviewMetric[]>(() => {
+    const students = this.countUsersByRole('Etudiant');
+    const professors = this.countUsersByRole('Professeur');
+    const activeUsers = this.users().filter((user) => user.status === 'Active').length;
+    const totalUsers = this.users().length;
+    const departments = this.academicRows().length;
+    const groups = this.totalGroups();
+    const subjects = this.totalSubjects();
+    const attendanceSessions = this.todayAttendanceSessions().length;
+    const openNoteFlows = this.noteValidationEvaluations().filter(
+      (evaluation) => evaluation.status !== 'Publiee'
+    ).length;
 
-  protected readonly activitySeries = computed(() => {
-    const stats = this.stats();
-    const values = stats.map((stat) => this.parseStatValue(stat.value));
-    const maxValue = Math.max(...values, 0);
+    return [
+      {
+        label: 'Etudiants',
+        value: this.formatNumber(students),
+        meta: `${this.formatNumber(groups)} groupe(s), ${this.formatPercent(this.percent(students, totalUsers))} des comptes`,
+      },
+      {
+        label: 'Professeurs',
+        value: this.formatNumber(professors),
+        meta: `${this.formatNumber(subjects)} matiere(s) encadree(s)`,
+      },
+      {
+        label: 'Departements',
+        value: this.formatNumber(departments),
+        meta: `${this.formatNumber(groups)} groupes et ${this.formatNumber(subjects)} matieres`,
+      },
+      {
+        label: 'Systeme actif',
+        value: `${this.formatPercent(this.percent(activeUsers, totalUsers))}`,
+        meta: `${this.formatNumber(attendanceSessions)} seance(s) aujourd'hui, ${openNoteFlows} workflow(s) note`,
+      },
+    ];
+  });
 
-    if (stats.length === 0 || maxValue === 0) {
-      return [];
-    }
+  protected readonly roleDistribution = computed<readonly ChartSegment[]>(() => {
+    const roles = [
+      { label: 'Etudiants', role: 'Etudiant', color: '#dfd0b8' },
+      { label: 'Professeurs', role: 'Professeur', color: '#948979' },
+      { label: 'Admins', role: 'Administrateur', color: '#6f7f8f' },
+    ];
+    const total = this.users().length;
 
-    return stats.map((stat, index) => ({
-      label: stat.label,
-      value: Math.max(8, Math.round((values[index] / maxValue) * 100)),
-    }));
+    return roles.map((item) => {
+      const value = this.countUsersByRole(item.role);
+      return {
+        label: item.label,
+        value,
+        percent: this.percent(value, total),
+        color: item.color,
+      };
+    });
+  });
+
+  protected readonly roleDonutStyle = computed(() => {
+    let offset = 0;
+    const segments = this.roleDistribution()
+      .filter((segment) => segment.percent > 0)
+      .map((segment) => {
+        const start = offset;
+        offset += segment.percent;
+        return `${segment.color} ${start}% ${offset}%`;
+      });
+
+    return `conic-gradient(${segments.length ? segments.join(', ') : 'rgba(223, 208, 184, 0.14) 0 100%'})`;
+  });
+
+  protected readonly departmentKpis = computed<readonly DepartmentKpi[]>(() => {
+    const departments = this.academicRows().map((row) => {
+      const students = this.users().filter(
+        (user) => user.role === 'Etudiant' && user.department === row.title
+      ).length;
+      const professors = this.users().filter(
+        (user) => user.role === 'Professeur' && user.department === row.title
+      ).length;
+      const structure = this.parseAcademicMeta(row.meta);
+
+      return {
+        name: row.title,
+        students,
+        professors,
+        groups: structure.groups,
+        subjects: structure.subjects,
+        load: students + professors + structure.groups + structure.subjects,
+      };
+    });
+    const maxLoad = Math.max(...departments.map((department) => department.load), 0);
+
+    return departments
+      .sort((first, second) => second.load - first.load)
+      .map((department) => ({
+        ...department,
+        load: Math.max(8, this.percent(department.load, maxLoad)),
+      }));
+  });
+
+  protected readonly systemKpis = computed<readonly SystemKpi[]>(() => {
+    const plannedExams = this.plannedExams().length;
+    const publishedExams = this.plannedExams().filter((exam) => this.isPublishedExam(exam)).length;
+    const noteFlows = this.noteValidationEvaluations().length;
+    const publishedNotes = this.noteValidationEvaluations().reduce(
+      (total, evaluation) => total + evaluation.publishedCount,
+      0
+    );
+    const totalNotes = this.noteValidationEvaluations().reduce(
+      (total, evaluation) => total + evaluation.totalNotes,
+      0
+    );
+    const attendanceSessions = this.todayAttendanceSessions();
+    const expected = attendanceSessions.reduce((total, session) => total + session.expectedCount, 0);
+    const recorded = attendanceSessions.reduce((total, session) => total + session.recordedCount, 0);
+    const eliminations = this.eliminations().length;
+    const notified = this.eliminations().filter((record) => record.status === 'Renseigne').length;
+
+    return [
+      {
+        label: 'Examens publies',
+        value: `${publishedExams}/${plannedExams}`,
+        meta: 'Calendrier examens',
+        progress: this.percent(publishedExams, plannedExams),
+      },
+      {
+        label: 'Notes publiees',
+        value: `${publishedNotes}/${totalNotes}`,
+        meta: `${noteFlows} evaluation(s) suivie(s)`,
+        progress: this.percent(publishedNotes, totalNotes),
+      },
+      {
+        label: 'Presences saisies',
+        value: `${recorded}/${expected}`,
+        meta: `Seances du ${this.todayAttendanceDay()}`,
+        progress: this.percent(recorded, expected),
+      },
+      {
+        label: 'Eliminations renseignees',
+        value: `${notified}/${eliminations}`,
+        meta: 'Suivi absence critique',
+        progress: this.percent(notified, eliminations),
+      },
+    ];
   });
 
   protected readonly quickActions = [
@@ -429,7 +578,6 @@ export class AdminDashboardComponent {
 
     this.dashboardApi.getDashboard().subscribe({
       next: (dashboard) => {
-        this.stats.set(this.normalizeStats(dashboard.stats ?? []));
         this.academicRows.set(this.normalizeAcademicRows(dashboard.academicRows ?? []));
         this.users.set((dashboard.users ?? []).map((user) => this.normalizeUser(user)));
         this.examRows.set((dashboard.exams ?? []).map((exam) => this.normalizeExam(exam)));
@@ -437,7 +585,6 @@ export class AdminDashboardComponent {
         this.toastMessage.set('Donnees admin chargees depuis la base de donnees.');
       },
       error: () => {
-        this.stats.set([]);
         this.academicRows.set([]);
         this.users.set([]);
         this.examRows.set([]);
@@ -844,19 +991,6 @@ export class AdminDashboardComponent {
     this.setSection(target);
   }
 
-  private normalizeStats(stats: readonly Partial<StatCard>[]): StatCard[] {
-    const tones: StatCard['tone'][] = ['light', 'steel', 'warm', 'sand'];
-
-    return stats
-      .filter((stat) => Boolean(stat.label))
-      .map((stat, index) => ({
-        label: this.cleanText(stat.label, 'Indicateur'),
-        value: this.cleanText(stat.value, '0'),
-        trend: this.cleanText(stat.trend, 'Base de donnees'),
-        tone: this.isStatTone(stat.tone) ? stat.tone : tones[index % tones.length],
-      }));
-  }
-
   private normalizeAcademicRows(rows: readonly Partial<AcademicRow>[]): AcademicRow[] {
     return rows
       .filter((row) => Boolean(row.title || row.code))
@@ -893,18 +1027,47 @@ export class AdminDashboardComponent {
     };
   }
 
-  private parseStatValue(value: string): number {
-    const numericValue = Number(value.replace(/[^\d.-]/g, ''));
-    return Number.isFinite(numericValue) ? numericValue : 0;
-  }
-
   private cleanText(value: string | null | undefined, fallback: string): string {
     const normalizedValue = value?.trim();
     return normalizedValue ? normalizedValue : fallback;
   }
 
-  private isStatTone(value: unknown): value is StatCard['tone'] {
-    return value === 'light' || value === 'warm' || value === 'steel' || value === 'sand';
+  private countUsersByRole(role: string): number {
+    return this.users().filter((user) => user.role === role).length;
+  }
+
+  private totalGroups(): number {
+    return this.academicRows().reduce((total, row) => total + this.parseAcademicMeta(row.meta).groups, 0);
+  }
+
+  private totalSubjects(): number {
+    return this.academicRows().reduce((total, row) => total + this.parseAcademicMeta(row.meta).subjects, 0);
+  }
+
+  private parseAcademicMeta(meta: string): { groups: number; subjects: number } {
+    const groups = Number(meta.match(/(\d+)\s+groupes?/i)?.[1] ?? 0);
+    const subjects = Number(meta.match(/(\d+)\s+matieres?/i)?.[1] ?? 0);
+
+    return {
+      groups: Number.isFinite(groups) ? groups : 0,
+      subjects: Number.isFinite(subjects) ? subjects : 0,
+    };
+  }
+
+  private percent(value: number, total: number): number {
+    if (!Number.isFinite(value) || !Number.isFinite(total) || total <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.round((value / total) * 100));
+  }
+
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat('fr-FR').format(value);
+  }
+
+  protected formatPercent(value: number): string {
+    return `${value}%`;
   }
 
   private buildCodeFromName(name: string | null | undefined): string {

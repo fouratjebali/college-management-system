@@ -51,81 +51,126 @@
     <p class="toast" role="status">{{ toastMessage() }}</p>
 
     @if (activeSection() === 'overview') {
-      <section class="content-grid overview-grid">
-        <article class="hero-card">
-          <span class="eyebrow">Pilotage academique</span>
-          <h2>Une vue claire pour gerer la plateforme.</h2>
-          <p>
-            Cette interface centralise les indicateurs, les listes et les actions essentielles
-            pour le pilotage academique.
-          </p>
-          <div class="hero-actions">
-            <button type="button" class="primary-button" (click)="setSection('structure')">
-              Ajouter une structure
-            </button>
-            <button type="button" class="secondary-button" (click)="setSection('calendar')">
-              Planifier un examen
-            </button>
-          </div>
-        </article>
-
-        <section class="stats-grid" aria-label="Statistiques principales">
-          @if (stats().length > 0) {
-            @for (stat of stats(); track stat.label) {
-              <article
-                class="stat-card"
-                [class.tone-light]="stat.tone === 'light'"
-                [class.tone-warm]="stat.tone === 'warm'"
-                [class.tone-steel]="stat.tone === 'steel'"
-                [class.tone-sand]="stat.tone === 'sand'"
-              >
-                <span>{{ stat.label }}</span>
-                <strong>{{ stat.value }}</strong>
-                <small>{{ stat.trend }}</small>
+      <section class="admin-overview">
+        <section class="overview-metrics" aria-label="Statistiques administrateur">
+          @if (overviewMetrics().length > 0) {
+            @for (metric of overviewMetrics(); track metric.label) {
+              <article class="metric-card">
+                <span>{{ metric.label }}</span>
+                <strong>{{ metric.value }}</strong>
+                <small>{{ metric.meta }}</small>
               </article>
             }
           } @else {
-            <article class="empty-state grid-empty">
+            <article class="empty-state full-span">
               {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique trouvee dans la base.' }}
             </article>
           }
         </section>
 
-        <article class="panel chart-panel">
-          <div class="panel-heading">
-            <span class="eyebrow">Base de donnees</span>
-            <h3>Repartition des donnees</h3>
-          </div>
-          @if (activitySeries().length > 0) {
-            <div class="bar-chart" aria-label="Graphique de repartition des donnees">
-              @for (point of activitySeries(); track point.label) {
-                <div class="bar-column">
-                  <span class="bar" [style.height.%]="point.value"></span>
-                  <small>{{ point.label }}</small>
+        <section class="insight-grid">
+          <article class="panel role-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Utilisateurs</span>
+                <h2>Repartition des roles</h2>
+              </div>
+              <span class="counter">{{ users().length }} compte(s)</span>
+            </div>
+
+            <div class="role-chart">
+              <div class="donut-chart" [style.background]="roleDonutStyle()">
+                <div class="donut-center">
+                  <strong>{{ users().length }}</strong>
+                  <small>Total</small>
+                </div>
+              </div>
+              <div class="legend-list">
+                @for (segment of roleDistribution(); track segment.label) {
+                  <div class="data-row legend-row">
+                    <span class="legend-dot" [style.background]="segment.color"></span>
+                    <div>
+                      <strong>{{ segment.label }}</strong>
+                      <small>{{ segment.value }} compte(s)</small>
+                    </div>
+                    <span>{{ formatPercent(segment.percent) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </article>
+
+          <article class="panel department-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Departements</span>
+                <h2>Charge academique</h2>
+              </div>
+              <span class="counter">{{ departmentKpis().length }} departement(s)</span>
+            </div>
+
+            <div class="department-chart">
+              @if (departmentKpis().length > 0) {
+                @for (department of departmentKpis(); track department.name) {
+                  <div class="data-row department-row">
+                    <div>
+                      <strong>{{ department.name }}</strong>
+                      <small>
+                        {{ department.students }} etudiant(s), {{ department.professors }} prof(s),
+                        {{ department.groups }} groupe(s), {{ department.subjects }} matiere(s)
+                      </small>
+                    </div>
+                    <div class="progress-track" aria-hidden="true">
+                      <span [style.width.%]="department.load"></span>
+                    </div>
+                  </div>
+                }
+              } @else {
+                <p class="empty-state">Aucun departement disponible.</p>
+              }
+            </div>
+          </article>
+
+          <article class="panel system-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Systeme</span>
+                <h2>Indicateurs operationnels</h2>
+              </div>
+              <span class="counter">{{ activeSemester()?.code || 'Semestre' }}</span>
+            </div>
+
+            <div class="system-kpi-grid">
+              @for (kpi of systemKpis(); track kpi.label) {
+                <div class="data-row system-kpi">
+                  <div>
+                    <strong>{{ kpi.value }}</strong>
+                    <span>{{ kpi.label }}</span>
+                    <small>{{ kpi.meta }}</small>
+                  </div>
+                  <div class="progress-track" aria-hidden="true">
+                    <span [style.width.%]="kpi.progress"></span>
+                  </div>
                 </div>
               }
             </div>
-          } @else {
-            <p class="empty-state">
-              {{ isDashboardLoading() ? 'Chargement du graphique...' : 'Graphique indisponible sans statistiques en base.' }}
-            </p>
-          }
-        </article>
+          </article>
 
-        <article class="panel quick-panel">
-          <div class="panel-heading">
-            <span class="eyebrow">Actions rapides</span>
-            <h3>Operations frequentes</h3>
-          </div>
-          <div class="quick-list">
-            @for (action of quickActions; track action) {
-              <button type="button" (click)="activateQuickAction(action)">
-                <span>{{ action }}</span>
-                <strong>Open</strong>
-              </button>
-            }
-          </div>
-        </article>
+          <article class="panel quick-panel">
+            <div class="panel-heading">
+              <span class="eyebrow">Actions rapides</span>
+              <h2>Operations frequentes</h2>
+            </div>
+            <div class="quick-list">
+              @for (action of quickActions; track action) {
+                <button type="button" (click)="activateQuickAction(action)">
+                  <span>{{ action }}</span>
+                  <strong>Open</strong>
+                </button>
+              }
+            </div>
+          </article>
+        </section>
       </section>
     } @else if (activeSection() === 'academic-year') {
       <section class="content-grid academic-year-layout">

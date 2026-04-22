@@ -35,7 +35,7 @@
 .brand-block,
 .nav-item,
 .panel,
-.stat-card,
+.metric-card,
 .toast {
   border: 1px solid var(--admin-border);
 }
@@ -262,48 +262,110 @@ button {
   gap: 18px;
 }
 
-.overview-grid {
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+.admin-overview,
+.overview-metrics,
+.insight-grid,
+.system-kpi-grid,
+.legend-list,
+.department-chart {
+  display: grid;
+  gap: 18px;
 }
 
-.hero-card,
 .panel,
-.stat-card {
+.metric-card {
   border-radius: 28px;
   background: var(--admin-panel);
 }
 
-.hero-card {
-  min-height: 330px;
-  padding: clamp(1.4rem, 4vw, 3rem);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  gap: 18px;
-  border: 1px solid rgba(223, 208, 184, 0.12);
-  background: linear-gradient(145deg, rgba(57, 62, 70, 0.96), rgba(34, 40, 49, 0.96));
+.overview-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.stat-card {
-  min-height: 150px;
+.metric-card {
+  min-height: 170px;
   padding: 20px;
   display: grid;
   align-content: space-between;
 }
 
-.stat-card span {
+.metric-card span,
+.system-kpi span {
   color: var(--admin-soft);
 }
 
-.stat-card strong {
-  font-size: 2.35rem;
+.metric-card strong {
+  font-size: clamp(2.15rem, 3vw, 3.1rem);
   letter-spacing: -0.05em;
+}
+
+.insight-grid {
+  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.1fr);
+}
+
+.role-chart {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 22px;
+}
+
+.donut-chart {
+  width: min(220px, 100%);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+}
+
+.donut-center {
+  width: 58%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(34, 40, 49, 0.94);
+}
+
+.donut-center strong,
+.system-kpi strong {
+  font-size: 1.7rem;
+}
+
+.legend-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.department-row {
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.45fr);
+}
+
+.progress-track {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--admin-sand), var(--admin-accent));
+}
+
+.system-kpi-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.system-kpi {
+  align-content: space-between;
 }
 
 .panel {
@@ -320,16 +382,6 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.bar-chart {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 14px;
-}
-
-.bar-column {
-  text-align: center;
 }
 
 .quick-list,
@@ -355,10 +407,6 @@ button {
   color: var(--admin-soft);
   text-align: center;
   line-height: 1.6;
-}
-
-.grid-empty {
-  grid-column: 1 / -1;
 }
 
 .quick-list button,
@@ -693,7 +741,9 @@ label {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .overview-grid,
+  .overview-metrics,
+  .insight-grid,
+  .role-chart,
   .two-columns,
   .users-layout,
   .academic-year-layout,
@@ -706,6 +756,8 @@ label {
   .filter-grid,
   .professor-grid,
   .summary-grid,
+  .system-kpi-grid,
+  .department-row,
   .attendance-stat-grid,
   .attendance-metrics {
     grid-template-columns: 1fr;
@@ -729,7 +781,7 @@ label {
   }
 
   .nav-stack,
-  .stats-grid,
+  .overview-metrics,
   .field-row,
   .filter-grid,
   .professor-grid,
