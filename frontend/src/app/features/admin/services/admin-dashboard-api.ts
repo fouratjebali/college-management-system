@@ -167,6 +167,44 @@ export interface AdminNoteValidationDetail {
   notes: AdminNoteValidationStudent[];
 }
 
+export interface AdminAttendanceSession {
+  sessionId: number;
+  subject: string;
+  groupId: number;
+  group: string;
+  department: string;
+  professor: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  room: string;
+  type: string;
+  expectedCount: number;
+  recordedCount: number;
+  presentCount: number;
+  lateCount: number;
+  absentCount: number;
+  missingCount: number;
+  absenceRate: string;
+  status: string;
+  closedAt: string;
+  lastEntryAt: string;
+}
+
+export interface AdminAttendanceStudent {
+  presenceId: number | null;
+  studentId: number;
+  studentName: string;
+  matricule: string;
+  status: string;
+  date: string;
+}
+
+export interface AdminAttendanceDetail {
+  session: AdminAttendanceSession;
+  students: AdminAttendanceStudent[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -269,6 +307,30 @@ export class AdminDashboardApi {
     return this.http.patch<AdminNoteValidationDetail>(
       `${this.apiUrl}/note-validation/evaluations/${evaluationId}/publish`,
       { remark }
+    );
+  }
+
+  getAttendanceSessions(): Observable<AdminAttendanceSession[]> {
+    return this.http.get<AdminAttendanceSession[]>(`${this.apiUrl}/attendance-supervision/sessions`);
+  }
+
+  getAttendanceDetail(sessionId: number): Observable<AdminAttendanceDetail> {
+    return this.http.get<AdminAttendanceDetail>(
+      `${this.apiUrl}/attendance-supervision/sessions/${sessionId}`
+    );
+  }
+
+  closeAttendanceSession(sessionId: number): Observable<AdminAttendanceDetail> {
+    return this.http.patch<AdminAttendanceDetail>(
+      `${this.apiUrl}/attendance-supervision/sessions/${sessionId}/close`,
+      {}
+    );
+  }
+
+  reopenAttendanceSession(sessionId: number): Observable<AdminAttendanceDetail> {
+    return this.http.patch<AdminAttendanceDetail>(
+      `${this.apiUrl}/attendance-supervision/sessions/${sessionId}/reopen`,
+      {}
     );
   }
 }

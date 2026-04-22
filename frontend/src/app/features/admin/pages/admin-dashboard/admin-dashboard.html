@@ -589,6 +589,136 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'attendance') {
+      <section class="content-grid attendance-layout">
+        <article class="panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Supervision presences</span>
+              <h2>Suivi des appels par seance</h2>
+            </div>
+            <span class="counter">{{ filteredAttendanceSessions().length }} seance(s)</span>
+          </div>
+
+          <div class="attendance-stat-grid">
+            @for (stat of attendanceStats(); track stat.label) {
+              <div>
+                <small>{{ stat.label }}</small>
+                <strong>{{ stat.value }}</strong>
+                <span>{{ stat.meta }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Seances</span>
+            <h2>Appels a superviser</h2>
+          </div>
+
+          <div class="attendance-session-list">
+            @if (filteredAttendanceSessions().length > 0) {
+              @for (session of filteredAttendanceSessions(); track session.sessionId) {
+                <button
+                  type="button"
+                  class="attendance-session-item"
+                  [class.active]="selectedAttendanceDetail()?.session?.sessionId === session.sessionId"
+                  (click)="selectAttendanceSession(session.sessionId)"
+                >
+                  <span class="code-pill">{{ session.type }}</span>
+                  <span>
+                    <strong>{{ session.subject }}</strong>
+                    <small>{{ session.group }} - {{ session.professor }}</small>
+                    <small>{{ session.day }} {{ session.startTime }} - {{ session.endTime }} - {{ session.room }}</small>
+                  </span>
+                  <span class="attendance-rate">{{ session.absenceRate }}</span>
+                  <span class="status-pill" [class.pending]="!isClosedAttendanceSession(session)">
+                    {{ session.status }}
+                  </span>
+                </button>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isAttendanceLoading() ? 'Chargement des presences...' : 'Aucune seance a superviser.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          @if (selectedAttendanceDetail(); as detail) {
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">{{ detail.session.group }}</span>
+                <h2>{{ detail.session.subject }}</h2>
+                <p>
+                  {{ detail.session.day }} {{ detail.session.startTime }} - {{ detail.session.endTime }}
+                  / {{ detail.session.professor }}
+                </p>
+              </div>
+              <span class="status-pill" [class.pending]="!isClosedAttendanceSession(detail.session)">
+                {{ detail.session.status }}
+              </span>
+            </div>
+
+            <div class="attendance-metrics">
+              <div>
+                <small>Attendus</small>
+                <strong>{{ detail.session.expectedCount }}</strong>
+              </div>
+              <div>
+                <small>Saisis</small>
+                <strong>{{ detail.session.recordedCount }}</strong>
+              </div>
+              <div>
+                <small>Presents</small>
+                <strong>{{ detail.session.presentCount }}</strong>
+              </div>
+              <div>
+                <small>Retards</small>
+                <strong>{{ detail.session.lateCount }}</strong>
+              </div>
+              <div>
+                <small>Absents</small>
+                <strong>{{ detail.session.absentCount }}</strong>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              @if (isClosedAttendanceSession(detail.session)) {
+                <button type="button" class="secondary-button" (click)="reopenAttendanceSession(detail.session)">
+                  Rouvrir l'appel
+                </button>
+              } @else {
+                <button type="button" class="primary-button" (click)="closeAttendanceSession(detail.session)">
+                  Cloturer l'appel
+                </button>
+              }
+              <span class="helper-card">
+                Derniere saisie: {{ detail.session.lastEntryAt || 'Aucune saisie' }}
+              </span>
+            </div>
+
+            <div class="attendance-student-list">
+              @for (student of detail.students; track student.studentId) {
+                <div class="attendance-student-row">
+                  <div class="avatar">{{ student.studentName.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ student.studentName }}</strong>
+                    <small>{{ student.matricule }} - {{ student.date || 'Non saisie' }}</small>
+                  </div>
+                  <span class="status-pill" [class.pending]="student.status === 'Absent' || student.status === 'Non saisie'">
+                    {{ student.status }}
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="empty-state">Selectionnez une seance pour consulter le detail de l'appel.</p>
+          }
+        </article>
+      </section>
     } @else {
       <section class="content-grid exam-calendar-layout">
         <article class="panel form-panel">

@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth';
 import {
   AdminAcademicYear,
+  AdminAttendanceDetail,
+  AdminAttendanceSession,
   AdminDashboardApi,
   AdminExamPlanningOptions,
   AdminExamPlanningRequest,
@@ -14,7 +16,7 @@ import {
   AdminSemester,
 } from '../../services/admin-dashboard-api';
 
-type AdminSection = 'overview' | 'academic-year' | 'structure' | 'users' | 'calendar';
+type AdminSection = 'overview' | 'academic-year' | 'structure' | 'users' | 'attendance' | 'calendar';
 
 interface NavItem {
   id: AdminSection;
@@ -102,6 +104,7 @@ export class AdminDashboardComponent {
   protected readonly isAcademicYearsLoading = signal(true);
   protected readonly isExamPlanningLoading = signal(true);
   protected readonly isNoteValidationLoading = signal(true);
+  protected readonly isAttendanceLoading = signal(true);
 
   protected readonly navItems: readonly NavItem[] = [
     {
@@ -123,6 +126,11 @@ export class AdminDashboardComponent {
       id: 'users',
       label: 'Utilisateurs',
       description: 'Comptes, roles et statuts',
+    },
+    {
+      id: 'attendance',
+      label: 'Presences',
+      description: 'Suivi et cloture des appels',
     },
     {
       id: 'calendar',
@@ -152,6 +160,7 @@ export class AdminDashboardComponent {
     'Gerer les semestres',
     'Creer un departement',
     'Ajouter un utilisateur',
+    'Superviser les presences',
     'Planifier un examen',
     'Publier les notes',
   ] as const;
@@ -167,6 +176,8 @@ export class AdminDashboardComponent {
   protected readonly examDrafts = signal<readonly ExamDraftRow[]>([]);
   protected readonly noteValidationEvaluations = signal<readonly AdminNoteValidationEvaluation[]>([]);
   protected readonly selectedNoteValidationDetail = signal<AdminNoteValidationDetail | null>(null);
+  protected readonly attendanceSessions = signal<readonly AdminAttendanceSession[]>([]);
+  protected readonly selectedAttendanceDetail = signal<AdminAttendanceDetail | null>(null);
   private examDraftCounter = 0;
 
   protected readonly activeAcademicYear = computed<AdminAcademicYear | null>(() =>
@@ -217,6 +228,38 @@ export class AdminDashboardComponent {
   protected readonly selectedNoteEvaluation = computed(() =>
     this.selectedNoteValidationDetail()?.evaluation ?? null
   );
+
+  protected readonly attendanceStats = computed(() => {
+    const sessions = this.attendanceSessions();
+    const expected = sessions.reduce((total, session) => total + session.expectedCount, 0);
+    const recorded = sessions.reduce((total, session) => total + session.recordedCount, 0);
+    const absent = sessions.reduce((total, session) => total + session.absentCount, 0);
+    const closed = sessions.filter((session) => this.isClosedAttendanceSession(session)).length;
+
+    return [
+      { label: 'Seances', value: sessions.length.toString(), meta: 'Sessions suivies' },
+      { label: 'Saisies', value: `${recorded}/${expected}`, meta: 'Presences renseignees' },
+      { label: 'Absences', value: absent.toString(), meta: 'Absences declarees' },
+      { label: 'Cloturees', value: closed.toString(), meta: 'Appels verrouilles' },
+    ];
+  });
+
+  protected readonly filteredAttendanceSessions = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+
+    return this.attendanceSessions().filter((session) =>
+      this.matchesText(query, [
+        session.subject,
+        session.group,
+        session.department,
+        session.professor,
+        session.day,
+        session.room,
+        session.type,
+        session.status,
+      ])
+    );
+  });
 
   protected readonly filteredUsers = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
@@ -359,6 +402,7 @@ export class AdminDashboardComponent {
     this.loadAcademicYears();
     this.loadExamPlanning();
     this.loadNoteValidation();
+    this.loadAttendanceSupervision();
   }
 
   private loadDashboard(): void {
@@ -608,6 +652,49 @@ export class AdminDashboardComponent {
     this.applyNoteDecision('publish');
   }
 
+  protected selectAttendanceSession(sessionId: number): void {
+    this.dashboardApi.getAttendanceDetail(sessionId).subscribe({
+      next: (detail) => {
+        this.selectedAttendanceDetail.set(detail);
+        this.toastMessage.set(`Appel ${detail.session.subject} - ${detail.session.group} charge.`);
+      },
+      error: () => {
+        this.selectedAttendanceDetail.set(null);
+        this.toastMessage.set("Impossible de charger le detail de cette seance.");
+      },
+    });
+  }
+
+  protected closeAttendanceSession(session: AdminAttendanceSession): void {
+    this.dashboardApi.closeAttendanceSession(session.sessionId).subscribe({
+      next: (detail) => {
+        this.selectedAttendanceDetail.set(detail);
+        this.loadAttendanceSupervision();
+        this.toastMessage.set(`Appel ${detail.session.subject} cloture.`);
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de cloturer cette seance de presence.");
+      },
+    });
+  }
+
+  protected reopenAttendanceSession(session: AdminAttendanceSession): void {
+    this.dashboardApi.reopenAttendanceSession(session.sessionId).subscribe({
+      next: (detail) => {
+        this.selectedAttendanceDetail.set(detail);
+        this.loadAttendanceSupervision();
+        this.toastMessage.set(`Appel ${detail.session.subject} rouvert.`);
+      },
+      error: () => {
+        this.toastMessage.set("Impossible de rouvrir cette seance de presence.");
+      },
+    });
+  }
+
+  protected isClosedAttendanceSession(session: AdminAttendanceSession): boolean {
+    return session.status.toLowerCase() === 'cloturee';
+  }
+
   protected submitAcademicYear(): void {
     if (this.academicYearForm.invalid) {
       this.academicYearForm.markAllAsTouched();
@@ -697,6 +784,8 @@ export class AdminDashboardComponent {
       ? 'users'
       : action.includes('semestre') || action.includes('annee')
         ? 'academic-year'
+      : action.includes('presence')
+        ? 'attendance'
       : action.includes('examen') || action.includes('notes')
         ? 'calendar'
         : 'structure';
@@ -858,6 +947,34 @@ export class AdminDashboardComponent {
     });
   }
 
+  private loadAttendanceSupervision(): void {
+    this.isAttendanceLoading.set(true);
+
+    this.dashboardApi.getAttendanceSessions().subscribe({
+      next: (sessions) => {
+        this.attendanceSessions.set(sessions ?? []);
+        this.isAttendanceLoading.set(false);
+
+        const selectedId = this.selectedAttendanceDetail()?.session.sessionId;
+        const nextSelection = selectedId
+          ? sessions.find((session) => session.sessionId === selectedId)
+          : sessions[0];
+
+        if (nextSelection) {
+          this.selectAttendanceSession(nextSelection.sessionId);
+        } else {
+          this.selectedAttendanceDetail.set(null);
+        }
+      },
+      error: () => {
+        this.attendanceSessions.set([]);
+        this.selectedAttendanceDetail.set(null);
+        this.isAttendanceLoading.set(false);
+        this.toastMessage.set('Impossible de charger la supervision des presences.');
+      },
+    });
+  }
+
   private applyNoteDecision(action: 'validate' | 'reject' | 'publish'): void {
     const evaluation = this.selectedNoteEvaluation();
 
@@ -936,6 +1053,10 @@ export class AdminDashboardComponent {
   private formatIsoDate(value: string): string {
     const [year, month, day] = value.split('-');
     return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  private matchesText(query: string, values: readonly string[]): boolean {
+    return !query || values.some((value) => value.toLowerCase().includes(query));
   }
 
   protected hasControlError(

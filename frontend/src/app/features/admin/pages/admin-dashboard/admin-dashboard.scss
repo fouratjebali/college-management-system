@@ -30,7 +30,6 @@
   gap: 24px;
   border-right: 1px solid var(--admin-border);
   background: rgba(34, 40, 49, 0.82);
-  backdrop-filter: blur(18px);
 }
 
 .brand-block,
@@ -39,7 +38,6 @@
 .stat-card,
 .toast {
   border: 1px solid var(--admin-border);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
 }
 
 .brand-block {
@@ -56,7 +54,6 @@
   height: 40px;
   border-radius: 14px;
   background: linear-gradient(145deg, var(--admin-sand), var(--admin-accent));
-  box-shadow: 0 16px 30px rgba(148, 137, 121, 0.24);
 }
 
 .brand-block strong,
@@ -88,7 +85,6 @@ small {
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .nav-item:hover,
@@ -107,7 +103,6 @@ small {
 
 .nav-item.active .nav-dot {
   background: var(--admin-sand);
-  box-shadow: 0 0 0 6px rgba(223, 208, 184, 0.1);
 }
 
 .nav-item strong,
@@ -206,7 +201,6 @@ input:focus,
 select:focus {
   outline: 0;
   border-color: rgba(223, 208, 184, 0.46);
-  box-shadow: 0 0 0 4px rgba(148, 137, 121, 0.16);
 }
 
 input::placeholder {
@@ -250,7 +244,6 @@ button {
 
 .primary-button {
   background: linear-gradient(135deg, var(--admin-accent), #5d554b);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
 }
 
 .secondary-button {
@@ -278,7 +271,6 @@ button {
 .stat-card {
   border-radius: 28px;
   background: var(--admin-panel);
-  backdrop-filter: blur(16px);
 }
 
 .hero-card {
@@ -289,27 +281,7 @@ button {
   justify-content: flex-end;
   gap: 18px;
   border: 1px solid rgba(223, 208, 184, 0.12);
-  background:
-    radial-gradient(circle at 82% 20%, rgba(223, 208, 184, 0.18), transparent 30%),
-    linear-gradient(145deg, rgba(57, 62, 70, 0.96), rgba(34, 40, 49, 0.96));
-}
-
-.hero-card h2 {
-  max-width: 13ch;
-  font-size: clamp(2.3rem, 5vw, 5rem);
-  line-height: 0.98;
-}
-
-.hero-card p {
-  max-width: 42rem;
-  color: var(--admin-soft);
-  line-height: 1.65;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  background: linear-gradient(145deg, rgba(57, 62, 70, 0.96), rgba(34, 40, 49, 0.96));
 }
 
 .stats-grid {
@@ -351,33 +323,20 @@ button {
 }
 
 .bar-chart {
-  height: 220px;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  align-items: end;
   gap: 14px;
-  padding-top: 20px;
 }
 
 .bar-column {
-  height: 100%;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 10px;
-  align-items: end;
   text-align: center;
-}
-
-.bar {
-  width: 100%;
-  min-height: 28px;
-  border-radius: 999px 999px 10px 10px;
-  background: linear-gradient(180deg, var(--admin-sand), var(--admin-accent));
 }
 
 .quick-list,
 .data-list,
 .user-table,
+.attendance-session-list,
+.attendance-student-list,
 .validation-list,
 .validation-detail,
 .note-table {
@@ -405,6 +364,8 @@ button {
 .quick-list button,
 .data-row,
 .user-row,
+.attendance-session-item,
+.attendance-student-row,
 .validation-item,
 .note-row {
   display: grid;
@@ -426,6 +387,47 @@ button {
   display: grid;
   grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
   gap: 14px;
+}
+
+.attendance-stat-grid,
+.attendance-metrics {
+  display: grid;
+  gap: 12px;
+}
+
+.attendance-stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.attendance-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.attendance-stat-grid > div,
+.attendance-metrics > div {
+  display: grid;
+  gap: 0.4rem;
+  padding: 14px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.46);
+}
+
+.attendance-session-item {
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attendance-session-item.active {
+  border-color: rgba(223, 208, 184, 0.32);
+  background: rgba(148, 137, 121, 0.18);
+}
+
+.attendance-student-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 .validation-item {
@@ -458,6 +460,10 @@ button {
 
 .exam-calendar-layout {
   grid-template-columns: minmax(360px, 0.74fr) minmax(0, 1.26fr);
+}
+
+.attendance-layout {
+  grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.1fr);
 }
 
 .filter-grid,
@@ -692,13 +698,16 @@ label {
   .users-layout,
   .academic-year-layout,
   .exam-calendar-layout,
+  .attendance-layout,
   .validation-layout {
     grid-template-columns: 1fr;
   }
 
   .filter-grid,
   .professor-grid,
-  .summary-grid {
+  .summary-grid,
+  .attendance-stat-grid,
+  .attendance-metrics {
     grid-template-columns: 1fr;
   }
 }
@@ -729,6 +738,8 @@ label {
   }
 
   .user-row,
+  .attendance-session-item,
+  .attendance-student-row,
   .note-row,
   .validation-item,
   .year-heading,

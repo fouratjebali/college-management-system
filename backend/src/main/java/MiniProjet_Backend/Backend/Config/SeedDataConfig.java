@@ -717,6 +717,12 @@ public class SeedDataConfig {
                 student,
                 group
         );
+        ensureGroupAttendanceSamples(
+                presenceRepository,
+                etudiantRepository,
+                seanceRepository,
+                group
+        );
 
         ensureStudentSupport(
                 supportCoursRepository,
@@ -967,6 +973,52 @@ public class SeedDataConfig {
                 .withSecond(0)
                 .withNano(0));
         presenceRepository.save(presence);
+    }
+
+    private void ensureGroupAttendanceSamples(
+            PresenceRepository presenceRepository,
+            EtudiantRepository etudiantRepository,
+            SeanceRepository seanceRepository,
+            Groupe group
+    ) {
+        List<Etudiant> students = etudiantRepository.findByGroupeId(group.getId());
+        List<Seance> sessions = seanceRepository.findByGroupeId(group.getId()).stream()
+                .filter(seance -> !"EXAMEN".equalsIgnoreCase(seance.getTypeSeance()))
+                .limit(6)
+                .toList();
+
+        for (int sessionIndex = 0; sessionIndex < sessions.size(); sessionIndex++) {
+            Seance seance = sessions.get(sessionIndex);
+
+            for (int studentIndex = 0; studentIndex < students.size(); studentIndex++) {
+                Etudiant student = students.get(studentIndex);
+                Presence presence = presenceRepository.findBySeanceId(seance.getId()).stream()
+                        .filter(existingPresence -> existingPresence.getEtudiant().getId().equals(student.getId()))
+                        .findFirst()
+                        .orElseGet(Presence::new);
+
+                presence.setSeance(seance);
+                presence.setEtudiant(student);
+                presence.setStatut(seedPresenceStatus(sessionIndex, studentIndex));
+                presence.setDateSaisie(LocalDateTime.now()
+                        .minusDays(Math.max(1, 8L - sessionIndex))
+                        .withHour(seance.getHeureDebut().getHour())
+                        .withMinute(seance.getHeureDebut().getMinute())
+                        .withSecond(0)
+                        .withNano(0));
+                presenceRepository.save(presence);
+            }
+        }
+    }
+
+    private String seedPresenceStatus(int sessionIndex, int studentIndex) {
+        if ((studentIndex + sessionIndex) % 11 == 0) {
+            return "Absent";
+        }
+        if ((studentIndex + sessionIndex) % 7 == 0) {
+            return "Retard";
+        }
+        return "Present";
     }
 
     private void ensureStudentSupport(

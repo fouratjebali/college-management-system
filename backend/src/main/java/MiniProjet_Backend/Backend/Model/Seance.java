@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -36,6 +37,12 @@ public class Seance {
 
     @Column(nullable = false)
     private String batiment;
+
+    @Column
+    private String attendanceStatus = "OUVERTE";
+
+    @Column
+    private LocalDateTime attendanceClosedAt;
 
     @ManyToOne
     @JoinColumn(name="enseignement_id", nullable = false)
