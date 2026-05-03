@@ -5,7 +5,6 @@ import { AuthService } from '../../../../core/services/auth';
 import {
   StudentAnnouncementRow,
   StudentAbsenceSummary,
-  StudentAttendanceRow,
   StudentDashboardApi,
   StudentGradeSummary,
   StudentGradeRow,
@@ -13,11 +12,17 @@ import {
   StudentMaterialRow,
   StudentProfile,
   StudentScheduleRow,
-  StudentStat,
   StudentSubjectGrade,
 } from '../../services/student-dashboard-api';
 
-type StudentSection = 'overview' | 'grades' | 'schedule' | 'absences' | 'materials' | 'announcements';
+type StudentSection =
+  | 'announcements'
+  | 'grades'
+  | 'schedule'
+  | 'exams'
+  | 'makeups'
+  | 'absences'
+  | 'materials';
 
 interface NavItem {
   id: StudentSection;
@@ -28,6 +33,12 @@ interface NavItem {
 interface ScheduleDayGroup {
   day: string;
   sessions: readonly StudentScheduleRow[];
+}
+
+interface NotificationItem {
+  label: string;
+  count: number;
+  target: StudentSection;
 }
 
 @Component({
@@ -43,13 +54,12 @@ export class StudentDashboardComponent {
   private readonly router = inject(Router);
   private readonly dashboardApi = inject(StudentDashboardApi);
 
-  protected readonly activeSection = signal<StudentSection>('overview');
+  protected readonly activeSection = signal<StudentSection>('announcements');
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('Espace etudiant charge avec succes.');
   protected readonly isDashboardLoading = signal(true);
 
   protected readonly profile = signal<StudentProfile | null>(null);
-  protected readonly stats = signal<readonly StudentStat[]>([]);
   protected readonly gradeSummary = signal<StudentGradeSummary | null>(null);
   protected readonly subjectGrades = signal<readonly StudentSubjectGrade[]>([]);
   protected readonly grades = signal<readonly StudentGradeRow[]>([]);
@@ -57,14 +67,13 @@ export class StudentDashboardComponent {
   protected readonly materials = signal<readonly StudentMaterialRow[]>([]);
   protected readonly announcements = signal<readonly StudentAnnouncementRow[]>([]);
   protected readonly makeups = signal<readonly StudentMakeupRow[]>([]);
-  protected readonly attendance = signal<readonly StudentAttendanceRow[]>([]);
   protected readonly absenceSummaries = signal<readonly StudentAbsenceSummary[]>([]);
 
   protected readonly navItems: readonly NavItem[] = [
     {
-      id: 'overview',
-      label: 'Dashboard',
-      description: 'Vue generale et indicateurs',
+      id: 'announcements',
+      label: 'Annonces',
+      description: 'Messages publies',
     },
     {
       id: 'grades',
@@ -77,6 +86,16 @@ export class StudentDashboardComponent {
       description: 'Seances par jour',
     },
     {
+      id: 'exams',
+      label: 'Examens',
+      description: 'Calendrier planifie',
+    },
+    {
+      id: 'makeups',
+      label: 'Rattrapages',
+      description: 'Seances supplementaires',
+    },
+    {
       id: 'absences',
       label: 'Absences',
       description: 'Suivi par matiere',
@@ -86,26 +105,8 @@ export class StudentDashboardComponent {
       label: 'Supports',
       description: 'Documents de cours',
     },
-    {
-      id: 'announcements',
-      label: 'Annonces',
-      description: 'Messages et rattrapages',
-    },
   ];
 
-  protected readonly quickActions = [
-    'Voir mes notes',
-    'Consulter emploi du temps',
-    'Suivre mes absences',
-    'Telecharger supports',
-    'Voir annonces',
-  ] as const;
-
-  protected readonly dashboardStats = computed(() =>
-    this.stats().filter((stat) => stat.label.trim().toLowerCase() !== 'moyenne')
-  );
-  protected readonly recentGrades = computed(() => this.filteredGrades().slice(0, 4));
-  protected readonly upcomingSessions = computed(() => this.filteredSchedule().slice(0, 6));
   protected readonly filteredAbsenceSummaries = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
 
@@ -152,6 +153,23 @@ export class StudentDashboardComponent {
   protected readonly filteredSchedule = computed(() => {
     const query = this.searchTerm().trim().toLowerCase();
     return this.schedule().filter((session) =>
+      !this.isExamSession(session) &&
+      this.matchesQuery(query, [
+        session.subject,
+        session.professor,
+        session.day,
+        session.start,
+        session.end,
+        session.room,
+        session.type,
+      ])
+    );
+  });
+
+  protected readonly filteredExams = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+    return this.schedule().filter((session) =>
+      this.isExamSession(session) &&
       this.matchesQuery(query, [
         session.subject,
         session.professor,
@@ -197,6 +215,33 @@ export class StudentDashboardComponent {
     );
   });
 
+  protected readonly notificationItems = computed<readonly NotificationItem[]>(() => [
+    {
+      label: 'Annonces',
+      count: this.announcements().length,
+      target: 'announcements',
+    },
+    {
+      label: 'Notes publiees',
+      count: this.grades().length,
+      target: 'grades',
+    },
+    {
+      label: 'Rattrapages',
+      count: this.makeups().length,
+      target: 'makeups',
+    },
+    {
+      label: 'Examens',
+      count: this.schedule().filter((session) => this.isExamSession(session)).length,
+      target: 'exams',
+    },
+  ]);
+
+  protected readonly notificationCount = computed(() =>
+    this.notificationItems().reduce((total, item) => total + item.count, 0)
+  );
+
   protected readonly scheduleDayGroups = computed<readonly ScheduleDayGroup[]>(() => {
     const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const sessions = this.filteredSchedule();
@@ -221,7 +266,6 @@ export class StudentDashboardComponent {
     this.dashboardApi.getDashboard().subscribe({
       next: (dashboard) => {
         this.profile.set(dashboard.profile ?? null);
-        this.stats.set(dashboard.stats ?? []);
         this.gradeSummary.set(dashboard.gradeSummary ?? null);
         this.subjectGrades.set(dashboard.subjectGrades ?? []);
         this.grades.set(dashboard.grades ?? []);
@@ -229,7 +273,6 @@ export class StudentDashboardComponent {
         this.materials.set(dashboard.materials ?? []);
         this.announcements.set(dashboard.announcements ?? []);
         this.makeups.set(dashboard.makeups ?? []);
-        this.attendance.set(dashboard.attendance ?? []);
         this.absenceSummaries.set(dashboard.absenceSummaries ?? []);
         this.isDashboardLoading.set(false);
         this.toastMessage.set('Donnees etudiant synchronisees avec la base.');
@@ -247,20 +290,6 @@ export class StudentDashboardComponent {
   protected setSection(section: StudentSection): void {
     this.activeSection.set(section);
     this.toastMessage.set(`${this.sectionLabel(section)} est disponible.`);
-  }
-
-  protected activateQuickAction(action: string): void {
-    const target: StudentSection = action.includes('notes')
-      ? 'grades'
-      : action.includes('emploi')
-        ? 'schedule'
-        : action.includes('absence')
-          ? 'absences'
-        : action.includes('supports')
-          ? 'materials'
-          : 'announcements';
-
-    this.setSection(target);
   }
 
   protected logout(): void {
@@ -291,7 +320,6 @@ export class StudentDashboardComponent {
 
   private clearDashboard(): void {
     this.profile.set(null);
-    this.stats.set([]);
     this.gradeSummary.set(null);
     this.subjectGrades.set([]);
     this.grades.set([]);
@@ -299,12 +327,15 @@ export class StudentDashboardComponent {
     this.materials.set([]);
     this.announcements.set([]);
     this.makeups.set([]);
-    this.attendance.set([]);
     this.absenceSummaries.set([]);
   }
 
   private matchesQuery(query: string, values: readonly string[]): boolean {
     return !query || values.some((value) => value.toLowerCase().includes(query));
+  }
+
+  private isExamSession(session: StudentScheduleRow): boolean {
+    return session.type.toLowerCase().includes('examen');
   }
 
   private sectionLabel(section: StudentSection): string {

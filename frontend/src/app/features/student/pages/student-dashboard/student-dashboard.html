@@ -35,129 +35,65 @@
       </div>
 
       <div class="topbar-actions">
-        <label class="search-box">
-          <span>Search</span>
-          <input
-            type="search"
-            placeholder="Note, matiere, support..."
-            [value]="searchTerm()"
-            (input)="updateSearch($event)"
-          />
-        </label>
+        <div class="notification-menu">
+          <button
+            type="button"
+            class="notification-button"
+            aria-label="Notifications importantes"
+            (click)="setSection('announcements')"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"
+              />
+              <path d="M9 17a3 3 0 0 0 6 0" />
+            </svg>
+            @if (notificationCount() > 0) {
+              <span class="notification-badge">{{ notificationCount() }}</span>
+            }
+          </button>
+          <div class="notification-panel">
+            @for (item of notificationItems(); track item.label) {
+              <button type="button" (click)="setSection(item.target)">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.count }}</strong>
+              </button>
+            }
+          </div>
+        </div>
         <button type="button" class="ghost-button" (click)="logout()">Logout</button>
       </div>
     </header>
 
     <p class="toast" role="status">{{ toastMessage() }}</p>
 
-    @if (activeSection() === 'overview') {
-      <section class="content-grid overview-grid">
-        <article class="hero-card">
-          <span class="eyebrow">Suivi academique</span>
-          <h2>Consulter notes, planning, supports et annonces.</h2>
-          @if (profile(); as student) {
-            <p>
-              {{ student.name }} - {{ student.group }} - {{ student.level }} - {{ student.year }}
-            </p>
-          } @else {
-            <p>Chargement du profil etudiant...</p>
-          }
-          <div class="hero-actions">
-            <button type="button" class="primary-button" (click)="setSection('grades')">
-              Voir mes notes
-            </button>
-            <button type="button" class="secondary-button" (click)="setSection('schedule')">
-              Emploi du temps
-            </button>
-          </div>
-        </article>
-
-        <section class="stats-grid" aria-label="Statistiques etudiant">
-          @if (dashboardStats().length > 0) {
-            @for (stat of dashboardStats(); track stat.label) {
-              <article
-                class="stat-card"
-                [class.tone-light]="stat.tone === 'light'"
-                [class.tone-warm]="stat.tone === 'warm'"
-                [class.tone-steel]="stat.tone === 'steel'"
-                [class.tone-sand]="stat.tone === 'sand'"
-              >
-                <span>{{ stat.label }}</span>
-                <strong>{{ stat.value }}</strong>
-                <small>{{ stat.trend }}</small>
-              </article>
-            }
-          } @else {
-            <article class="empty-state grid-empty">
-              {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique disponible.' }}
-            </article>
-          }
-        </section>
-
-        <article class="panel quick-panel">
-          <div class="panel-heading">
-            <span class="eyebrow">Actions rapides</span>
-            <h2>Acces direct</h2>
-          </div>
-          <div class="quick-list">
-            @for (action of quickActions; track action) {
-              <button type="button" (click)="activateQuickAction(action)">
-                <span>{{ action }}</span>
-                <strong>Open</strong>
-              </button>
-            }
-          </div>
-        </article>
-
-        <article class="panel table-panel">
+    @if (activeSection() === 'announcements') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
           <div class="panel-heading inline-heading">
             <div>
-              <span class="eyebrow">Dernieres notes</span>
-              <h2>Evaluations publiees</h2>
+              <span class="eyebrow">Annonces publiees</span>
+              <h2>Messages actifs</h2>
+              @if (profile(); as student) {
+                <p>{{ student.name }} - {{ student.group }} - {{ student.level }} - {{ student.year }}</p>
+              }
             </div>
-            <span class="counter">{{ grades().length }} notes</span>
+            <span class="counter">{{ filteredAnnouncements().length }} annonce(s)</span>
           </div>
 
-          <div class="data-list">
-            @if (recentGrades().length > 0) {
-              @for (grade of recentGrades(); track grade.id) {
-                <div class="data-row">
-                  <span class="code-pill">{{ grade.value }}</span>
-                  <div>
-                    <strong>{{ grade.subject }}</strong>
-                    <small>{{ grade.evaluation }} - {{ grade.date }}</small>
-                  </div>
-                  <span class="status-pill">{{ grade.status }}</span>
-                </div>
+          <div class="announcement-list">
+            @if (filteredAnnouncements().length > 0) {
+              @for (announcement of filteredAnnouncements(); track announcement.id) {
+                <article class="announcement-card">
+                  <strong>{{ announcement.title }}</strong>
+                  <p>{{ announcement.content }}</p>
+                  <small>{{ announcement.author }} - publiee le {{ announcement.publicationDate }}</small>
+                  <small>Expire le {{ announcement.expirationDate }}</small>
+                </article>
               }
             } @else {
               <p class="empty-state">
-                {{ isDashboardLoading() ? 'Chargement des notes...' : 'Aucune note publiee.' }}
-              </p>
-            }
-          </div>
-        </article>
-
-        <article class="panel table-panel full-span">
-          <div class="panel-heading">
-            <span class="eyebrow">Prochaines seances</span>
-            <h2>Apercu du planning</h2>
-          </div>
-          <div class="timeline">
-            @if (upcomingSessions().length > 0) {
-              @for (session of upcomingSessions(); track session.id) {
-                <div class="timeline-item">
-                  <span class="timeline-dot"></span>
-                  <div>
-                    <strong>{{ session.subject }}</strong>
-                    <small>{{ session.type }} - {{ session.professor }}</small>
-                    <small>{{ session.day }} de {{ session.start }} a {{ session.end }} - {{ session.room }}</small>
-                  </div>
-                </div>
-              }
-            } @else {
-              <p class="empty-state">
-                {{ isDashboardLoading() ? 'Chargement du planning...' : 'Aucune seance trouvee.' }}
+                {{ isDashboardLoading() ? 'Chargement des annonces...' : 'Aucune annonce publiee active.' }}
               </p>
             }
           </div>
@@ -289,6 +225,39 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'exams') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Calendrier des examens</span>
+              <h2>Examens planifies</h2>
+              <p>Seuls les examens publies par l'administration sont affiches.</p>
+            </div>
+            <span class="counter">{{ filteredExams().length }} examen(s)</span>
+          </div>
+
+          <div class="exam-grid">
+            @if (filteredExams().length > 0) {
+              @for (exam of filteredExams(); track exam.id) {
+                <article class="exam-card">
+                  <span class="code-pill">EX</span>
+                  <div>
+                    <strong>{{ exam.subject }}</strong>
+                    <small>{{ exam.professor }}</small>
+                    <small>{{ exam.day }} de {{ exam.start }} a {{ exam.end }}</small>
+                  </div>
+                  <span class="status-pill">{{ exam.room }}</span>
+                </article>
+              }
+            } @else {
+              <p class="empty-state grid-empty">
+                {{ isDashboardLoading() ? 'Chargement des examens...' : 'Aucun examen planifie publie.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
     } @else if (activeSection() === 'absences') {
       <section class="content-grid">
         <article class="panel table-panel full-span">
@@ -372,38 +341,13 @@
         </article>
       </section>
     } @else {
-      <section class="content-grid two-columns">
-        <article class="panel table-panel">
-          <div class="panel-heading inline-heading">
-            <div>
-              <span class="eyebrow">Annonces</span>
-              <h2>Messages actifs</h2>
-            </div>
-            <span class="counter">{{ filteredAnnouncements().length }} annonce(s)</span>
-          </div>
-
-          <div class="announcement-list">
-            @if (filteredAnnouncements().length > 0) {
-              @for (announcement of filteredAnnouncements(); track announcement.id) {
-                <article class="announcement-card">
-                  <strong>{{ announcement.title }}</strong>
-                  <p>{{ announcement.content }}</p>
-                  <small>{{ announcement.author }} - {{ announcement.publicationDate }}</small>
-                </article>
-              }
-            } @else {
-              <p class="empty-state">
-                {{ isDashboardLoading() ? 'Chargement des annonces...' : 'Aucune annonce active.' }}
-              </p>
-            }
-          </div>
-        </article>
-
-        <article class="panel table-panel">
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Rattrapages</span>
-              <h2>Seances supplementaires</h2>
+              <h2>Seances supplementaires planifiees</h2>
+              <p>Les rattrapages lies a votre groupe sont regroupes dans cette section.</p>
             </div>
             <span class="counter">{{ filteredMakeups().length }} seance(s)</span>
           </div>
@@ -423,34 +367,6 @@
             } @else {
               <p class="empty-state">
                 {{ isDashboardLoading() ? 'Chargement des rattrapages...' : 'Aucun rattrapage programme.' }}
-              </p>
-            }
-          </div>
-        </article>
-
-        <article class="panel table-panel full-span">
-          <div class="panel-heading inline-heading">
-            <div>
-              <span class="eyebrow">Presence</span>
-              <h2>Historique de presence</h2>
-            </div>
-            <span class="counter">{{ attendance().length }} entree(s)</span>
-          </div>
-
-          <div class="attendance-list">
-            @if (attendance().length > 0) {
-              @for (item of attendance(); track item.id) {
-                <div class="attendance-row">
-                  <div>
-                    <strong>{{ item.subject }}</strong>
-                    <small>{{ item.session }} - {{ item.date }}</small>
-                  </div>
-                  <span class="status-pill">{{ item.status }}</span>
-                </div>
-              }
-            } @else {
-              <p class="empty-state">
-                {{ isDashboardLoading() ? 'Chargement des presences...' : 'Aucune presence enregistree.' }}
               </p>
             }
           </div>
