@@ -48,10 +48,6 @@
       </div>
     </header>
 
-    @if (toastMessage()) {
-      <p class="toast" role="status">{{ toastMessage() }}</p>
-    }
-
     @if (activeSection() === 'overview') {
       <section class="content-grid overview-grid">
         <article class="hero-card">
