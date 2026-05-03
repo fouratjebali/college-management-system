@@ -562,6 +562,93 @@ label {
   grid-template-columns: auto 1fr minmax(160px, 0.35fr);
 }
 
+.attendance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.attendance-summary span {
+  min-height: 74px;
+  display: grid;
+  gap: 0.2rem;
+  align-content: center;
+  justify-items: center;
+  padding: 0.8rem;
+  border: 1px solid rgba(223, 208, 184, 0.12);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.38);
+  color: var(--admin-soft);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.attendance-summary strong {
+  color: #ffffff;
+  font-size: 1.35rem;
+}
+
+.optimized-attendance-list {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.attendance-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px solid rgba(120, 190, 150, 0.3);
+  border-radius: 18px;
+  background: rgba(43, 74, 60, 0.34);
+  color: var(--admin-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.attendance-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(223, 208, 184, 0.34);
+  background: rgba(48, 88, 70, 0.46);
+}
+
+.attendance-card.absent {
+  border-color: rgba(255, 116, 116, 0.55);
+  background: rgba(110, 43, 43, 0.42);
+}
+
+.attendance-card.absent:hover {
+  background: rgba(130, 50, 50, 0.5);
+}
+
+.attendance-card small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--admin-soft);
+}
+
+.attendance-status {
+  min-width: 74px;
+  display: inline-flex;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.42rem 0.68rem;
+  background: rgba(120, 190, 150, 0.22);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.attendance-card.absent .attendance-status {
+  background: rgba(255, 116, 116, 0.22);
+}
+
 .schedule-day {
   display: grid;
   gap: 12px;
@@ -677,8 +764,18 @@ label {
   .stats-grid,
   .field-row,
   .professor-grid,
+  .attendance-summary,
   .attendance-row {
     grid-template-columns: 1fr;
+  }
+
+  .attendance-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .attendance-status {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .schedule-row {

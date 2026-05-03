@@ -254,6 +254,17 @@ export class ProfessorDashboardComponent {
     return this.students().filter((student) => student.groupId === groupId);
   });
 
+  protected readonly attendanceSummary = computed(() => {
+    const students = this.attendanceStudents();
+    const absent = students.filter((student) => this.isAbsent(student.id)).length;
+
+    return {
+      absent,
+      present: students.length - absent,
+      total: students.length,
+    };
+  });
+
   protected readonly scheduleDayGroups = computed<readonly ScheduleDayGroup[]>(() => {
     const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
@@ -404,11 +415,40 @@ export class ProfessorDashboardComponent {
     }));
   }
 
-  protected updateAttendanceStatus(studentId: number, event: Event): void {
+  protected toggleAttendanceStatus(studentId: number): void {
+    const nextStatus = this.isAbsent(studentId) ? 'Present' : 'Absent';
+
     this.attendanceDrafts.update((drafts) => ({
       ...drafts,
-      [studentId]: (event.target as HTMLSelectElement).value,
+      [studentId]: nextStatus,
     }));
+  }
+
+  protected markAllAttendance(status: 'Present' | 'Absent'): void {
+    const drafts: Record<number, string> = {};
+
+    this.attendanceStudents().forEach((student) => {
+      drafts[student.id] = status;
+    });
+
+    this.attendanceDrafts.set(drafts);
+    this.toastMessage.set(
+      status === 'Present'
+        ? 'Tous les etudiants sont marques presents.'
+        : 'Tous les etudiants sont marques absents.'
+    );
+  }
+
+  protected resetAttendanceDrafts(): void {
+    const sessionId = this.selectedSessionId();
+
+    if (!sessionId) {
+      this.attendanceDrafts.set({});
+      return;
+    }
+
+    this.seedAttendanceDrafts(sessionId);
+    this.toastMessage.set("L'appel est reinitialise pour la seance selectionnee.");
   }
 
   protected submitGrades(): void {
@@ -648,6 +688,10 @@ export class ProfessorDashboardComponent {
     return this.attendanceDrafts()[studentId] ?? 'Present';
   }
 
+  protected isAbsent(studentId: number): boolean {
+    return this.getAttendanceStatus(studentId) === 'Absent';
+  }
+
   protected hasControlError(
     form: { get(path: string): AbstractControl | null },
     controlName: string,
@@ -757,7 +801,7 @@ export class ProfessorDashboardComponent {
       const existingAttendance = this.attendance().find(
         (item) => item.sessionId === sessionId && item.studentId === student.id
       );
-      drafts[student.id] = existingAttendance?.status ?? 'Present';
+      drafts[student.id] = existingAttendance?.status === 'Absent' ? 'Absent' : 'Present';
     });
 
     this.attendanceDrafts.set(drafts);

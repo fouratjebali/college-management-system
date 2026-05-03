@@ -450,7 +450,7 @@
           <div class="panel-heading">
             <span class="eyebrow">Gestion presences</span>
             <h2>Selectionner un groupe et une seance</h2>
-            <p>Chaque etudiant peut etre marque present, absent ou en retard.</p>
+            <p>Tous les etudiants sont presents par defaut. Cliquez uniquement sur les absents.</p>
           </div>
 
           <form [formGroup]="attendanceForm" (ngSubmit)="submitAttendance()">
@@ -485,8 +485,32 @@
               </div>
             }
 
+            <div class="attendance-summary" aria-label="Synthese de l'appel">
+              <span>
+                <strong>{{ attendanceSummary().present }}</strong>
+                Presents
+              </span>
+              <span>
+                <strong>{{ attendanceSummary().absent }}</strong>
+                Absents
+              </span>
+              <span>
+                <strong>{{ attendanceSummary().total }}</strong>
+                Total
+              </span>
+            </div>
+
             <div class="form-actions">
               <button class="primary-button" type="submit">Sauvegarder l'appel</button>
+              <button class="secondary-button" type="button" (click)="markAllAttendance('Present')">
+                Tous presents
+              </button>
+              <button class="secondary-button" type="button" (click)="markAllAttendance('Absent')">
+                Tous absents
+              </button>
+              <button class="ghost-button" type="button" (click)="resetAttendanceDrafts()">
+                Reinitialiser
+              </button>
               <button class="secondary-button" type="button" (click)="reportCollectiveAbsence()">
                 Signaler aucun present
               </button>
@@ -503,24 +527,25 @@
             <span class="counter">{{ attendanceStudents().length }} etudiants</span>
           </div>
 
-          <div class="attendance-list">
+          <div class="attendance-list optimized-attendance-list">
             @if (attendanceStudents().length > 0) {
               @for (student of attendanceStudents(); track student.id) {
-                <div class="attendance-row">
+                <button
+                  type="button"
+                  class="attendance-card"
+                  [class.absent]="isAbsent(student.id)"
+                  [attr.aria-pressed]="isAbsent(student.id)"
+                  (click)="toggleAttendanceStatus(student.id)"
+                >
                   <div class="avatar">{{ student.name.charAt(0) }}</div>
                   <div>
                     <strong>{{ student.name }}</strong>
                     <small>{{ student.matricule }} - {{ student.level }}</small>
                   </div>
-                  <select
-                    [value]="getAttendanceStatus(student.id)"
-                    (change)="updateAttendanceStatus(student.id, $event)"
-                  >
-                    <option>Present</option>
-                    <option>Absent</option>
-                    <option>Retard</option>
-                  </select>
-                </div>
+                  <span class="attendance-status">
+                    {{ isAbsent(student.id) ? 'Absent' : 'Present' }}
+                  </span>
+                </button>
               }
             } @else {
               <p class="empty-state">
