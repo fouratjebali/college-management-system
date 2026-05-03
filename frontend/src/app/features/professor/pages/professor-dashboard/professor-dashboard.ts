@@ -329,7 +329,6 @@ export class ProfessorDashboardComponent {
 
   protected setSection(section: ProfessorSection): void {
     this.activeSection.set(section);
-    this.toastMessage.set(`${this.sectionLabel(section)} est disponible.`);
   }
 
   protected activateQuickAction(action: string): void {
@@ -825,7 +824,4 @@ export class ProfessorDashboardComponent {
     return !query || values.some((value) => value.toLowerCase().includes(query));
   }
 
-  private sectionLabel(section: ProfessorSection): string {
-    return this.navItems.find((item) => item.id === section)?.label ?? 'Module professeur';
-  }
 }

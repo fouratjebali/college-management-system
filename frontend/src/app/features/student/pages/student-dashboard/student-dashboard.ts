@@ -289,7 +289,6 @@ export class StudentDashboardComponent {
 
   protected setSection(section: StudentSection): void {
     this.activeSection.set(section);
-    this.toastMessage.set(`${this.sectionLabel(section)} est disponible.`);
   }
 
   protected logout(): void {
@@ -338,7 +337,4 @@ export class StudentDashboardComponent {
     return session.type.toLowerCase().includes('examen');
   }
 
-  private sectionLabel(section: StudentSection): string {
-    return this.navItems.find((item) => item.id === section)?.label ?? 'Module etudiant';
-  }
 }

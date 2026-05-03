@@ -598,7 +598,6 @@ export class AdminDashboardComponent {
 
   protected setSection(section: AdminSection): void {
     this.activeSection.set(section);
-    this.toastMessage.set(`${this.sectionLabel(section)} est disponible.`);
   }
 
   protected logout(): void {
@@ -1311,7 +1310,4 @@ export class AdminDashboardComponent {
     return errorCode ? control.hasError(errorCode) : control.invalid;
   }
 
-  private sectionLabel(section: AdminSection): string {
-    return this.navItems.find((item) => item.id === section)?.label ?? 'Module admin';
-  }
 }
