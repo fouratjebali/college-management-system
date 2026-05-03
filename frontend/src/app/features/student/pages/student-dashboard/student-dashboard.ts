@@ -56,7 +56,7 @@ export class StudentDashboardComponent {
 
   protected readonly activeSection = signal<StudentSection>('announcements');
   protected readonly searchTerm = signal('');
-  protected readonly toastMessage = signal('Espace etudiant charge avec succes.');
+  protected readonly toastMessage = signal('');
   protected readonly isDashboardLoading = signal(true);
 
   protected readonly profile = signal<StudentProfile | null>(null);

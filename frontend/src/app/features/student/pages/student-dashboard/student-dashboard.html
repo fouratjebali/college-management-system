@@ -65,7 +65,9 @@
       </div>
     </header>
 
-    <p class="toast" role="status">{{ toastMessage() }}</p>
+    @if (toastMessage()) {
+      <p class="toast" role="status">{{ toastMessage() }}</p>
+    }
 
     @if (activeSection() === 'announcements') {
       <section class="content-grid">

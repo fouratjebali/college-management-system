@@ -118,7 +118,7 @@ export class AdminDashboardComponent {
 
   protected readonly activeSection = signal<AdminSection>('overview');
   protected readonly searchTerm = signal('');
-  protected readonly toastMessage = signal('Espace admin charge avec succes.');
+  protected readonly toastMessage = signal('');
   protected readonly selectedDepartment = signal('Tous');
   protected readonly selectedGroup = signal('Tous');
   protected readonly selectedRole = signal('Tous');
@@ -582,7 +582,6 @@ export class AdminDashboardComponent {
         this.users.set((dashboard.users ?? []).map((user) => this.normalizeUser(user)));
         this.examRows.set((dashboard.exams ?? []).map((exam) => this.normalizeExam(exam)));
         this.isDashboardLoading.set(false);
-        this.toastMessage.set('Donnees admin chargees depuis la base de donnees.');
       },
       error: () => {
         this.academicRows.set([]);

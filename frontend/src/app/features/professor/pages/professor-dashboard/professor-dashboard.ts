@@ -62,7 +62,7 @@ export class ProfessorDashboardComponent {
 
   protected readonly activeSection = signal<ProfessorSection>('overview');
   protected readonly searchTerm = signal('');
-  protected readonly toastMessage = signal('Espace professeur charge avec succes.');
+  protected readonly toastMessage = signal('');
   protected readonly isDashboardLoading = signal(true);
   protected readonly selectedGradeGroupId = signal<number | null>(null);
   protected readonly selectedEvaluationId = signal<number | null>(null);
@@ -315,7 +315,6 @@ export class ProfessorDashboardComponent {
         this.materials.set(dashboard.materials ?? []);
         this.prepareDefaultSelections();
         this.isDashboardLoading.set(false);
-        this.toastMessage.set('Donnees professeur synchronisees avec la base.');
       },
       error: () => {
         this.clearDashboard();
