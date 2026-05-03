@@ -275,7 +275,6 @@ export class StudentDashboardComponent {
         this.makeups.set(dashboard.makeups ?? []);
         this.absenceSummaries.set(dashboard.absenceSummaries ?? []);
         this.isDashboardLoading.set(false);
-        this.toastMessage.set('Donnees etudiant synchronisees avec la base.');
       },
       error: () => {
         this.clearDashboard();
