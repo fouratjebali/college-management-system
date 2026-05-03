@@ -270,6 +270,10 @@ button {
   gap: 18px;
 }
 
+.workspace > .content-grid {
+  margin-top: 28px;
+}
+
 .overview-grid {
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
 }
