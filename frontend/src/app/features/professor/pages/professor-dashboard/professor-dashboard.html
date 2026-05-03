@@ -242,6 +242,107 @@
           </div>
         </article>
       </section>
+    } @else if (activeSection() === 'evaluations') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Evaluations</span>
+            <h2>{{ editingEvaluationId() ? 'Modifier une evaluation' : 'Creer une evaluation' }}</h2>
+            <p>Le professeur prepare les DS, examens et examens TP lies a ses seances.</p>
+          </div>
+
+          <form [formGroup]="evaluationForm" (ngSubmit)="submitEvaluation()">
+            <label>
+              Libelle
+              <input type="text" formControlName="libelle" placeholder="DS 1 - Services REST" />
+              @if (hasControlError(evaluationForm, 'libelle')) {
+                <small class="field-error">Libelle requis.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Type
+                <select formControlName="typeEvaluation">
+                  <option>DS</option>
+                  <option>Examen</option>
+                  <option>Examen TP</option>
+                </select>
+              </label>
+
+              <label>
+                Date
+                <input type="datetime-local" formControlName="dateEvaluation" />
+                @if (hasControlError(evaluationForm, 'dateEvaluation')) {
+                  <small class="field-error">Date requise.</small>
+                }
+              </label>
+            </div>
+
+            <label>
+              Seance rattachee
+              <select formControlName="sessionId" (change)="updateEvaluationSession($event)">
+                <option [value]="0" disabled>Choisir une seance</option>
+                @for (session of sessions(); track session.id) {
+                  <option [value]="session.id">
+                    {{ session.day }} {{ session.start }} - {{ session.subject }} - {{ session.group }}
+                  </option>
+                }
+              </select>
+            </label>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">
+                {{ editingEvaluationId() ? 'Enregistrer les modifications' : 'Creer evaluation' }}
+              </button>
+              @if (editingEvaluationId()) {
+                <button class="secondary-button" type="button" (click)="cancelEvaluationEdit()">
+                  Annuler
+                </button>
+              }
+            </div>
+          </form>
+        </article>
+
+        <article class="panel table-panel wide-table">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Evaluations planifiees</span>
+              <h2>DS, examens et examens TP</h2>
+            </div>
+            <span class="counter">{{ filteredEvaluations().length }} evaluation(s)</span>
+          </div>
+
+          <div class="data-list">
+            @if (filteredEvaluations().length > 0) {
+              @for (evaluation of filteredEvaluations(); track evaluation.id) {
+                <div class="data-row evaluation-row">
+                  <span class="code-pill">{{ evaluation.type }}</span>
+                  <div>
+                    <strong>{{ evaluation.label }}</strong>
+                    <small>
+                      {{ evaluation.subject }} - {{ evaluation.group }} - {{ evaluation.date }} -
+                      coef {{ evaluation.coefficient }}
+                    </small>
+                  </div>
+                  <div class="row-actions">
+                    <button type="button" class="secondary-button compact-button" (click)="editEvaluation(evaluation)">
+                      Modifier
+                    </button>
+                    <button type="button" class="ghost-button compact-button" (click)="deleteEvaluation(evaluation)">
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des evaluations...' : 'Aucune evaluation creee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
     } @else if (activeSection() === 'grades') {
       <section class="content-grid two-columns">
         <article class="panel form-panel">

@@ -1,6 +1,7 @@
 package MiniProjet_Backend.Backend.Service;
 
 import MiniProjet_Backend.Backend.DTO.ProfessorDashboardResponseDTO;
+import MiniProjet_Backend.Backend.DTO.ProfessorEvaluationRequestDTO;
 import MiniProjet_Backend.Backend.Model.Enseignement;
 import MiniProjet_Backend.Backend.Model.Etudiant;
 import MiniProjet_Backend.Backend.Model.Evaluation;
@@ -130,6 +131,60 @@ public class ProfessorDashboardService {
         seanceRepository.save(seance);
     }
 
+    @Transactional
+    public ProfessorDashboardResponseDTO.EvaluationRowDTO createEvaluation(
+            String email,
+            ProfessorEvaluationRequestDTO request
+    ) {
+        Professeur professeur = findProfessorByEmail(email);
+        Seance seance = findOwnedSession(professeur, request.getSeanceId());
+
+        Evaluation evaluation = new Evaluation();
+        evaluation.setLibelle(request.getLibelle());
+        evaluation.setTypeEvaluation(request.getTypeEvaluation());
+        evaluation.setDateEvaluation(request.getDateEvaluation());
+        evaluation.setSeance(seance);
+        evaluation.setPlanningStatus("BROUILLON");
+
+        Evaluation savedEvaluation = evaluationRepository.save(academicEvaluationPolicyService.applyPolicy(evaluation));
+        return toEvaluationRow(savedEvaluation);
+    }
+
+    @Transactional
+    public ProfessorDashboardResponseDTO.EvaluationRowDTO updateEvaluation(
+            String email,
+            Integer evaluationId,
+            ProfessorEvaluationRequestDTO request
+    ) {
+        Professeur professeur = findProfessorByEmail(email);
+        Evaluation evaluation = findOwnedEvaluation(professeur, evaluationId);
+        Seance seance = findOwnedSession(professeur, request.getSeanceId());
+
+        if (hasPublishedGrade(evaluation)) {
+            throw new RuntimeException("Une evaluation contenant des notes publiees ne peut plus etre modifiee.");
+        }
+
+        evaluation.setLibelle(request.getLibelle());
+        evaluation.setTypeEvaluation(request.getTypeEvaluation());
+        evaluation.setDateEvaluation(request.getDateEvaluation());
+        evaluation.setSeance(seance);
+
+        Evaluation savedEvaluation = evaluationRepository.save(academicEvaluationPolicyService.applyPolicy(evaluation));
+        return toEvaluationRow(savedEvaluation);
+    }
+
+    @Transactional
+    public void deleteEvaluation(String email, Integer evaluationId) {
+        Professeur professeur = findProfessorByEmail(email);
+        Evaluation evaluation = findOwnedEvaluation(professeur, evaluationId);
+
+        if (!noteRepository.findByEvaluationId(evaluation.getId()).isEmpty()) {
+            throw new RuntimeException("Une evaluation contenant deja des notes ne peut pas etre supprimee.");
+        }
+
+        evaluationRepository.delete(evaluation);
+    }
+
     private List<ProfessorDashboardResponseDTO.StatDTO> buildStats(
             List<Enseignement> teachings,
             List<Groupe> groups,
@@ -235,6 +290,37 @@ public class ProfessorDashboardService {
                 .group(seance.getGroupe().getLibelle())
                 .subject(seance.getEnseignement().getMatiere().getLibelle())
                 .build();
+    }
+
+    private Professeur findProfessorByEmail(String email) {
+        return professeurRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Professeur introuvable"));
+    }
+
+    private Seance findOwnedSession(Professeur professeur, Integer sessionId) {
+        Seance seance = seanceRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Seance not found"));
+
+        if (seance.getEnseignement() == null
+                || seance.getEnseignement().getProfesseur() == null
+                || !seance.getEnseignement().getProfesseur().getId().equals(professeur.getId())) {
+            throw new RuntimeException("Cette seance n'appartient pas au professeur connecte.");
+        }
+
+        return seance;
+    }
+
+    private Evaluation findOwnedEvaluation(Professeur professeur, Integer evaluationId) {
+        Evaluation evaluation = evaluationRepository.findById(evaluationId)
+                .orElseThrow(() -> new RuntimeException("Evaluation not found"));
+
+        findOwnedSession(professeur, evaluation.getSeance().getId());
+        return evaluation;
+    }
+
+    private boolean hasPublishedGrade(Evaluation evaluation) {
+        return noteRepository.findByEvaluationId(evaluation.getId()).stream()
+                .anyMatch(note -> "Publiee".equalsIgnoreCase(note.getStatut()));
     }
 
     private ProfessorDashboardResponseDTO.StudentRowDTO toStudentRow(Etudiant etudiant) {

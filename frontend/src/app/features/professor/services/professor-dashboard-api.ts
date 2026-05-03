@@ -128,6 +128,13 @@ export interface CreateSessionPayload {
   groupe: { id: number };
 }
 
+export interface ProfessorEvaluationPayload {
+  libelle: string;
+  typeEvaluation: string;
+  dateEvaluation: string;
+  seanceId: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -149,6 +156,21 @@ export class ProfessorDashboardApi {
 
   reportCollectiveAbsence(sessionId: number): Observable<unknown> {
     return this.http.patch(`${this.apiUrl}/attendance/${sessionId}/collective-absence`, {});
+  }
+
+  createEvaluation(payload: ProfessorEvaluationPayload): Observable<ProfessorEvaluationRow> {
+    return this.http.post<ProfessorEvaluationRow>(`${this.apiUrl}/evaluations`, payload);
+  }
+
+  updateEvaluation(
+    evaluationId: number,
+    payload: ProfessorEvaluationPayload
+  ): Observable<ProfessorEvaluationRow> {
+    return this.http.put<ProfessorEvaluationRow>(`${this.apiUrl}/evaluations/${evaluationId}`, payload);
+  }
+
+  deleteEvaluation(evaluationId: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl}/evaluations/${evaluationId}`);
   }
 
   createMakeupSession(payload: CreateSessionPayload): Observable<unknown> {

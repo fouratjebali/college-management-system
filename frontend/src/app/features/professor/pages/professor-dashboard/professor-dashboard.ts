@@ -9,6 +9,7 @@ import {
   ProfessorAttendanceRow,
   ProfessorDashboardApi,
   ProfessorEvaluationRow,
+  ProfessorEvaluationPayload,
   ProfessorGradeRow,
   ProfessorGroupRow,
   ProfessorMaterialRow,
@@ -20,7 +21,13 @@ import {
   SaveGradePayload,
 } from '../../services/professor-dashboard-api';
 
-type ProfessorSection = 'overview' | 'schedule' | 'grades' | 'attendance' | 'materials';
+type ProfessorSection =
+  | 'overview'
+  | 'schedule'
+  | 'evaluations'
+  | 'grades'
+  | 'attendance'
+  | 'materials';
 
 interface NavItem {
   id: ProfessorSection;
@@ -63,6 +70,7 @@ export class ProfessorDashboardComponent {
   protected readonly selectedSessionId = signal<number | null>(null);
   protected readonly selectedMaterialTeachingId = signal<number | null>(null);
   protected readonly selectedFileName = signal('');
+  protected readonly editingEvaluationId = signal<number | null>(null);
 
   protected readonly stats = signal<readonly ProfessorStat[]>([]);
   protected readonly teachings = signal<readonly ProfessorTeachingRow[]>([]);
@@ -89,6 +97,11 @@ export class ProfessorDashboardComponent {
       description: 'Jours, horaires, salles et groupes',
     },
     {
+      id: 'evaluations',
+      label: 'Evaluations',
+      description: 'DS, examens et coefficients',
+    },
+    {
       id: 'grades',
       label: 'Saisie notes',
       description: 'Evaluations et envoi batch',
@@ -107,6 +120,7 @@ export class ProfessorDashboardComponent {
 
   protected readonly quickActions = [
     'Saisir des notes',
+    'Creer une evaluation',
     'Faire appel',
     'Voir emploi du temps',
     'Creer un rattrapage',
@@ -120,6 +134,13 @@ export class ProfessorDashboardComponent {
 
   protected readonly attendanceForm = this.formBuilder.nonNullable.group({
     groupId: [0, [Validators.required, Validators.min(1)]],
+    sessionId: [0, [Validators.required, Validators.min(1)]],
+  });
+
+  protected readonly evaluationForm = this.formBuilder.nonNullable.group({
+    libelle: ['', [Validators.required, Validators.minLength(3)]],
+    typeEvaluation: ['DS', [Validators.required]],
+    dateEvaluation: ['', [Validators.required]],
     sessionId: [0, [Validators.required, Validators.min(1)]],
   });
 
@@ -191,6 +212,20 @@ export class ProfessorDashboardComponent {
     const groupId = this.selectedGradeGroupId();
 
     return this.evaluations().filter((evaluation) => !groupId || evaluation.groupId === groupId);
+  });
+
+  protected readonly filteredEvaluations = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+
+    return this.evaluations().filter((evaluation) =>
+      this.matchesQuery(query, [
+        evaluation.label,
+        evaluation.type,
+        evaluation.date,
+        evaluation.group,
+        evaluation.subject,
+      ])
+    );
   });
 
   protected readonly attendanceSessions = computed(() => {
@@ -289,6 +324,8 @@ export class ProfessorDashboardComponent {
   protected activateQuickAction(action: string): void {
     const target: ProfessorSection = action.includes('notes')
       ? 'grades'
+      : action.includes('evaluation')
+        ? 'evaluations'
       : action.includes('appel')
         ? 'attendance'
         : action.includes('emploi')
@@ -323,6 +360,10 @@ export class ProfessorDashboardComponent {
 
   protected updateSession(event: Event): void {
     this.selectSession(Number((event.target as HTMLSelectElement).value));
+  }
+
+  protected updateEvaluationSession(event: Event): void {
+    this.evaluationForm.controls.sessionId.setValue(Number((event.target as HTMLSelectElement).value));
   }
 
   protected updateMaterialTeaching(event: Event): void {
@@ -409,6 +450,77 @@ export class ProfessorDashboardComponent {
       },
       error: () => {
         this.toastMessage.set('Erreur pendant la sauvegarde des notes.');
+      },
+    });
+  }
+
+  protected submitEvaluation(): void {
+    if (this.evaluationForm.invalid) {
+      this.evaluationForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.evaluationForm.getRawValue();
+    const payload: ProfessorEvaluationPayload = {
+      libelle: raw.libelle.trim(),
+      typeEvaluation: raw.typeEvaluation,
+      dateEvaluation: raw.dateEvaluation,
+      seanceId: raw.sessionId,
+    };
+    const editingId = this.editingEvaluationId();
+    const request = editingId
+      ? this.dashboardApi.updateEvaluation(editingId, payload)
+      : this.dashboardApi.createEvaluation(payload);
+
+    request.subscribe({
+      next: () => {
+        this.toastMessage.set(
+          editingId ? 'Evaluation modifiee avec succes.' : 'Evaluation creee avec succes.'
+        );
+        this.resetEvaluationForm();
+        this.loadDashboard();
+      },
+      error: (error) => {
+        this.toastMessage.set(
+          error.error?.message ||
+            error.error?.error ||
+            "Impossible d'enregistrer l'evaluation."
+        );
+      },
+    });
+  }
+
+  protected editEvaluation(evaluation: ProfessorEvaluationRow): void {
+    this.editingEvaluationId.set(evaluation.id);
+    this.evaluationForm.setValue({
+      libelle: evaluation.label,
+      typeEvaluation: evaluation.type,
+      dateEvaluation: this.toDateTimeInputValue(evaluation.date),
+      sessionId: evaluation.sessionId,
+    });
+    this.toastMessage.set(`Modification de ${evaluation.label}.`);
+  }
+
+  protected cancelEvaluationEdit(): void {
+    this.resetEvaluationForm();
+    this.toastMessage.set('Creation evaluation disponible.');
+  }
+
+  protected deleteEvaluation(evaluation: ProfessorEvaluationRow): void {
+    this.dashboardApi.deleteEvaluation(evaluation.id).subscribe({
+      next: () => {
+        this.toastMessage.set(`Evaluation ${evaluation.label} supprimee.`);
+        if (this.editingEvaluationId() === evaluation.id) {
+          this.resetEvaluationForm();
+        }
+        this.loadDashboard();
+      },
+      error: (error) => {
+        this.toastMessage.set(
+          error.error?.message ||
+            error.error?.error ||
+            "Impossible de supprimer une evaluation contenant deja des notes."
+        );
       },
     });
   }
@@ -565,6 +677,31 @@ export class ProfessorDashboardComponent {
       this.selectGradeGroup(firstGroup.id);
       this.selectAttendanceGroup(firstGroup.id);
     }
+
+    if (this.sessions()[0] && !this.evaluationForm.controls.sessionId.value) {
+      this.evaluationForm.controls.sessionId.setValue(this.sessions()[0].id);
+    }
+  }
+
+  private resetEvaluationForm(): void {
+    this.editingEvaluationId.set(null);
+    this.evaluationForm.reset({
+      libelle: '',
+      typeEvaluation: 'DS',
+      dateEvaluation: '',
+      sessionId: this.sessions()[0]?.id ?? 0,
+    });
+  }
+
+  private toDateTimeInputValue(date: string): string {
+    const [day, month, rest] = date.split('/');
+    const [year, time] = rest?.split(' ') ?? [];
+
+    if (!day || !month || !year || !time) {
+      return '';
+    }
+
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${time}`;
   }
 
   private selectGradeGroup(groupId: number): void {
