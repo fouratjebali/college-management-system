@@ -445,12 +445,12 @@
         </article>
       </section>
     } @else if (activeSection() === 'attendance') {
-      <section class="content-grid two-columns">
-        <article class="panel form-panel">
+      <section class="content-grid attendance-layout">
+        <article class="panel form-panel attendance-control-panel">
           <div class="panel-heading">
             <span class="eyebrow">Gestion presences</span>
-            <h2>Selectionner un groupe et une seance</h2>
-            <p>Tous les etudiants sont presents par defaut. Cliquez uniquement sur les absents.</p>
+            <h2>Preparer l'appel</h2>
+            <p>Les etudiants sont presents par defaut. Marquez seulement les absents.</p>
           </div>
 
           <form [formGroup]="attendanceForm" (ngSubmit)="submitAttendance()">
@@ -477,31 +477,35 @@
             </label>
 
             @if (selectedSession(); as session) {
-              <div class="helper-card">
-                {{ session.type }} - {{ session.room }} - {{ session.start }} a {{ session.end }}
+              <div class="attendance-session-card">
+                <strong>{{ session.subject }}</strong>
+                <span>{{ session.type }} - {{ session.room }} - {{ session.start }} a {{ session.end }}</span>
                 @if (session.collectiveAbsenceStatus !== 'Aucune') {
-                  - absence collective {{ session.collectiveAbsenceStatus }}
+                  <small>Absence collective {{ session.collectiveAbsenceStatus }}</small>
                 }
               </div>
             }
 
             <div class="attendance-summary" aria-label="Synthese de l'appel">
-              <span>
+              <span class="summary-item present">
                 <strong>{{ attendanceSummary().present }}</strong>
                 Presents
               </span>
-              <span>
+              <span class="summary-item absent">
                 <strong>{{ attendanceSummary().absent }}</strong>
                 Absents
               </span>
-              <span>
+              <span class="summary-item total">
                 <strong>{{ attendanceSummary().total }}</strong>
                 Total
               </span>
             </div>
 
             <div class="form-actions">
-              <button class="primary-button" type="submit">Sauvegarder l'appel</button>
+              <button class="primary-button attendance-save-button" type="submit">Sauvegarder l'appel</button>
+            </div>
+
+            <div class="attendance-bulk-actions" aria-label="Actions rapides presence">
               <button class="secondary-button" type="button" (click)="markAllAttendance('Present')">
                 Tous presents
               </button>
@@ -512,24 +516,25 @@
                 Reinitialiser
               </button>
               <button class="secondary-button" type="button" (click)="reportCollectiveAbsence()">
-                Signaler aucun present
+                Aucun present
               </button>
             </div>
           </form>
         </article>
 
-        <article class="panel table-panel wide-table">
+        <article class="panel table-panel wide-table attendance-list-panel">
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Appel</span>
               <h2>Statuts des etudiants</h2>
+              <p>Cliquez sur une ligne pour basculer entre present et absent.</p>
             </div>
             <span class="counter">{{ attendanceStudents().length }} etudiants</span>
           </div>
 
-          <div class="attendance-list optimized-attendance-list">
+          <div class="attendance-list">
             @if (attendanceStudents().length > 0) {
-              @for (student of attendanceStudents(); track student.id) {
+              @for (student of attendanceStudents(); track student.id; let index = $index) {
                 <button
                   type="button"
                   class="attendance-card"
@@ -537,13 +542,16 @@
                   [attr.aria-pressed]="isAbsent(student.id)"
                   (click)="toggleAttendanceStatus(student.id)"
                 >
-                  <div class="avatar">{{ student.name.charAt(0) }}</div>
-                  <div>
+                  <span class="attendance-index">{{ index + 1 }}</span>
+                  <div class="attendance-student-info">
                     <strong>{{ student.name }}</strong>
                     <small>{{ student.matricule }} - {{ student.level }}</small>
                   </div>
                   <span class="attendance-status">
                     {{ isAbsent(student.id) ? 'Absent' : 'Present' }}
+                  </span>
+                  <span class="attendance-switch" aria-hidden="true">
+                    <span></span>
                   </span>
                 </button>
               }
