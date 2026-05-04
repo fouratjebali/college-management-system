@@ -1,10 +1,10 @@
 :host {
   --student-bg: var(--color-primary);
-  --student-panel: rgba(57, 62, 70, 0.82);
-  --student-border: rgba(223, 208, 184, 0.14);
-  --student-text: #ffffff;
-  --student-soft: rgba(255, 255, 255, 0.68);
-  --student-muted: rgba(255, 255, 255, 0.48);
+  --student-panel: var(--color-panel);
+  --student-border: var(--color-border);
+  --student-text: var(--color-text-main);
+  --student-soft: var(--color-text-soft);
+  --student-muted: var(--color-text-muted);
   --student-accent: var(--color-tertiary);
   --student-sand: var(--color-surface);
   display: block;
@@ -16,10 +16,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
-  background:
-    radial-gradient(circle at 14% 12%, rgba(223, 208, 184, 0.11), transparent 30%),
-    radial-gradient(circle at 86% 6%, rgba(148, 137, 121, 0.16), transparent 28%),
-    linear-gradient(135deg, #171b21 0%, var(--student-bg) 54%, #252b34 100%);
+  background: var(--app-page-background);
 }
 
 .sidebar {
@@ -31,7 +28,7 @@
   flex-direction: column;
   gap: 24px;
   border-right: 1px solid var(--student-border);
-  background: rgba(34, 40, 49, 0.82);
+  background: var(--color-sidebar);
   backdrop-filter: blur(18px);
 }
 
@@ -49,7 +46,7 @@
   gap: 14px;
   padding: 16px;
   border-radius: 24px;
-  background: rgba(57, 62, 70, 0.62);
+  background: var(--color-control);
 }
 
 .brand-mark {
@@ -93,7 +90,7 @@ small {
   gap: 12px;
   padding: 15px;
   border-radius: 20px;
-  background: rgba(34, 40, 49, 0.48);
+  background: var(--color-nav);
   color: var(--student-text);
   font: inherit;
   text-align: left;
@@ -104,8 +101,8 @@ small {
 .nav-item:hover,
 .nav-item.active {
   transform: translateX(4px);
-  background: linear-gradient(135deg, rgba(148, 137, 121, 0.24), rgba(57, 62, 70, 0.82));
-  border-color: rgba(223, 208, 184, 0.26);
+  background: var(--color-nav-active);
+  border-color: color-mix(in srgb, var(--student-sand) 32%, transparent);
 }
 
 .nav-dot {
@@ -176,7 +173,7 @@ h2 {
   padding: 10px 14px;
   border: 1px solid var(--student-border);
   border-radius: 999px;
-  background: rgba(57, 62, 70, 0.66);
+  background: var(--color-control);
 }
 
 .notification-menu {
@@ -189,10 +186,10 @@ h2 {
   height: 48px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(223, 208, 184, 0.18);
+  border: 1px solid var(--student-border);
   border-radius: 999px;
-  background: rgba(57, 62, 70, 0.72);
-  color: #ffffff;
+  background: var(--color-control);
+  color: var(--student-text);
   cursor: pointer;
 }
 
@@ -232,7 +229,7 @@ h2 {
   padding: 10px;
   border: 1px solid var(--student-border);
   border-radius: 18px;
-  background: rgba(34, 40, 49, 0.96);
+  background: var(--color-panel-strong);
 }
 
 .notification-menu:hover .notification-panel,
@@ -248,8 +245,8 @@ h2 {
   border: 0;
   border-radius: 12px;
   padding: 0.7rem;
-  background: rgba(57, 62, 70, 0.62);
-  color: #ffffff;
+  background: var(--color-control);
+  color: var(--student-text);
   cursor: pointer;
 }
 
@@ -273,7 +270,7 @@ input:focus {
 }
 
 input::placeholder {
-  color: rgba(255, 255, 255, 0.36);
+  color: var(--color-placeholder);
 }
 
 button {
@@ -285,15 +282,15 @@ button {
 .secondary-button {
   border: 0;
   border-radius: 999px;
-  color: #ffffff;
+  color: var(--student-text);
   font-weight: 800;
   cursor: pointer;
 }
 
 .ghost-button,
 .secondary-button {
-  border: 1px solid rgba(223, 208, 184, 0.18);
-  background: rgba(57, 62, 70, 0.72);
+  border: 1px solid var(--student-border);
+  background: var(--color-control);
 }
 
 .ghost-button,

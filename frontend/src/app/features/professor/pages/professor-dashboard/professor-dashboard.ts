@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth';
+import { ThemeService } from '../../../../core/services/theme';
 import {
   CreateSessionPayload,
   ProfessorAttendanceRow,
@@ -59,8 +60,10 @@ export class ProfessorDashboardComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dashboardApi = inject(ProfessorDashboardApi);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly activeSection = signal<ProfessorSection>('overview');
+  protected readonly themeLabel = this.themeService.label;
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('');
   protected readonly isDashboardLoading = signal(true);
@@ -347,6 +350,10 @@ export class ProfessorDashboardComponent {
   protected logout(): void {
     this.authService.logout();
     this.router.navigate(['/']);
+  }
+
+  protected toggleTheme(): void {
+    this.themeService.toggle();
   }
 
   protected updateSearch(event: Event): void {
