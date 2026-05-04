@@ -5,6 +5,10 @@ import { AuthService } from '../../../../core/services/auth';
 import { ShellPreferencesService } from '../../../../core/services/shell-preferences';
 import { ThemeService } from '../../../../core/services/theme';
 import {
+  NotificationCenterComponent,
+  NotificationCenterItem,
+} from '../../../../shared/components/notification-center/notification-center';
+import {
   StudentAnnouncementRow,
   StudentAbsenceSummary,
   StudentDashboardApi,
@@ -37,16 +41,10 @@ interface ScheduleDayGroup {
   sessions: readonly StudentScheduleRow[];
 }
 
-interface NotificationItem {
-  label: string;
-  count: number;
-  target: StudentSection;
-}
-
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationCenterComponent],
   templateUrl: './student-dashboard.html',
   styleUrl: './student-dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -221,32 +219,48 @@ export class StudentDashboardComponent {
     );
   });
 
-  protected readonly notificationItems = computed<readonly NotificationItem[]>(() => [
-    {
-      label: 'Annonces',
-      count: this.announcements().length,
+  protected readonly notificationItems = computed<readonly NotificationCenterItem[]>(() => {
+    const announcements = this.announcements().map((announcement) => ({
+      id: `student-announcement-${announcement.id}`,
+      title: announcement.title,
+      description: announcement.content,
+      category: 'Annonce',
+      meta: announcement.publicationDate,
+      priority: 'high' as const,
       target: 'announcements',
-    },
-    {
-      label: 'Notes publiees',
-      count: this.grades().length,
+    }));
+    const grades = this.grades().map((grade) => ({
+      id: `student-grade-${grade.id}`,
+      title: `Note publiee - ${grade.subject}`,
+      description: `${grade.evaluation} : ${grade.value}/20`,
+      category: 'Notes',
+      meta: grade.date,
+      priority: 'high' as const,
       target: 'grades',
-    },
-    {
-      label: 'Rattrapages',
-      count: this.makeups().length,
+    }));
+    const makeups = this.makeups().map((makeup) => ({
+      id: `student-makeup-${makeup.id}`,
+      title: `Rattrapage - ${makeup.subject}`,
+      description: `${makeup.day} de ${makeup.start} a ${makeup.end} en ${makeup.room}`,
+      category: 'Rattrapage',
+      meta: makeup.professor,
+      priority: 'critical' as const,
       target: 'makeups',
-    },
-    {
-      label: 'Examens',
-      count: this.schedule().filter((session) => this.isExamSession(session)).length,
-      target: 'exams',
-    },
-  ]);
+    }));
+    const exams = this.schedule()
+      .filter((session) => this.isExamSession(session))
+      .map((session) => ({
+        id: `student-exam-${session.id}`,
+        title: `Examen planifie - ${session.subject}`,
+        description: `${session.day} de ${session.start} a ${session.end} en ${session.room}`,
+        category: 'Examens',
+        meta: session.type,
+        priority: 'critical' as const,
+        target: 'exams',
+      }));
 
-  protected readonly notificationCount = computed(() =>
-    this.notificationItems().reduce((total, item) => total + item.count, 0)
-  );
+    return [...announcements, ...grades, ...makeups, ...exams];
+  });
 
   protected readonly scheduleDayGroups = computed<readonly ScheduleDayGroup[]>(() => {
     const dayOrder = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
@@ -294,6 +308,10 @@ export class StudentDashboardComponent {
 
   protected setSection(section: StudentSection): void {
     this.activeSection.set(section);
+  }
+
+  protected openNotificationTarget(item: NotificationCenterItem): void {
+    this.setSection(item.target as StudentSection);
   }
 
   protected logout(): void {

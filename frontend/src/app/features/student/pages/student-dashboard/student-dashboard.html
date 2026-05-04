@@ -51,32 +51,11 @@
       </div>
 
       <div class="topbar-actions">
-        <div class="notification-menu">
-          <button
-            type="button"
-            class="notification-button"
-            aria-label="Notifications importantes"
-            (click)="setSection('announcements')"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5"
-              />
-              <path d="M9 17a3 3 0 0 0 6 0" />
-            </svg>
-            @if (notificationCount() > 0) {
-              <span class="notification-badge">{{ notificationCount() }}</span>
-            }
-          </button>
-          <div class="notification-panel">
-            @for (item of notificationItems(); track item.label) {
-              <button type="button" (click)="setSection(item.target)">
-                <span>{{ item.label }}</span>
-                <strong>{{ item.count }}</strong>
-              </button>
-            }
-          </div>
-        </div>
+        <app-notification-center
+          storageKey="student-notifications"
+          [items]="notificationItems()"
+          (notificationSelected)="openNotificationTarget($event)"
+        />
         <button
           type="button"
           class="ghost-button theme-toggle"

@@ -6,6 +6,10 @@ import { AuthService } from '../../../../core/services/auth';
 import { ShellPreferencesService } from '../../../../core/services/shell-preferences';
 import { ThemeService } from '../../../../core/services/theme';
 import {
+  NotificationCenterComponent,
+  NotificationCenterItem,
+} from '../../../../shared/components/notification-center/notification-center';
+import {
   AdminAcademicYear,
   AdminAttendanceDetail,
   AdminAttendanceSession,
@@ -114,7 +118,7 @@ interface ExamWeekGroup {
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, NotificationCenterComponent],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -322,6 +326,55 @@ export class AdminDashboardComponent {
         progress: this.percent(notified, eliminations),
       },
     ];
+  });
+
+  protected readonly notificationItems = computed<readonly NotificationCenterItem[]>(() => {
+    const noteFlows = this.noteValidationEvaluations()
+      .filter((evaluation) => evaluation.status !== 'Publiee')
+      .map((evaluation) => ({
+        id: `admin-note-${evaluation.evaluationId}-${evaluation.status}`,
+        title: `Notes a traiter - ${evaluation.subject}`,
+        description: `${evaluation.group} / ${evaluation.submittedCount} soumise(s), ${evaluation.validatedCount} validee(s)`,
+        category: 'Notes',
+        meta: evaluation.professor,
+        priority: evaluation.rejectedCount > 0 ? ('critical' as const) : ('high' as const),
+        target: 'notes',
+      }));
+    const examDrafts = this.plannedExams()
+      .filter((exam) => !this.isPublishedExam(exam))
+      .map((exam) => ({
+        id: `admin-exam-${exam.evaluationId}-${exam.status}`,
+        title: `Examen non publie - ${exam.subject}`,
+        description: `${exam.group} / ${exam.day} ${exam.startTime}-${exam.endTime}`,
+        category: 'Examens',
+        meta: exam.status,
+        priority: 'normal' as const,
+        target: 'exams',
+      }));
+    const attendanceAlerts = this.todayAttendanceSessions()
+      .filter((session) => session.missingCount > 0 || session.collectiveAbsenceStatus !== 'Aucune')
+      .map((session) => ({
+        id: `admin-attendance-${session.sessionId}-${session.status}-${session.collectiveAbsenceStatus}`,
+        title: `Presence a verifier - ${session.subject}`,
+        description: `${session.group} / ${session.missingCount} appel(s) manquant(s)`,
+        category: 'Presences',
+        meta: session.collectiveAbsenceStatus,
+        priority: session.collectiveAbsenceStatus !== 'Aucune' ? ('critical' as const) : ('high' as const),
+        target: 'attendance',
+      }));
+    const eliminations = this.eliminations()
+      .filter((record) => record.status !== 'Renseigne')
+      .map((record) => ({
+        id: `admin-elimination-${record.id}-${record.status}`,
+        title: `Absence critique - ${record.studentName}`,
+        description: `${record.subject} / ${record.absenceCount} absence(s)`,
+        category: 'Eliminations',
+        meta: record.group,
+        priority: 'critical' as const,
+        target: 'attendance',
+      }));
+
+    return [...eliminations, ...attendanceAlerts, ...noteFlows, ...examDrafts];
   });
 
   protected readonly quickActions = [
@@ -665,6 +718,10 @@ export class AdminDashboardComponent {
 
   protected setSection(section: AdminSection): void {
     this.activeSection.set(section);
+  }
+
+  protected openNotificationTarget(item: NotificationCenterItem): void {
+    this.setSection(item.target as AdminSection);
   }
 
   protected logout(): void {
