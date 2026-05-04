@@ -535,6 +535,201 @@ button {
   grid-template-columns: auto minmax(0, 1fr) auto auto;
 }
 
+.notes-workspace {
+  gap: 18px;
+}
+
+.notes-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  align-items: end;
+  gap: 20px;
+}
+
+.notes-hero .panel-heading {
+  max-width: 760px;
+}
+
+.notes-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notes-kpi-card,
+.selected-note-kpis > div {
+  display: grid;
+  gap: 0.45rem;
+  padding: 16px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(57, 62, 70, 0.62), rgba(34, 40, 49, 0.7));
+}
+
+.notes-kpi-card strong,
+.selected-note-kpis strong {
+  font-size: clamp(1.55rem, 2vw, 2.15rem);
+  letter-spacing: 0;
+}
+
+.notes-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.notes-validation-layout {
+  grid-template-columns: minmax(360px, 0.76fr) minmax(0, 1.24fr);
+  gap: 0;
+  min-height: min(720px, calc(100vh - 245px));
+}
+
+.notes-evaluation-list,
+.notes-detail-panel {
+  align-content: start;
+  padding: 18px;
+}
+
+.notes-evaluation-list {
+  max-height: min(720px, calc(100vh - 245px));
+  overflow: auto;
+  border-right: 1px solid var(--admin-border);
+}
+
+.notes-list-heading,
+.notes-detail-header,
+.notes-table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.notes-list-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -18px -18px 4px;
+  padding: 18px;
+  background: color-mix(in srgb, var(--admin-panel) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.note-evaluation-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  min-height: 82px;
+}
+
+.note-evaluation-card:hover,
+.note-evaluation-card.active {
+  border-color: color-mix(in srgb, var(--admin-sand) 38%, transparent);
+  background: linear-gradient(135deg, rgba(148, 137, 121, 0.22), rgba(57, 62, 70, 0.58));
+}
+
+.note-evaluation-content {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.note-evaluation-content strong,
+.note-student-cell strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-progress-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.note-progress-row span {
+  padding: 0.32rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(223, 208, 184, 0.1);
+  color: var(--admin-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.notes-detail-header {
+  padding: 18px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 20px;
+  background: radial-gradient(circle at top right, rgba(223, 208, 184, 0.14), transparent 34%),
+    rgba(34, 40, 49, 0.5);
+}
+
+.notes-detail-header h3,
+.notes-list-heading h3 {
+  margin: 0;
+}
+
+.selected-note-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.notes-decision-form {
+  padding: 16px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 20px;
+  background: rgba(34, 40, 49, 0.34);
+}
+
+.notes-action-bar {
+  justify-content: flex-end;
+}
+
+.notes-review-list {
+  gap: 10px;
+}
+
+.notes-table-heading {
+  padding: 0 12px;
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.notes-table-heading span:first-child {
+  flex: 1;
+}
+
+.note-review-row {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 72px;
+  background: rgba(34, 40, 49, 0.38);
+}
+
+.note-review-row:hover {
+  border-color: color-mix(in srgb, var(--admin-sand) 24%, transparent);
+  background: rgba(57, 62, 70, 0.58);
+}
+
+.note-student-cell {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.note-value-badge {
+  min-width: 72px;
+  padding: 0.52rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(223, 208, 184, 0.12);
+  text-align: center;
+}
+
+.notes-empty-detail {
+  min-height: 360px;
+}
+
 .two-columns {
   grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
 }
@@ -785,6 +980,10 @@ label {
   .attendance-student-row,
   .validation-item,
   .note-row,
+  .notes-kpi-card,
+  .selected-note-kpis > div,
+  .notes-detail-header,
+  .notes-decision-form,
   .summary-grid > div,
   .academic-year-row,
   .semester-row,
@@ -797,6 +996,20 @@ label {
   .empty-state {
     border-color: rgba(37, 55, 78, 0.1);
     background: rgba(248, 250, 252, 0.86);
+  }
+
+  .notes-list-heading {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  .note-evaluation-card:hover,
+  .note-evaluation-card.active {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(219, 229, 239, 0.76));
+  }
+
+  .note-progress-row span,
+  .note-value-badge {
+    background: rgba(37, 99, 235, 0.08);
   }
 
   .donut-center {
@@ -841,6 +1054,7 @@ label {
   .overview-metrics,
   .insight-grid,
   .role-chart,
+  .notes-hero,
   .two-columns,
   .users-layout,
   .academic-year-layout,
@@ -856,8 +1070,20 @@ label {
   .system-kpi-grid,
   .department-row,
   .attendance-stat-grid,
-  .attendance-metrics {
+  .attendance-metrics,
+  .notes-kpi-grid,
+  .selected-note-kpis {
     grid-template-columns: 1fr;
+  }
+
+  .notes-validation-layout {
+    min-height: auto;
+  }
+
+  .notes-evaluation-list {
+    max-height: none;
+    border-right: 0;
+    border-bottom: 1px solid var(--admin-border);
   }
 }
 
@@ -891,6 +1117,8 @@ label {
   .attendance-student-row,
   .note-row,
   .validation-item,
+  .note-evaluation-card,
+  .note-review-row,
   .year-heading,
   .semester-row,
   .week-heading,
