@@ -1,4 +1,4 @@
-<main class="professor-page">
+<main class="professor-page" [class.sidebar-collapsed]="sidebarCollapsed()">
   <aside class="sidebar" aria-label="Navigation professeur">
     <div class="brand-block">
       <span class="brand-mark"></span>
@@ -35,6 +35,9 @@
       </div>
 
       <div class="topbar-actions">
+        <button type="button" class="ghost-button shell-toggle" (click)="toggleSidebar()">
+          {{ sidebarCollapsed() ? 'Show menu' : 'Hide menu' }}
+        </button>
         <label class="search-box">
           <span>Search</span>
           <input

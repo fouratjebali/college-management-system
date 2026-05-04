@@ -17,6 +17,11 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   background: var(--app-page-background);
+  transition: grid-template-columns 0.24s ease;
+}
+
+.student-page.sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .sidebar {
@@ -30,6 +35,16 @@
   border-right: 1px solid var(--student-border);
   background: var(--color-sidebar);
   backdrop-filter: blur(18px);
+  overflow: hidden;
+  transition: opacity 0.2s ease, padding 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.student-page.sidebar-collapsed .sidebar {
+  padding-inline: 0;
+  border-right-color: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-18px);
 }
 
 .brand-block,
@@ -567,6 +582,14 @@ button {
   .student-page,
   .two-columns {
     grid-template-columns: 1fr;
+  }
+
+  .student-page.sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .student-page.sidebar-collapsed .sidebar {
+    display: none;
   }
 
   .sidebar {
