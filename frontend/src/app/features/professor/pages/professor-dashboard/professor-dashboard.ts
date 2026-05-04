@@ -7,6 +7,10 @@ import { AuthService } from '../../../../core/services/auth';
 import { ShellPreferencesService } from '../../../../core/services/shell-preferences';
 import { ThemeService } from '../../../../core/services/theme';
 import {
+  NotificationCenterComponent,
+  NotificationCenterItem,
+} from '../../../../shared/components/notification-center/notification-center';
+import {
   CreateSessionPayload,
   ProfessorAttendanceRow,
   ProfessorDashboardApi,
@@ -51,7 +55,7 @@ interface ScheduleDayGroup {
 @Component({
   selector: 'app-professor-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, NotificationCenterComponent],
   templateUrl: './professor-dashboard.html',
   styleUrl: './professor-dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -301,6 +305,53 @@ export class ProfessorDashboardComponent {
     });
   });
 
+  protected readonly notificationItems = computed<readonly NotificationCenterItem[]>(() => {
+    const sessions = this.upcomingSessions().map((session) => ({
+      id: `prof-session-${session.id}-${session.day}-${session.start}`,
+      title: `Seance a venir - ${session.subject}`,
+      description: `${session.group} / ${session.day} ${session.start}-${session.end} en ${session.room}`,
+      category: 'Emploi du temps',
+      meta: session.type,
+      priority: session.collectiveAbsenceStatus !== 'Aucune' ? ('critical' as const) : ('normal' as const),
+      target: 'schedule',
+    }));
+    const gradeWork = this.evaluations()
+      .filter((evaluation) =>
+        this.grades().some(
+          (grade) => grade.evaluationId === evaluation.id && grade.status !== 'Publiee'
+        )
+      )
+      .map((evaluation) => ({
+        id: `prof-grade-${evaluation.id}`,
+        title: `Notes a finaliser - ${evaluation.subject}`,
+        description: `${evaluation.label} / ${evaluation.group}`,
+        category: 'Notes',
+        meta: evaluation.date,
+        priority: 'high' as const,
+        target: 'grades',
+      }));
+    const evaluations = this.evaluations().slice(0, 4).map((evaluation) => ({
+      id: `prof-evaluation-${evaluation.id}`,
+      title: `Evaluation planifiee - ${evaluation.label}`,
+      description: `${evaluation.subject} / ${evaluation.group}`,
+      category: 'Evaluations',
+      meta: evaluation.date,
+      priority: 'normal' as const,
+      target: 'evaluations',
+    }));
+    const materials = this.materials().slice(0, 4).map((material) => ({
+      id: `prof-material-${material.id}`,
+      title: `Support depose - ${material.title}`,
+      description: `${material.subject} / ${material.fileName}`,
+      category: 'Supports',
+      meta: material.date,
+      priority: 'low' as const,
+      target: 'materials',
+    }));
+
+    return [...gradeWork, ...sessions, ...evaluations, ...materials];
+  });
+
   constructor() {
     this.loadDashboard();
   }
@@ -334,6 +385,10 @@ export class ProfessorDashboardComponent {
 
   protected setSection(section: ProfessorSection): void {
     this.activeSection.set(section);
+  }
+
+  protected openNotificationTarget(item: NotificationCenterItem): void {
+    this.setSection(item.target as ProfessorSection);
   }
 
   protected activateQuickAction(action: string): void {

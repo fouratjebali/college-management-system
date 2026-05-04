@@ -51,6 +51,11 @@
       </div>
 
       <div class="topbar-actions">
+        <app-notification-center
+          storageKey="admin-notifications"
+          [items]="notificationItems()"
+          (notificationSelected)="openNotificationTarget($event)"
+        />
         <label class="search-box">
           <span>Search</span>
           <input
