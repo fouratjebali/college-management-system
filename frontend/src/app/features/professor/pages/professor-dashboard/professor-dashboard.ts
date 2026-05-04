@@ -4,6 +4,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../../core/services/auth';
+import { ShellPreferencesService } from '../../../../core/services/shell-preferences';
 import { ThemeService } from '../../../../core/services/theme';
 import {
   CreateSessionPayload,
@@ -61,9 +62,11 @@ export class ProfessorDashboardComponent {
   private readonly router = inject(Router);
   private readonly dashboardApi = inject(ProfessorDashboardApi);
   private readonly themeService = inject(ThemeService);
+  private readonly shellPreferences = inject(ShellPreferencesService);
 
   protected readonly activeSection = signal<ProfessorSection>('overview');
   protected readonly themeLabel = this.themeService.label;
+  protected readonly sidebarCollapsed = this.shellPreferences.sidebarCollapsed;
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('');
   protected readonly isDashboardLoading = signal(true);
@@ -354,6 +357,10 @@ export class ProfessorDashboardComponent {
 
   protected toggleTheme(): void {
     this.themeService.toggle();
+  }
+
+  protected toggleSidebar(): void {
+    this.shellPreferences.toggleSidebar();
   }
 
   protected updateSearch(event: Event): void {
