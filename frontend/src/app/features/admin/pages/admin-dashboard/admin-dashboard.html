@@ -1071,32 +1071,63 @@
         </article>
       </section>
     } @else if (activeSection() === 'notes') {
-      <section class="content-grid">
-
-        <article class="panel table-panel full-span">
+      <section class="content-grid notes-workspace">
+        <article class="panel notes-hero full-span">
           <div class="panel-heading">
             <span class="eyebrow">Validation notes</span>
-            <h2>Workflow de validation</h2>
+            <h2>Centre de decision des notes</h2>
+            <p>
+              Suivez les evaluations soumises, controlez les remarques et appliquez les decisions sans quitter la page.
+            </p>
           </div>
 
-          <div class="validation-layout">
-            <div class="validation-list">
-              @if (noteValidationEvaluations().length > 0) {
-                @for (evaluation of noteValidationEvaluations(); track evaluation.evaluationId) {
+          <div class="notes-kpi-grid">
+            <div class="notes-kpi-card">
+              <small>Evaluations</small>
+              <strong>{{ noteValidationSummary().evaluations }}</strong>
+              <span>{{ noteValidationSummary().pendingEvaluations }} a traiter</span>
+            </div>
+            <div class="notes-kpi-card">
+              <small>Notes soumises</small>
+              <strong>{{ noteValidationSummary().submitted }}</strong>
+              <span>{{ noteValidationSummary().validated }} validee(s)</span>
+            </div>
+            <div class="notes-kpi-card">
+              <small>Publication</small>
+              <strong>{{ noteValidationSummary().published }}/{{ noteValidationSummary().totalNotes }}</strong>
+              <span>{{ noteValidationSummary().rejected }} rejetee(s)</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel table-panel notes-panel full-span">
+          <div class="validation-layout notes-validation-layout">
+            <div class="validation-list notes-evaluation-list">
+              <div class="notes-list-heading">
+                <div>
+                  <span class="eyebrow">Evaluations</span>
+                  <h3>Files de validation</h3>
+                </div>
+                <span class="counter">{{ filteredNoteValidationEvaluations().length }}</span>
+              </div>
+
+              @if (filteredNoteValidationEvaluations().length > 0) {
+                @for (evaluation of filteredNoteValidationEvaluations(); track evaluation.evaluationId) {
                   <button
                     type="button"
-                    class="validation-item"
+                    class="validation-item note-evaluation-card"
                     [class.active]="selectedNoteEvaluation()?.evaluationId === evaluation.evaluationId"
                     (click)="selectNoteEvaluation(evaluation.evaluationId)"
                   >
                     <span class="code-pill">{{ evaluation.type }}</span>
-                    <span>
+                    <span class="note-evaluation-content">
                       <strong>{{ evaluation.subject }}</strong>
                       <small>{{ evaluation.group }} - {{ evaluation.professor }}</small>
-                      <small>
-                        {{ evaluation.submittedCount }} soumise(s), {{ evaluation.validatedCount }} validee(s),
-                        {{ evaluation.publishedCount }} publiee(s)
-                      </small>
+                      <span class="note-progress-row">
+                        <span>Soumises {{ evaluation.submittedCount }}</span>
+                        <span>Validees {{ evaluation.validatedCount }}</span>
+                        <span>Publiees {{ evaluation.publishedCount }}</span>
+                      </span>
                     </span>
                     <span class="status-pill" [class.pending]="evaluation.status !== 'Publiee'">
                       {{ evaluation.status }}
@@ -1105,14 +1136,14 @@
                 }
               } @else {
                 <p class="empty-state">
-                  {{ isNoteValidationLoading() ? 'Chargement des notes...' : 'Aucune note soumise pour validation.' }}
+                  {{ isNoteValidationLoading() ? 'Chargement des notes...' : 'Aucune evaluation ne correspond aux filtres.' }}
                 </p>
               }
             </div>
 
-            <div class="validation-detail">
+            <div class="validation-detail notes-detail-panel">
               @if (selectedNoteValidationDetail(); as detail) {
-                <div class="panel-heading inline-heading">
+                <div class="notes-detail-header">
                   <div>
                     <span class="eyebrow">{{ detail.evaluation.type }}</span>
                     <h3>{{ detail.evaluation.label }}</h3>
@@ -1121,30 +1152,44 @@
                   <span class="counter">{{ detail.evaluation.totalNotes }} note(s)</span>
                 </div>
 
-                <form [formGroup]="noteValidationForm">
+                <div class="selected-note-kpis">
+                  @for (kpi of selectedNoteKpis(); track kpi.label) {
+                    <div>
+                      <small>{{ kpi.label }}</small>
+                      <strong>{{ kpi.value }}</strong>
+                    </div>
+                  }
+                </div>
+
+                <form class="notes-decision-form" [formGroup]="noteValidationForm">
                   <label>
                     Decision / remarque
                     <input type="text" formControlName="remark" placeholder="Controle effectue, correction demandee..." />
                   </label>
-                  <div class="form-actions">
+                  <div class="form-actions notes-action-bar">
                     <button type="button" class="primary-button" (click)="validateSelectedNotes()">Valider</button>
                     <button type="button" class="secondary-button" (click)="publishSelectedNotes()">Publier</button>
                     <button type="button" class="mini-button" (click)="rejectSelectedNotes()">Rejeter</button>
                   </div>
                 </form>
 
-                <div class="note-table">
+                <div class="note-table notes-review-list">
+                  <div class="notes-table-heading">
+                    <span>Etudiant</span>
+                    <span>Note</span>
+                    <span>Statut</span>
+                  </div>
                   @for (note of detail.notes; track note.noteId) {
-                    <div class="note-row">
+                    <div class="note-row note-review-row">
                       <div class="avatar">{{ note.studentName.charAt(0) }}</div>
-                      <div>
+                      <div class="note-student-cell">
                         <strong>{{ note.studentName }}</strong>
                         <small>{{ note.matricule }} - {{ note.remark || 'Sans remarque professeur' }}</small>
                         @if (note.validationRemark) {
                           <small>{{ note.validationRemark }}</small>
                         }
                       </div>
-                      <strong>{{ note.value }}/20</strong>
+                      <strong class="note-value-badge">{{ note.value }}/20</strong>
                       <span class="status-pill" [class.pending]="note.status !== 'Publiee'">
                         {{ note.status }}
                       </span>
@@ -1152,7 +1197,7 @@
                   }
                 </div>
               } @else {
-                <p class="empty-state">Selectionnez une evaluation pour consulter les notes.</p>
+                <p class="empty-state notes-empty-detail">Selectionnez une evaluation pour consulter les notes.</p>
               }
             </div>
           </div>

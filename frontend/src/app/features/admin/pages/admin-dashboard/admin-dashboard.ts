@@ -398,6 +398,56 @@ export class AdminDashboardComponent {
     this.selectedNoteValidationDetail()?.evaluation ?? null
   );
 
+  protected readonly filteredNoteValidationEvaluations = computed(() => {
+    const query = this.searchTerm().trim().toLowerCase();
+
+    return this.noteValidationEvaluations().filter((evaluation) =>
+      this.matchesText(query, [
+        evaluation.label,
+        evaluation.type,
+        evaluation.subject,
+        evaluation.group,
+        evaluation.professor,
+        evaluation.status,
+      ])
+    );
+  });
+
+  protected readonly noteValidationSummary = computed(() => {
+    const evaluations = this.noteValidationEvaluations();
+    const totalNotes = evaluations.reduce((total, evaluation) => total + evaluation.totalNotes, 0);
+    const submitted = evaluations.reduce((total, evaluation) => total + evaluation.submittedCount, 0);
+    const validated = evaluations.reduce((total, evaluation) => total + evaluation.validatedCount, 0);
+    const rejected = evaluations.reduce((total, evaluation) => total + evaluation.rejectedCount, 0);
+    const published = evaluations.reduce((total, evaluation) => total + evaluation.publishedCount, 0);
+    const pendingEvaluations = evaluations.filter((evaluation) => evaluation.status !== 'Publiee').length;
+
+    return {
+      evaluations: evaluations.length,
+      pendingEvaluations,
+      submitted,
+      validated,
+      rejected,
+      published,
+      totalNotes,
+    };
+  });
+
+  protected readonly selectedNoteKpis = computed(() => {
+    const evaluation = this.selectedNoteEvaluation();
+
+    if (!evaluation) {
+      return [];
+    }
+
+    return [
+      { label: 'Soumises', value: evaluation.submittedCount.toString() },
+      { label: 'Validees', value: evaluation.validatedCount.toString() },
+      { label: 'Rejetees', value: evaluation.rejectedCount.toString() },
+      { label: 'Publiees', value: evaluation.publishedCount.toString() },
+    ];
+  });
+
   protected readonly todayAttendanceDay = computed(() => this.currentFrenchDay());
 
   protected readonly attendanceStats = computed(() => {
