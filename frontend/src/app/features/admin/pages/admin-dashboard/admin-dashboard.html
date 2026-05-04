@@ -852,7 +852,7 @@
           </div>
         </article>
       </section>
-    } @else {
+    } @else if (activeSection() === 'exams') {
       <section class="content-grid exam-calendar-layout">
         <article class="panel form-panel">
           <div class="panel-heading">
@@ -1069,6 +1069,9 @@
             }
           </div>
         </article>
+      </section>
+    } @else if (activeSection() === 'notes') {
+      <section class="content-grid">
 
         <article class="panel table-panel full-span">
           <div class="panel-heading">
