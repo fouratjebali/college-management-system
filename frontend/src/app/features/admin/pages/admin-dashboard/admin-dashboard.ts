@@ -19,7 +19,14 @@ import {
   AdminSemester,
 } from '../../services/admin-dashboard-api';
 
-type AdminSection = 'overview' | 'academic-year' | 'structure' | 'users' | 'attendance' | 'calendar';
+type AdminSection =
+  | 'overview'
+  | 'academic-year'
+  | 'structure'
+  | 'users'
+  | 'attendance'
+  | 'exams'
+  | 'notes';
 
 interface NavItem {
   id: AdminSection;
@@ -162,9 +169,14 @@ export class AdminDashboardComponent {
       description: 'Suivi et cloture des appels',
     },
     {
-      id: 'calendar',
-      label: 'Examens & Notes',
-      description: 'Calendrier et publication',
+      id: 'exams',
+      label: 'Examens',
+      description: 'Planning et publication',
+    },
+    {
+      id: 'notes',
+      label: 'Notes',
+      description: 'Validation et publication',
     },
   ];
 
@@ -996,8 +1008,10 @@ export class AdminDashboardComponent {
         ? 'academic-year'
       : action.includes('presence')
         ? 'attendance'
-      : action.includes('examen') || action.includes('notes')
-        ? 'calendar'
+      : action.includes('examen')
+        ? 'exams'
+      : action.includes('notes')
+        ? 'notes'
         : 'structure';
 
     this.setSection(target);
