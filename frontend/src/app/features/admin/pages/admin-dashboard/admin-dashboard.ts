@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../../core/services/auth';
+import { ThemeService } from '../../../../core/services/theme';
 import {
   AdminAcademicYear,
   AdminAttendanceDetail,
@@ -115,8 +116,10 @@ export class AdminDashboardComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly dashboardApi = inject(AdminDashboardApi);
+  private readonly themeService = inject(ThemeService);
 
   protected readonly activeSection = signal<AdminSection>('overview');
+  protected readonly themeLabel = this.themeService.label;
   protected readonly searchTerm = signal('');
   protected readonly toastMessage = signal('');
   protected readonly selectedDepartment = signal('Tous');
@@ -602,6 +605,10 @@ export class AdminDashboardComponent {
   protected logout(): void {
     this.authService.logout();
     this.router.navigate(['/']);
+  }
+
+  protected toggleTheme(): void {
+    this.themeService.toggle();
   }
 
   protected updateSearch(event: Event): void {

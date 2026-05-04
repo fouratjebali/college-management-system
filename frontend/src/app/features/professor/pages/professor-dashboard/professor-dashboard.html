@@ -44,6 +44,9 @@
             (input)="updateSearch($event)"
           />
         </label>
+        <button type="button" class="ghost-button theme-toggle" (click)="toggleTheme()">
+          {{ themeLabel() }}
+        </button>
         <button type="button" class="ghost-button" (click)="logout()">Logout</button>
       </div>
     </header>

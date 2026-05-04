@@ -17,6 +17,59 @@
   --color-shadow: rgba(0, 0, 0, 0.28);
   --color-text-main: #ffffff;
   --color-text-soft: rgba(255, 255, 255, 0.72);
+  --color-text-muted: rgba(255, 255, 255, 0.48);
+  --color-page-start: #171b21;
+  --color-page-end: #252b34;
+  --color-sidebar: rgba(34, 40, 49, 0.82);
+  --color-panel: rgba(57, 62, 70, 0.82);
+  --color-panel-strong: rgba(57, 62, 70, 0.96);
+  --color-control: rgba(57, 62, 70, 0.66);
+  --color-field: rgba(34, 40, 49, 0.62);
+  --color-nav: rgba(34, 40, 49, 0.48);
+  --color-nav-active: linear-gradient(135deg, rgba(148, 137, 121, 0.24), rgba(57, 62, 70, 0.82));
+  --color-placeholder: rgba(255, 255, 255, 0.36);
+  --color-select-option: #2c3138;
+  --app-page-background:
+    radial-gradient(circle at 14% 12%, rgba(223, 208, 184, 0.11), transparent 30%),
+    radial-gradient(circle at 86% 6%, rgba(148, 137, 121, 0.16), transparent 28%),
+    linear-gradient(135deg, var(--color-page-start) 0%, var(--color-primary) 54%, var(--color-page-end) 100%);
+  --app-body-background:
+    radial-gradient(circle at top left, rgba(148, 137, 121, 0.18) 0%, transparent 32%),
+    radial-gradient(circle at bottom right, rgba(223, 208, 184, 0.08) 0%, transparent 24%),
+    linear-gradient(135deg, #1d2229 0%, #222831 58%, #2a313a 100%);
+}
+
+:root[data-theme='light'] {
+  --color-primary: #f4f0e7;
+  --color-secondary: #ffffff;
+  --color-tertiary: #7b6f60;
+  --color-surface: #2f3a46;
+  --color-surface-soft: rgba(47, 58, 70, 0.08);
+  --color-surface-strong: rgba(255, 255, 255, 0.92);
+  --color-border: rgba(47, 58, 70, 0.14);
+  --color-shadow: rgba(47, 58, 70, 0.16);
+  --color-text-main: #17202a;
+  --color-text-soft: rgba(23, 32, 42, 0.68);
+  --color-text-muted: rgba(23, 32, 42, 0.48);
+  --color-page-start: #f9f6ef;
+  --color-page-end: #e9e2d4;
+  --color-sidebar: rgba(255, 255, 255, 0.78);
+  --color-panel: rgba(255, 255, 255, 0.78);
+  --color-panel-strong: rgba(255, 255, 255, 0.95);
+  --color-control: rgba(255, 255, 255, 0.72);
+  --color-field: rgba(255, 255, 255, 0.82);
+  --color-nav: rgba(255, 255, 255, 0.58);
+  --color-nav-active: linear-gradient(135deg, rgba(123, 111, 96, 0.16), rgba(255, 255, 255, 0.9));
+  --color-placeholder: rgba(23, 32, 42, 0.42);
+  --color-select-option: #ffffff;
+  --app-page-background:
+    radial-gradient(circle at 14% 12%, rgba(123, 111, 96, 0.12), transparent 30%),
+    radial-gradient(circle at 86% 6%, rgba(47, 58, 70, 0.08), transparent 28%),
+    linear-gradient(135deg, var(--color-page-start) 0%, var(--color-primary) 54%, var(--color-page-end) 100%);
+  --app-body-background:
+    radial-gradient(circle at top left, rgba(123, 111, 96, 0.12) 0%, transparent 32%),
+    radial-gradient(circle at bottom right, rgba(47, 58, 70, 0.08) 0%, transparent 24%),
+    linear-gradient(135deg, #fbf8f1 0%, #f4f0e7 58%, #e9e2d4 100%);
 }
 
 html {
@@ -41,15 +94,12 @@ body {
   // Default the application to a light color theme. This can be changed to
   // `dark` to enable the dark color theme, or to `light dark` to defer to the
   // user's system settings.
-  color-scheme: dark;
+  color-scheme: inherit;
 
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
   // variables at https://material.angular.dev/guide/system-variables
-  background:
-    radial-gradient(circle at top left, rgba(148, 137, 121, 0.18) 0%, transparent 32%),
-    radial-gradient(circle at bottom right, rgba(223, 208, 184, 0.08) 0%, transparent 24%),
-    linear-gradient(135deg, #1d2229 0%, #222831 58%, #2a313a 100%);
+  background: var(--app-body-background);
   color: var(--color-text-main);
   font: var(--mat-sys-body-medium);
   font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
@@ -61,6 +111,11 @@ body {
 
 a {
   color: var(--color-surface);
+}
+
+.theme-toggle {
+  min-width: 84px;
+  justify-content: center;
 }
 /* You can add global styles to this file, and also import other style files */
 
