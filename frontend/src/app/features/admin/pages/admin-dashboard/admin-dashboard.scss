@@ -22,7 +22,7 @@
 }
 
 .admin-page.sidebar-collapsed {
-  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -41,11 +41,21 @@
 }
 
 .admin-page.sidebar-collapsed .sidebar {
-  padding-inline: 0;
-  border-right-color: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-18px);
+  padding-inline: 16px;
+  align-items: center;
+}
+
+.admin-page.sidebar-collapsed .brand-block {
+  width: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.admin-page.sidebar-collapsed .brand-block > .brand-mark,
+.admin-page.sidebar-collapsed .brand-block > div,
+.admin-page.sidebar-collapsed .nav-stack {
+  display: none;
 }
 
 .brand-block,
@@ -63,6 +73,10 @@
   padding: 16px;
   border-radius: 24px;
   background: var(--color-control);
+}
+
+.brand-block > div {
+  min-width: 0;
 }
 
 .brand-mark {
@@ -251,6 +265,12 @@ button {
 
 .ghost-button {
   padding: 0.85rem 1.1rem;
+}
+
+.icon-button,
+.theme-toggle,
+.shell-toggle {
+  padding: 0;
 }
 
 .primary-button,
@@ -748,6 +768,58 @@ label {
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
+:host-context([data-theme='light']) {
+  .panel,
+  .metric-card,
+  .brand-block,
+  .search-box,
+  .ghost-button,
+  .secondary-button {
+    box-shadow: 0 18px 42px rgba(37, 55, 78, 0.08);
+  }
+
+  .quick-list button,
+  .data-row,
+  .user-row,
+  .attendance-session-item,
+  .attendance-student-row,
+  .validation-item,
+  .note-row,
+  .summary-grid > div,
+  .academic-year-row,
+  .semester-row,
+  .professor-card,
+  .helper-card,
+  .exam-card-row,
+  .toggle-row label,
+  .attendance-stat-grid > div,
+  .attendance-metrics > div,
+  .empty-state {
+    border-color: rgba(37, 55, 78, 0.1);
+    background: rgba(248, 250, 252, 0.86);
+  }
+
+  .donut-center {
+    background: #f8fafc;
+  }
+
+  .progress-track {
+    background: #dbe5ef;
+  }
+
+  .code-pill,
+  .status-pill,
+  .counter,
+  .mini-button {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1e3a8a;
+  }
+
+  .primary-button {
+    color: #ffffff;
+  }
+}
+
 @media (max-width: 1100px) {
   .admin-page {
     grid-template-columns: 1fr;
@@ -755,10 +827,6 @@ label {
 
   .admin-page.sidebar-collapsed {
     grid-template-columns: 1fr;
-  }
-
-  .admin-page.sidebar-collapsed .sidebar {
-    display: none;
   }
 
   .sidebar {
