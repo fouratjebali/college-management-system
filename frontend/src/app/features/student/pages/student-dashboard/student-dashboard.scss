@@ -21,7 +21,7 @@
 }
 
 .student-page.sidebar-collapsed {
-  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
 }
 
 .sidebar {
@@ -40,11 +40,21 @@
 }
 
 .student-page.sidebar-collapsed .sidebar {
-  padding-inline: 0;
-  border-right-color: transparent;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-18px);
+  padding-inline: 16px;
+  align-items: center;
+}
+
+.student-page.sidebar-collapsed .brand-block {
+  width: 48px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.student-page.sidebar-collapsed .brand-block > .brand-mark,
+.student-page.sidebar-collapsed .brand-block > div,
+.student-page.sidebar-collapsed .nav-stack {
+  display: none;
 }
 
 .brand-block,
@@ -62,6 +72,10 @@
   padding: 16px;
   border-radius: 24px;
   background: var(--color-control);
+}
+
+.brand-block > div {
+  min-width: 0;
 }
 
 .brand-mark {
@@ -312,6 +326,12 @@ button {
 .primary-button,
 .secondary-button {
   padding: 0.85rem 1.1rem;
+}
+
+.icon-button,
+.theme-toggle,
+.shell-toggle {
+  padding: 0;
 }
 
 .primary-button {
@@ -578,6 +598,46 @@ button {
   line-height: 1.6;
 }
 
+:host-context([data-theme='light']) {
+  .panel,
+  .brand-block,
+  .search-box,
+  .ghost-button,
+  .secondary-button,
+  .notification-button {
+    box-shadow: 0 18px 42px rgba(37, 55, 78, 0.08);
+  }
+
+  .data-row,
+  .average-card,
+  .grade-row,
+  .subject-grade-card,
+  .subject-grade-grid > div,
+  .material-card,
+  .announcement-card,
+  .exam-card,
+  .schedule-row,
+  .empty-state {
+    border-color: rgba(37, 55, 78, 0.1);
+    background: rgba(248, 250, 252, 0.86);
+  }
+
+  .schedule-row,
+  .subject-grade-grid > div {
+    background: rgba(241, 246, 252, 0.94);
+  }
+
+  .counter,
+  .notification-badge {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1e3a8a;
+  }
+
+  .primary-button {
+    color: #ffffff;
+  }
+}
+
 @media (max-width: 1180px) {
   .student-page,
   .two-columns {
@@ -586,10 +646,6 @@ button {
 
   .student-page.sidebar-collapsed {
     grid-template-columns: 1fr;
-  }
-
-  .student-page.sidebar-collapsed .sidebar {
-    display: none;
   }
 
   .sidebar {
