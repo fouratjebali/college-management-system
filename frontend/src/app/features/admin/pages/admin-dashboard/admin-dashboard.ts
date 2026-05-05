@@ -19,6 +19,7 @@ import {
   AdminExamPlanningRequest,
   AdminNoteValidationDetail,
   AdminNoteValidationEvaluation,
+  AdminPlanningOption,
   AdminPlannedExam,
   AdminSemester,
 } from '../../services/admin-dashboard-api';
@@ -100,6 +101,9 @@ interface ProfessorDepartmentGroup {
 
 interface ExamDraftRow extends AdminExamPlanningRequest {
   id: number;
+  dayLabel?: string;
+  roomSource?: string;
+  guardLabel?: string;
 }
 
 interface ExamDayGroup {
@@ -120,6 +124,20 @@ interface NoteWorkflowStage {
   value: string;
   meta: string;
   tone: 'submitted' | 'validated' | 'rejected' | 'published';
+}
+
+interface TpExamRequest {
+  id: number;
+  subjectId: number;
+  groupId: number;
+  professorId: number;
+  subject: string;
+  group: string;
+  professor: string;
+  requestedDate: string;
+  preferredRoom: string;
+  reason: string;
+  status: 'En attente' | 'Planifiee';
 }
 
 @Component({
@@ -402,6 +420,7 @@ export class AdminDashboardComponent {
   protected readonly examPlanningOptions = signal<AdminExamPlanningOptions | null>(null);
   protected readonly plannedExams = signal<readonly AdminPlannedExam[]>([]);
   protected readonly examDrafts = signal<readonly ExamDraftRow[]>([]);
+  protected readonly selectedTpRequestId = signal<number | null>(null);
   protected readonly noteValidationEvaluations = signal<readonly AdminNoteValidationEvaluation[]>([]);
   protected readonly selectedNoteValidationDetail = signal<AdminNoteValidationDetail | null>(null);
   protected readonly attendanceSessions = signal<readonly AdminAttendanceSession[]>([]);
@@ -665,6 +684,51 @@ export class AdminDashboardComponent {
     ).sort((first, second) => first.localeCompare(second))
   );
 
+  protected readonly tpExamRequests = computed<readonly TpExamRequest[]>(() => {
+    const subjects = this.examPlanningOptions()?.subjects ?? [];
+    const groups = this.examPlanningOptions()?.groups ?? [];
+    const professors = this.examPlanningOptions()?.professors ?? [];
+
+    if (!subjects.length || !groups.length || !professors.length) {
+      return [];
+    }
+
+    return subjects.slice(0, 4).map((subject, index) => ({
+      id: index + 1,
+      subjectId: subject.id,
+      groupId: groups[index % groups.length].id,
+      professorId: professors[index % professors.length].id,
+      subject: subject.label,
+      group: groups[index % groups.length].label,
+      professor: professors[index % professors.length].label,
+      requestedDate: this.offsetDate(2 + index),
+      preferredRoom: `Labo ${index + 1}`,
+      reason:
+        index % 2 === 0
+          ? 'Evaluation pratique necessitant une salle machine.'
+          : 'Controle TP demande apres cloture du chapitre pratique.',
+      status: this.selectedTpRequestId() === index + 1 ? 'Planifiee' : 'En attente',
+    }));
+  });
+
+  protected readonly selectedTpRequest = computed(() =>
+    this.tpExamRequests().find((request) => request.id === this.selectedTpRequestId()) ?? null
+  );
+
+  protected readonly examPlanningStats = computed(() => {
+    const drafts = this.examDrafts();
+    const ds = drafts.filter((draft) => draft.evaluationType === 'DS').length;
+    const exams = drafts.filter((draft) => draft.evaluationType === 'Examen').length;
+    const rooms = new Set(drafts.map((draft) => draft.room)).size;
+    const guards = new Set(drafts.map((draft) => draft.professorId)).size;
+
+    return [
+      { label: 'Epreuves generees', value: drafts.length.toString(), meta: `${ds} DS / ${exams} examen(s)` },
+      { label: 'Salles mobilisees', value: rooms.toString(), meta: 'Rotation selon disponibilite' },
+      { label: 'Surveillants', value: guards.toString(), meta: 'Affectation automatique' },
+    ];
+  });
+
   protected readonly professorsByDepartment = computed<readonly ProfessorDepartmentGroup[]>(() =>
     this.departmentOptions()
       .filter((department) => department !== 'Tous')
@@ -695,16 +759,24 @@ export class AdminDashboardComponent {
   });
 
   protected readonly examForm = this.formBuilder.nonNullable.group({
-    evaluationType: ['DS', [Validators.required]],
+    evaluationType: ['Examen TP', [Validators.required]],
     subjectId: [0, [Validators.required, Validators.min(1)]],
     groupId: [0, [Validators.required, Validators.min(1)]],
     professorId: [0, [Validators.required, Validators.min(1)]],
     startDate: ['', [Validators.required]],
     startTime: ['09:00', [Validators.required]],
-    endTime: ['11:00', [Validators.required]],
+    endTime: ['10:30', [Validators.required]],
     building: ['Bloc B', [Validators.required]],
     room: ['', [Validators.required]],
     details: [''],
+  });
+
+  protected readonly examWeekForm = this.formBuilder.nonNullable.group({
+    evaluationType: ['DS', [Validators.required]],
+    groupId: [0, [Validators.required, Validators.min(1)]],
+    startDate: ['', [Validators.required]],
+    endDate: ['', [Validators.required]],
+    building: ['Bloc B', [Validators.required]],
   });
 
   protected readonly noteValidationForm = this.formBuilder.nonNullable.group({
@@ -858,6 +930,11 @@ export class AdminDashboardComponent {
   }
 
   protected submitExam(): void {
+    if (this.examForm.controls.evaluationType.value !== 'Examen TP' || !this.selectedTpRequest()) {
+      this.toastMessage.set("Un examen TP doit etre lie a une demande professeur.");
+      return;
+    }
+
     if (this.examForm.invalid) {
       this.examForm.markAllAsTouched();
       return;
@@ -868,6 +945,7 @@ export class AdminDashboardComponent {
       .subscribe({
         next: (exam) => {
           this.toastMessage.set(`${exam.type} ${exam.subject} ajoute en brouillon pour ${exam.group}.`);
+          this.selectedTpRequestId.set(null);
           this.loadExamPlanning();
           this.loadDashboard();
         },
@@ -882,22 +960,112 @@ export class AdminDashboardComponent {
   }
 
   protected addExamDraft(): void {
-    if (this.examForm.invalid) {
-      this.examForm.markAllAsTouched();
+    if (this.examWeekForm.invalid) {
+      this.examWeekForm.markAllAsTouched();
       return;
     }
 
-    const draft = {
-      ...this.buildExamPlanningRequest(),
-      id: ++this.examDraftCounter,
-    };
-
-    this.examDrafts.update((drafts) => [...drafts, draft]);
-    this.toastMessage.set(`${this.optionLabel('subject', draft.subjectId)} ajoute au lot hebdomadaire.`);
+    this.generateExamWeek();
   }
 
   protected removeExamDraft(draftId: number): void {
     this.examDrafts.update((drafts) => drafts.filter((draft) => draft.id !== draftId));
+  }
+
+  protected clearGeneratedWeek(): void {
+    this.examDrafts.set([]);
+  }
+
+  protected planTpRequest(request: TpExamRequest): void {
+    this.selectedTpRequestId.set(request.id);
+    this.examForm.setValue({
+      evaluationType: 'Examen TP',
+      subjectId: request.subjectId,
+      groupId: request.groupId,
+      professorId: request.professorId,
+      startDate: request.requestedDate,
+      startTime: '14:00',
+      endTime: '15:30',
+      building: 'Bloc TP',
+      room: request.preferredRoom,
+      details: request.reason,
+    });
+  }
+
+  protected generateExamWeek(): void {
+    if (this.examWeekForm.invalid) {
+      this.examWeekForm.markAllAsTouched();
+      return;
+    }
+
+    const { evaluationType, groupId, startDate, endDate, building } = this.examWeekForm.getRawValue();
+    const dates = this.businessDaysBetween(startDate, endDate);
+    const subjects = this.examSubjectsForGroup(groupId).slice(0, Math.max(1, dates.length));
+    const professors = this.examPlanningOptions()?.professors ?? [];
+    const rooms = ['Salle 101', 'Salle 104', 'Salle 201', 'Salle 204', 'Amphi A'];
+    const duration = evaluationType === 'DS' ? 60 : 90;
+    const startSlots = evaluationType === 'DS' ? ['09:00', '10:30', '12:00'] : ['09:00', '11:00'];
+
+    const drafts = subjects.map((subject, index) => {
+      const date = dates[index % dates.length] ?? startDate;
+      const startTime = startSlots[index % startSlots.length];
+      const professor = professors[index % Math.max(1, professors.length)];
+      const room = rooms[index % rooms.length];
+
+      return {
+        id: ++this.examDraftCounter,
+        evaluationType,
+        subjectId: subject.id,
+        groupId,
+        professorId: professor?.id ?? 0,
+        examDate: date,
+        startTime,
+        endTime: this.addMinutes(startTime, duration),
+        building,
+        room,
+        details: `Genere automatiquement pour ${this.optionLabel('group', groupId)}`,
+        dayLabel: this.frenchDayLabel(date),
+        roomSource: 'Disponible',
+        guardLabel: professor?.label ?? 'Surveillant a definir',
+      };
+    });
+
+    this.examDrafts.set(drafts);
+    this.toastMessage.set(`${drafts.length} epreuve(s) generee(s) pour ${this.optionLabel('group', groupId)}.`);
+  }
+
+  protected shiftExamDraft(draftId: number, minutes: number): void {
+    this.examDrafts.update((drafts) =>
+      drafts.map((draft) =>
+        draft.id === draftId
+          ? {
+              ...draft,
+              startTime: this.addMinutes(draft.startTime, minutes),
+              endTime: this.addMinutes(draft.endTime, minutes),
+            }
+          : draft
+      )
+    );
+  }
+
+  protected rotateDraftRoom(draftId: number): void {
+    const rooms = ['Salle 101', 'Salle 104', 'Salle 201', 'Salle 204', 'Amphi A'];
+
+    this.examDrafts.update((drafts) =>
+      drafts.map((draft) => {
+        if (draft.id !== draftId) {
+          return draft;
+        }
+
+        const nextRoom = rooms[(rooms.indexOf(draft.room) + 1) % rooms.length] ?? rooms[0];
+
+        return {
+          ...draft,
+          room: nextRoom,
+          roomSource: 'Modifiee',
+        };
+      })
+    );
   }
 
   protected submitExamDrafts(): void {
@@ -913,6 +1081,26 @@ export class AdminDashboardComponent {
       .subscribe({
         next: (exams) => {
           this.examDrafts.set([]);
+          const weekStart = exams[0]?.weekStart;
+
+          if (weekStart) {
+            this.dashboardApi.publishExamWeek(weekStart).subscribe({
+              next: (publishedExams) => {
+                this.toastMessage.set(`${publishedExams.length} examen(s) publie(s) pour la semaine.`);
+                this.loadExamPlanning();
+                this.loadDashboard();
+              },
+              error: () => {
+                this.toastMessage.set(
+                  `${exams.length} examen(s) planifie(s), publication semaine a relancer depuis le calendrier.`
+                );
+                this.loadExamPlanning();
+                this.loadDashboard();
+              },
+            });
+            return;
+          }
+
           this.toastMessage.set(`${exams.length} examen(s) planifie(s) en brouillon.`);
           this.loadExamPlanning();
           this.loadDashboard();
@@ -1438,6 +1626,10 @@ export class AdminDashboardComponent {
     if (this.examForm.controls.professorId.value === 0 && options.professors[0]) {
       this.examForm.controls.professorId.setValue(options.professors[0].id);
     }
+
+    if (this.examWeekForm.controls.groupId.value === 0 && options.groups[0]) {
+      this.examWeekForm.controls.groupId.setValue(options.groups[0].id);
+    }
   }
 
   private buildExamPlanningRequest(): AdminExamPlanningRequest {
@@ -1456,6 +1648,67 @@ export class AdminDashboardComponent {
       room,
       details,
     };
+  }
+
+  private examSubjectsForGroup(groupId: number): readonly AdminPlanningOption[] {
+    const subjects = this.examPlanningOptions()?.subjects ?? [];
+    const groupLabel = this.optionLabel('group', groupId).toLowerCase();
+    const scoped = subjects.filter((subject) => {
+      const meta = `${subject.label} ${subject.meta}`.toLowerCase();
+      return groupLabel !== 'non defini' && meta.includes(groupLabel);
+    });
+
+    return scoped.length > 0 ? scoped : subjects;
+  }
+
+  private businessDaysBetween(startDate: string, endDate: string): string[] {
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+      return startDate ? [startDate] : [];
+    }
+
+    const dates: string[] = [];
+    const cursor = new Date(start);
+
+    while (cursor <= end && dates.length < 6) {
+      const day = cursor.getDay();
+      if (day >= 1 && day <= 6) {
+        dates.push(this.toIsoDate(cursor));
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dates.length > 0 ? dates : [startDate];
+  }
+
+  private offsetDate(days: number): string {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return this.toIsoDate(date);
+  }
+
+  private toIsoDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private addMinutes(time: string, minutes: number): string {
+    const [hours, mins] = time.split(':').map((value) => Number(value));
+    const total = (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(mins) ? mins : 0) + minutes;
+    const normalized = ((total % 1440) + 1440) % 1440;
+    const nextHours = Math.floor(normalized / 60).toString().padStart(2, '0');
+    const nextMinutes = (normalized % 60).toString().padStart(2, '0');
+    return `${nextHours}:${nextMinutes}`;
+  }
+
+  private frenchDayLabel(value: string): string {
+    const date = new Date(`${value}T00:00:00`);
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    return Number.isNaN(date.getTime()) ? value : days[date.getDay()];
   }
 
   private formatIsoDate(value: string): string {
