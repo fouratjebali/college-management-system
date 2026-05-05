@@ -10,6 +10,7 @@ import MiniProjet_Backend.Backend.Model.Evaluation;
 import MiniProjet_Backend.Backend.Model.Groupe;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.User;
+import MiniProjet_Backend.Backend.Repository.AdministrateurRepository;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
 import MiniProjet_Backend.Backend.Repository.EnseignementRepository;
 import MiniProjet_Backend.Backend.Repository.EtudiantRepository;
@@ -17,11 +18,13 @@ import MiniProjet_Backend.Backend.Repository.EvaluationRepository;
 import MiniProjet_Backend.Backend.Repository.GroupeRepository;
 import MiniProjet_Backend.Backend.Repository.MatiereRepository;
 import MiniProjet_Backend.Backend.Repository.ProfesseurRepository;
-import MiniProjet_Backend.Backend.Repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,9 +36,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class AdminDashboardService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AdminDashboardService.class);
     private static final DateTimeFormatter EXAM_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    private final UserRepository userRepository;
+    private final AdministrateurRepository administrateurRepository;
     private final EtudiantRepository etudiantRepository;
     private final ProfesseurRepository professeurRepository;
     private final DepartementRepository departementRepository;
@@ -46,7 +50,7 @@ public class AdminDashboardService {
     private final AcademicEvaluationPolicyService academicEvaluationPolicyService;
 
     public AdminDashboardService(
-            UserRepository userRepository,
+            AdministrateurRepository administrateurRepository,
             EtudiantRepository etudiantRepository,
             ProfesseurRepository professeurRepository,
             DepartementRepository departementRepository,
@@ -56,7 +60,7 @@ public class AdminDashboardService {
             EvaluationRepository evaluationRepository,
             AcademicEvaluationPolicyService academicEvaluationPolicyService
     ) {
-        this.userRepository = userRepository;
+        this.administrateurRepository = administrateurRepository;
         this.etudiantRepository = etudiantRepository;
         this.professeurRepository = professeurRepository;
         this.departementRepository = departementRepository;
@@ -87,29 +91,51 @@ public class AdminDashboardService {
             String group
     ) {
         int size = Math.min(Math.max(requestedSize, 5), 100);
-        List<AdminDashboardResponseDTO.UserRowDTO> users = buildUsers();
-        List<AdminDashboardResponseDTO.UserRowDTO> filteredUsers = users.stream()
-                .filter(user -> matchesUserFilters(user, search, role, department, group))
-                .toList();
+        try {
+            List<AdminDashboardResponseDTO.UserRowDTO> users = buildUsers();
+            List<AdminDashboardResponseDTO.UserRowDTO> filteredUsers = users.stream()
+                    .filter(user -> matchesUserFilters(user, search, role, department, group))
+                    .toList();
 
-        int totalPages = filteredUsers.isEmpty() ? 0 : (int) Math.ceil((double) filteredUsers.size() / size);
-        int page = totalPages == 0 ? 0 : Math.min(Math.max(requestedPage, 0), totalPages - 1);
-        int start = page * size;
-        int end = Math.min(start + size, filteredUsers.size());
+            int totalPages = filteredUsers.isEmpty() ? 0 : (int) Math.ceil((double) filteredUsers.size() / size);
+            int page = totalPages == 0 ? 0 : Math.min(Math.max(requestedPage, 0), totalPages - 1);
+            int start = page * size;
+            int end = Math.min(start + size, filteredUsers.size());
 
+            return AdminUserPageResponseDTO.builder()
+                    .content(filteredUsers.subList(start, end))
+                    .page(page)
+                    .size(size)
+                    .totalElements(filteredUsers.size())
+                    .totalPages(totalPages)
+                    .totalUserElements(users.size())
+                    .activeUserElements(users.stream().filter(user -> "Active".equalsIgnoreCase(user.getStatus())).count())
+                    .roleCounts(buildRoleCounts(users))
+                    .departments(buildDepartmentOptions(users))
+                    .groups(buildGroupOptions())
+                    .departmentSummaries(buildDepartmentSummaries(users))
+                    .professorsByDepartment(buildProfessorsByDepartment(users))
+                    .build();
+        } catch (RuntimeException exception) {
+            LOGGER.error("Unable to build paginated admin users", exception);
+            return emptyUsersPage(size);
+        }
+    }
+
+    private AdminUserPageResponseDTO emptyUsersPage(int size) {
         return AdminUserPageResponseDTO.builder()
-                .content(filteredUsers.subList(start, end))
-                .page(page)
+                .content(List.of())
+                .page(0)
                 .size(size)
-                .totalElements(filteredUsers.size())
-                .totalPages(totalPages)
-                .totalUserElements(users.size())
-                .activeUserElements(users.stream().filter(user -> "Active".equalsIgnoreCase(user.getStatus())).count())
-                .roleCounts(buildRoleCounts(users))
-                .departments(buildDepartmentOptions(users))
-                .groups(buildGroupOptions())
-                .departmentSummaries(buildDepartmentSummaries(users))
-                .professorsByDepartment(buildProfessorsByDepartment(users))
+                .totalElements(0)
+                .totalPages(0)
+                .totalUserElements(0)
+                .activeUserElements(0)
+                .roleCounts(Map.of("Etudiant", 0L, "Professeur", 0L, "Administrateur", 0L))
+                .departments(List.of())
+                .groups(List.of())
+                .departmentSummaries(List.of())
+                .professorsByDepartment(List.of())
                 .build();
     }
 
@@ -148,18 +174,35 @@ public class AdminDashboardService {
     }
 
     private List<AdminDashboardResponseDTO.UserRowDTO> buildUsers() {
-        return userRepository.findAll().stream()
-                .sorted(Comparator.comparing(User::getId))
-                .map(user -> AdminDashboardResponseDTO.UserRowDTO.builder()
-                        .name(defaultText(user.getNomComplet(), "Utilisateur sans nom"))
-                        .email(defaultText(user.getEmail(), "Email non renseigne"))
-                        .role(resolveRole(user))
-                        .status(user.isActif() ? "Active" : "Pending")
-                        .department(defaultText(resolveDepartment(user), "Non affecte"))
-                        .group(defaultText(resolveGroup(user), "Non affecte"))
-                        .specialty(defaultText(resolveSpecialty(user), "Non renseigne"))
-                        .build())
+        List<AdminDashboardResponseDTO.UserRowDTO> users = new ArrayList<>();
+
+        etudiantRepository.findAll().forEach(student -> users.add(buildUserRow(student, "Etudiant")));
+        professeurRepository.findAll().forEach(professor -> users.add(buildUserRow(professor, "Professeur")));
+        administrateurRepository.findAll().forEach(admin -> users.add(buildUserRow(admin, "Administrateur")));
+
+        return users.stream()
+                .sorted(Comparator.comparing(AdminDashboardResponseDTO.UserRowDTO::getEmail))
                 .toList();
+    }
+
+    private AdminDashboardResponseDTO.UserRowDTO buildUserRow(User user, String role) {
+        return AdminDashboardResponseDTO.UserRowDTO.builder()
+                .name(safeText(() -> user.getNomComplet(), "Utilisateur sans nom"))
+                .email(safeText(() -> user.getEmail(), "Email non renseigne"))
+                .role(role)
+                .status(isActive(user) ? "Active" : "Pending")
+                .department(safeText(() -> resolveDepartment(user), "Non affecte"))
+                .group(safeText(() -> resolveGroup(user), "Non affecte"))
+                .specialty(safeText(() -> resolveSpecialty(user), "Non renseigne"))
+                .build();
+    }
+
+    private boolean isActive(User user) {
+        try {
+            return user.isActif();
+        } catch (RuntimeException exception) {
+            return false;
+        }
     }
 
     private boolean matchesUserFilters(
@@ -284,6 +327,19 @@ public class AdminDashboardService {
 
     private String defaultText(String value, String fallback) {
         return hasText(value) ? value.trim() : fallback;
+    }
+
+    private String safeText(TextSupplier supplier, String fallback) {
+        try {
+            return defaultText(supplier.get(), fallback);
+        } catch (RuntimeException exception) {
+            return fallback;
+        }
+    }
+
+    @FunctionalInterface
+    private interface TextSupplier {
+        String get();
     }
 
     private List<AdminDashboardResponseDTO.ExamRowDTO> buildExams() {
