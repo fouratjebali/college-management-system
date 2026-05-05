@@ -862,11 +862,7 @@
         <article class="panel exam-studio-hero full-span">
           <div class="panel-heading">
             <span class="eyebrow">Studio examens</span>
-            <h2>Planification intelligente des epreuves</h2>
-            <p>
-              Les examens TP sont planifies uniquement depuis une demande professeur. Les DS et examens sont
-              generes par semaine selon classe, periode, duree, salle disponible et surveillant.
-            </p>
+            <h2>Planification des epreuves</h2>
           </div>
 
           <div class="exam-studio-kpis">
@@ -888,8 +884,8 @@
         <article class="panel tp-request-panel">
           <div class="panel-heading inline-heading">
             <div>
-              <span class="eyebrow">Demandes professeurs</span>
-              <h2>Examens TP a valider</h2>
+              <span class="eyebrow">TP</span>
+              <h2>Demandes professeurs</h2>
             </div>
             <span class="counter">{{ tpExamRequests().length }}</span>
           </div>
@@ -921,9 +917,9 @@
           </div>
 
           <form class="tp-plan-form" [formGroup]="examForm" (ngSubmit)="submitExam()">
-            <div class="panel-heading">
-              <span class="eyebrow">Planification TP</span>
-              <h3>{{ selectedTpRequest()?.subject || 'Selectionnez une demande' }}</h3>
+            <div class="compact-form-heading">
+              <strong>{{ selectedTpRequest()?.subject || 'Selectionnez une demande TP' }}</strong>
+              <span>Planification TP</span>
             </div>
 
             <div class="field-row">
@@ -953,8 +949,7 @@
         <article class="panel weekly-generator-panel">
           <div class="panel-heading">
             <span class="eyebrow">Generateur semaine</span>
-            <h2>DS et examens par classe</h2>
-            <p>Choisissez une periode et une classe. Le systeme construit une semaine coherent selon les durees.</p>
+            <h2>DS et examens</h2>
           </div>
 
           <form [formGroup]="examWeekForm" (ngSubmit)="generateExamWeek()">
@@ -1016,7 +1011,7 @@
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Semaine generee</span>
-              <h2>Revue et ajustements avant publication</h2>
+              <h2>Revue avant publication</h2>
             </div>
             <span class="counter">{{ examDrafts().length }} epreuve(s)</span>
           </div>
@@ -1057,7 +1052,7 @@
           <div class="panel-heading inline-heading">
             <div>
               <span class="eyebrow">Planning publie</span>
-              <h2>Calendrier des examens</h2>
+              <h2>Calendrier</h2>
             </div>
             <span class="counter">{{ plannedExams().length }} examen(s)</span>
           </div>

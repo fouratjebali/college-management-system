@@ -1105,6 +1105,20 @@ label {
   background: rgba(17, 24, 39, 0.16);
 }
 
+.compact-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.compact-form-heading span {
+  color: var(--admin-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .exam-rule-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
