@@ -115,6 +115,13 @@ interface ExamWeekGroup {
   days: readonly ExamDayGroup[];
 }
 
+interface NoteWorkflowStage {
+  label: string;
+  value: string;
+  meta: string;
+  tone: 'submitted' | 'validated' | 'rejected' | 'published';
+}
+
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -499,6 +506,42 @@ export class AdminDashboardComponent {
       { label: 'Rejetees', value: evaluation.rejectedCount.toString() },
       { label: 'Publiees', value: evaluation.publishedCount.toString() },
     ];
+  });
+
+  protected readonly noteWorkflowStages = computed<readonly NoteWorkflowStage[]>(() => {
+    const summary = this.noteValidationSummary();
+
+    return [
+      {
+        label: 'Soumises',
+        value: this.formatNumber(summary.submitted),
+        meta: 'En attente de controle',
+        tone: 'submitted',
+      },
+      {
+        label: 'Validees',
+        value: this.formatNumber(summary.validated),
+        meta: 'Pretes pour publication',
+        tone: 'validated',
+      },
+      {
+        label: 'Rejetees',
+        value: this.formatNumber(summary.rejected),
+        meta: 'Correction demandee',
+        tone: 'rejected',
+      },
+      {
+        label: 'Publiees',
+        value: `${this.formatNumber(summary.published)}/${this.formatNumber(summary.totalNotes)}`,
+        meta: 'Visibles par les etudiants',
+        tone: 'published',
+      },
+    ];
+  });
+
+  protected readonly selectedNotePublicationRatio = computed(() => {
+    const evaluation = this.selectedNoteEvaluation();
+    return evaluation ? this.percent(evaluation.publishedCount, evaluation.totalNotes) : 0;
   });
 
   protected readonly todayAttendanceDay = computed(() => this.currentFrenchDay());
@@ -1201,6 +1244,10 @@ export class AdminDashboardComponent {
 
   protected formatPercent(value: number): string {
     return `${value}%`;
+  }
+
+  protected noteProgressPercent(evaluation: AdminNoteValidationEvaluation): number {
+    return this.percent(evaluation.publishedCount, evaluation.totalNotes);
   }
 
   private buildCodeFromName(name: string | null | undefined): string {
