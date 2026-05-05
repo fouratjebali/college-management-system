@@ -745,7 +745,7 @@ export class AdminDashboardComponent {
 
   protected readonly examWeekForm = this.formBuilder.nonNullable.group({
     evaluationType: ['DS', [Validators.required]],
-    groupId: [0, [Validators.required, Validators.min(1)]],
+    departmentId: [0, [Validators.required, Validators.min(1)]],
     startDate: ['', [Validators.required]],
     endDate: ['', [Validators.required]],
     building: ['Bloc B', [Validators.required]],
@@ -1036,40 +1036,51 @@ export class AdminDashboardComponent {
       return;
     }
 
-    const { evaluationType, groupId, startDate, endDate, building } = this.examWeekForm.getRawValue();
+    const { evaluationType, departmentId, startDate, endDate, building } = this.examWeekForm.getRawValue();
     const dates = this.businessDaysBetween(startDate, endDate);
-    const subjects = this.examSubjectsForGroup(groupId).slice(0, Math.max(1, dates.length));
+    const groups = this.examGroupsForDepartment(departmentId);
+    const subjects = this.examSubjectsForDepartment(departmentId);
     const professors = this.examPlanningOptions()?.professors ?? [];
     const rooms = ['Salle 101', 'Salle 104', 'Salle 201', 'Salle 204', 'Amphi A'];
     const duration = evaluationType === 'DS' ? 60 : 90;
     const startSlots = evaluationType === 'DS' ? ['09:00', '10:30', '12:00'] : ['09:00', '11:00'];
 
-    const drafts = subjects.map((subject, index) => {
-      const date = dates[index % dates.length] ?? startDate;
-      const startTime = startSlots[index % startSlots.length];
-      const professor = professors[index % Math.max(1, professors.length)];
-      const room = rooms[index % rooms.length];
+    if (!groups.length || !subjects.length) {
+      this.toastMessage.set('Aucun groupe ou matiere disponible pour cette filiere.');
+      return;
+    }
 
-      return {
-        id: ++this.examDraftCounter,
-        evaluationType,
-        subjectId: subject.id,
-        groupId,
-        professorId: professor?.id ?? 0,
-        examDate: date,
-        startTime,
-        endTime: this.addMinutes(startTime, duration),
-        building,
-        room,
-        details: `Genere automatiquement pour ${this.optionLabel('group', groupId)}`,
-        dayLabel: this.frenchDayLabel(date),
-        roomSource: 'Disponible',
-        guardLabel: professor?.label ?? 'Surveillant a definir',
-      };
-    });
+    const drafts = groups.flatMap((group, groupIndex) =>
+      subjects.map((subject, subjectIndex) => {
+        const index = groupIndex * subjects.length + subjectIndex;
+        const date = dates[Math.floor(index / startSlots.length) % dates.length] ?? startDate;
+        const startTime = startSlots[index % startSlots.length];
+        const professor = professors[index % Math.max(1, professors.length)];
+        const room = rooms[index % rooms.length];
+
+        return {
+          id: ++this.examDraftCounter,
+          evaluationType,
+          subjectId: subject.id,
+          groupId: group.id,
+          professorId: professor?.id ?? 0,
+          examDate: date,
+          startTime,
+          endTime: this.addMinutes(startTime, duration),
+          building,
+          room,
+          details: `Genere automatiquement pour la filiere ${this.optionLabel('department', departmentId)}`,
+          dayLabel: this.frenchDayLabel(date),
+          roomSource: 'Disponible',
+          guardLabel: professor?.label ?? 'Surveillant a definir',
+        };
+      })
+    );
 
     this.examDrafts.set(drafts);
-    this.toastMessage.set(`${drafts.length} epreuve(s) generee(s) pour ${this.optionLabel('group', groupId)}.`);
+    this.toastMessage.set(
+      `${drafts.length} epreuve(s) generee(s) pour la filiere ${this.optionLabel('department', departmentId)}.`
+    );
   }
 
   protected shiftExamDraft(draftId: number, minutes: number): void {
@@ -1181,14 +1192,16 @@ export class AdminDashboardComponent {
     return exam.status.toLowerCase() === 'publie';
   }
 
-  protected optionLabel(kind: 'subject' | 'group' | 'professor', id: number): string {
+  protected optionLabel(kind: 'subject' | 'group' | 'professor' | 'department', id: number): string {
     const options = this.examPlanningOptions();
     const source =
       kind === 'subject'
         ? options?.subjects
         : kind === 'group'
           ? options?.groups
-          : options?.professors;
+          : kind === 'department'
+            ? options?.departments
+            : options?.professors;
 
     return source?.find((option) => option.id === id)?.label ?? 'Non renseigne';
   }
@@ -1665,8 +1678,8 @@ export class AdminDashboardComponent {
       this.examForm.controls.professorId.setValue(options.professors[0].id);
     }
 
-    if (this.examWeekForm.controls.groupId.value === 0 && options.groups[0]) {
-      this.examWeekForm.controls.groupId.setValue(options.groups[0].id);
+    if (this.examWeekForm.controls.departmentId.value === 0 && options.departments[0]) {
+      this.examWeekForm.controls.departmentId.setValue(options.departments[0].id);
     }
   }
 
@@ -1688,12 +1701,19 @@ export class AdminDashboardComponent {
     };
   }
 
-  private examSubjectsForGroup(groupId: number): readonly AdminPlanningOption[] {
+  private examGroupsForDepartment(departmentId: number): readonly AdminPlanningOption[] {
+    const departmentLabel = this.optionLabel('department', departmentId).toLowerCase();
+    const groups = this.examPlanningOptions()?.groups ?? [];
+
+    return groups.filter((group) => group.meta.toLowerCase() === departmentLabel);
+  }
+
+  private examSubjectsForDepartment(departmentId: number): readonly AdminPlanningOption[] {
     const subjects = this.examPlanningOptions()?.subjects ?? [];
-    const groupLabel = this.optionLabel('group', groupId).toLowerCase();
+    const departmentLabel = this.optionLabel('department', departmentId).toLowerCase();
     const scoped = subjects.filter((subject) => {
       const meta = `${subject.label} ${subject.meta}`.toLowerCase();
-      return groupLabel !== 'non defini' && meta.includes(groupLabel);
+      return departmentLabel !== 'non renseigne' && meta.includes(departmentLabel);
     });
 
     return scoped.length > 0 ? scoped : subjects;

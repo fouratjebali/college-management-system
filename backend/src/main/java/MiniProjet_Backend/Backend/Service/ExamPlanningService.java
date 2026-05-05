@@ -84,7 +84,11 @@ public class ExamPlanningService {
                         .toList())
                 .subjects(matiereRepository.findAll().stream()
                         .sorted(Comparator.comparing(Matiere::getLibelle))
-                        .map(subject -> option(subject.getId(), subject.getLibelle(), subject.getCode()))
+                        .map(subject -> option(
+                                subject.getId(),
+                                subject.getLibelle(),
+                                subject.getDepartement() == null ? subject.getCode() : subject.getDepartement().getNom()
+                        ))
                         .toList())
                 .professors(professeurRepository.findAll().stream()
                         .sorted(Comparator.comparing(Professeur::getNomComplet))
