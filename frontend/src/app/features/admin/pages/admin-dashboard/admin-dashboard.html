@@ -246,7 +246,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Annee universitaire</span>
             <h2>Creer une annee</h2>
-            <p>Une seule annee peut etre active a la fois.</p>
           </div>
 
           <form [formGroup]="academicYearForm" (ngSubmit)="submitAcademicYear()">
@@ -288,7 +287,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Semestre</span>
             <h2>Ajouter un semestre</h2>
-            <p>Les dates doivent rester dans l'annee universitaire choisie.</p>
           </div>
 
           <form [formGroup]="semesterForm" (ngSubmit)="submitSemester()">
@@ -407,7 +405,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Structure pedagogique</span>
             <h2>Gerer une entite</h2>
-            <p>La liste de droite affiche uniquement les departements existants en base.</p>
           </div>
 
           <form [formGroup]="structureForm" (ngSubmit)="submitStructure()">
@@ -521,7 +518,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Gestion utilisateurs</span>
             <h2>{{ editingUserEmail() ? 'Modifier un utilisateur' : 'Creer un compte' }}</h2>
-            <p>Les informations affichees restent synchronisees avec les donnees institutionnelles.</p>
           </div>
 
           <form [formGroup]="userForm" (ngSubmit)="submitUser()">
@@ -736,10 +732,10 @@
               <div>
                 <span class="eyebrow">{{ detail.session.group }}</span>
                 <h2>{{ detail.session.subject }}</h2>
-                <p>
+                <small>
                   {{ detail.session.day }} {{ detail.session.startTime }} - {{ detail.session.endTime }}
                   / {{ detail.session.professor }}
-                </p>
+                </small>
                 @if (detail.session.collectiveAbsenceStatus !== 'Aucune') {
                   <small>
                     Absence collective {{ detail.session.collectiveAbsenceStatus }}
@@ -1116,9 +1112,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Validation notes</span>
             <h2>Centre de decision academique</h2>
-            <p>
-              Pilotez les evaluations soumises, les corrections demandees et la publication finale depuis un espace de revue unique.
-            </p>
           </div>
 
           <div class="notes-workflow-rail" aria-label="Workflow de validation des notes">
@@ -1182,7 +1175,7 @@
                   <div>
                     <span class="eyebrow">{{ detail.evaluation.type }}</span>
                     <h3>{{ detail.evaluation.label }}</h3>
-                    <p>{{ detail.evaluation.subject }} - {{ detail.evaluation.group }} - {{ detail.evaluation.professor }}</p>
+                    <small>{{ detail.evaluation.subject }} - {{ detail.evaluation.group }} - {{ detail.evaluation.professor }}</small>
                   </div>
                   <div class="notes-publication-meter">
                     <strong>{{ formatPercent(selectedNotePublicationRatio()) }}</strong>

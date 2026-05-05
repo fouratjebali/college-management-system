@@ -716,7 +716,8 @@ button {
     rgba(34, 40, 49, 0.5);
 }
 
-.notes-case-hero p {
+.notes-case-hero small {
+  display: block;
   margin: 0.35rem 0 0;
   color: var(--admin-soft);
 }
