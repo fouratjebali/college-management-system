@@ -643,9 +643,20 @@ export class AdminDashboardComponent {
   });
 
   protected readonly groupOptions = computed(() => {
+    const department = this.selectedDepartment();
+    const normalizedDepartment = department.trim().toLowerCase();
+    const academicGroups = this.examPlanningOptions()?.groups ?? [];
+    const scopedGroups = academicGroups
+      .filter((group) => department === 'Tous' || group.meta.trim().toLowerCase() === normalizedDepartment)
+      .map((group) => group.label);
+    const fallbackGroups = this.userGroupOptions().filter(
+      (group) => group && group !== 'Non affecte' && group !== 'Tous les groupes'
+    );
+    const groups = academicGroups.length > 0 ? scopedGroups : fallbackGroups;
+
     return [
       'Tous',
-      ...Array.from(new Set(this.userGroupOptions())).filter((group) => group && group !== 'Non affecte'),
+      ...Array.from(new Set(groups)).sort((first, second) => first.localeCompare(second)),
     ];
   });
 
@@ -658,7 +669,10 @@ export class AdminDashboardComponent {
   protected readonly groupFormOptions = computed(() =>
     Array.from(
       new Set(
-        this.userGroupOptions()
+        [
+          ...(this.examPlanningOptions()?.groups.map((group) => group.label) ?? []),
+          ...this.userGroupOptions(),
+        ]
           .filter((group) => group && group !== 'Non affecte' && group !== 'Tous les groupes')
       )
     ).sort((first, second) => first.localeCompare(second))
