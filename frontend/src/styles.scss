@@ -1,0 +1,148 @@
+
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+:root {
+  --color-primary: #222831;
+  --color-secondary: #393e46;
+  --color-tertiary: #948979;
+  --color-surface: #dfd0b8;
+  --color-surface-soft: rgba(223, 208, 184, 0.12);
+  --color-surface-strong: rgba(57, 62, 70, 0.92);
+  --color-border: rgba(223, 208, 184, 0.14);
+  --color-shadow: rgba(0, 0, 0, 0.28);
+  --color-text-main: #ffffff;
+  --color-text-soft: rgba(255, 255, 255, 0.72);
+  --color-text-muted: rgba(255, 255, 255, 0.48);
+  --color-page-start: #171b21;
+  --color-page-end: #252b34;
+  --color-sidebar: rgba(34, 40, 49, 0.82);
+  --color-panel: rgba(57, 62, 70, 0.82);
+  --color-panel-strong: rgba(57, 62, 70, 0.96);
+  --color-control: rgba(57, 62, 70, 0.66);
+  --color-field: rgba(34, 40, 49, 0.62);
+  --color-nav: rgba(34, 40, 49, 0.48);
+  --color-nav-active: linear-gradient(135deg, rgba(148, 137, 121, 0.24), rgba(57, 62, 70, 0.82));
+  --color-placeholder: rgba(255, 255, 255, 0.36);
+  --color-select-option: #2c3138;
+  --app-page-background:
+    radial-gradient(circle at 14% 12%, rgba(223, 208, 184, 0.11), transparent 30%),
+    radial-gradient(circle at 86% 6%, rgba(148, 137, 121, 0.16), transparent 28%),
+    linear-gradient(135deg, var(--color-page-start) 0%, var(--color-primary) 54%, var(--color-page-end) 100%);
+  --app-body-background:
+    radial-gradient(circle at top left, rgba(148, 137, 121, 0.18) 0%, transparent 32%),
+    radial-gradient(circle at bottom right, rgba(223, 208, 184, 0.08) 0%, transparent 24%),
+    linear-gradient(135deg, #1d2229 0%, #222831 58%, #2a313a 100%);
+}
+
+:root[data-theme='light'] {
+  --color-primary: #edf3f8;
+  --color-secondary: #ffffff;
+  --color-tertiary: #2563eb;
+  --color-surface: #1f2937;
+  --color-surface-soft: rgba(37, 99, 235, 0.08);
+  --color-surface-strong: rgba(255, 255, 255, 0.94);
+  --color-border: rgba(37, 55, 78, 0.12);
+  --color-shadow: rgba(37, 55, 78, 0.12);
+  --color-text-main: #101827;
+  --color-text-soft: rgba(16, 24, 39, 0.66);
+  --color-text-muted: rgba(16, 24, 39, 0.44);
+  --color-page-start: #f7faff;
+  --color-page-end: #dfe9f5;
+  --color-sidebar: rgba(255, 255, 255, 0.88);
+  --color-panel: rgba(255, 255, 255, 0.9);
+  --color-panel-strong: rgba(255, 255, 255, 0.95);
+  --color-control: rgba(255, 255, 255, 0.92);
+  --color-field: rgba(255, 255, 255, 0.96);
+  --color-nav: rgba(248, 250, 252, 0.88);
+  --color-nav-active: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(255, 255, 255, 0.96));
+  --color-placeholder: rgba(23, 32, 42, 0.42);
+  --color-select-option: #ffffff;
+  --app-page-background:
+    radial-gradient(circle at 14% 12%, rgba(37, 99, 235, 0.09), transparent 30%),
+    radial-gradient(circle at 86% 6%, rgba(31, 41, 55, 0.06), transparent 28%),
+    linear-gradient(135deg, var(--color-page-start) 0%, var(--color-primary) 54%, var(--color-page-end) 100%);
+  --app-body-background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08) 0%, transparent 32%),
+    radial-gradient(circle at bottom right, rgba(31, 41, 55, 0.06) 0%, transparent 24%),
+    linear-gradient(135deg, #f8fbff 0%, #edf3f8 58%, #dfe9f5 100%);
+}
+
+html {
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
+  min-height: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: inherit;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background: var(--app-body-background);
+  color: var(--color-text-main);
+  font: var(--mat-sys-body-medium);
+  font-family: 'Segoe UI', 'Trebuchet MS', sans-serif;
+
+  // Reset the user agent margin.
+  margin: 0;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-surface);
+}
+
+.icon-button,
+.theme-toggle,
+.shell-toggle {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.icon-button svg,
+.theme-toggle svg,
+.shell-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.shell-toggle {
+  margin-left: auto;
+  justify-content: center;
+}
+/* You can add global styles to this file, and also import other style files */
+
+html,
+body {
+  height: 100%;
+}

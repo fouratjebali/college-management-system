@@ -1,0 +1,1310 @@
+<main class="admin-page" [class.sidebar-collapsed]="sidebarCollapsed()">
+  <aside class="sidebar" aria-label="Navigation administrateur">
+    <div class="brand-block">
+      <span class="brand-mark"></span>
+      <div>
+        <strong>ISSATSO+</strong>
+        <span>Admin Control</span>
+      </div>
+      <button
+        type="button"
+        class="ghost-button shell-toggle"
+        [attr.aria-label]="sidebarCollapsed() ? 'Afficher le menu' : 'Masquer le menu'"
+        (click)="toggleSidebar()"
+      >
+        @if (sidebarCollapsed()) {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        }
+      </button>
+    </div>
+
+    <nav class="nav-stack">
+      @for (item of navItems; track item.id) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="activeSection() === item.id"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          (click)="setSection(item.id)"
+        >
+          <span class="nav-dot"></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">College Management System</span>
+        <h1>Espace Administrateur</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <app-notification-center
+          storageKey="admin-notifications"
+          [items]="notificationItems()"
+          (notificationSelected)="openNotificationTarget($event)"
+        />
+        <label class="search-box">
+          <span>Search</span>
+          <input
+            type="search"
+            placeholder="Utilisateur, role, statut..."
+            [value]="searchTerm()"
+            (input)="updateSearch($event)"
+          />
+        </label>
+        <button
+          type="button"
+          class="ghost-button theme-toggle"
+          [attr.aria-label]="'Activer le mode ' + themeLabel()"
+          (click)="toggleTheme()"
+        >
+          @if (themeLabel() === 'Light') {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 7 9 9 0 1 1-9-7" />
+            </svg>
+          }
+        </button>
+        <button type="button" class="ghost-button" (click)="logout()">Logout</button>
+      </div>
+    </header>
+
+    @if (activeSection() === 'overview') {
+      <section class="admin-overview">
+        <section class="overview-metrics" aria-label="Statistiques administrateur">
+          @if (overviewMetrics().length > 0) {
+            @for (metric of overviewMetrics(); track metric.label) {
+              <article class="metric-card">
+                <span>{{ metric.label }}</span>
+                <strong>{{ metric.value }}</strong>
+                <small>{{ metric.meta }}</small>
+              </article>
+            }
+          } @else {
+            <article class="empty-state full-span">
+              {{ isDashboardLoading() ? 'Chargement des statistiques...' : 'Aucune statistique trouvee dans la base.' }}
+            </article>
+          }
+        </section>
+
+        <section class="insight-grid">
+          <article class="panel role-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Utilisateurs</span>
+                <h2>Repartition des roles</h2>
+              </div>
+              <span class="counter">{{ totalUserElements() }} compte(s)</span>
+            </div>
+
+            <div class="role-chart">
+              <div class="donut-chart" [style.background]="roleDonutStyle()">
+                <div class="donut-center">
+                  <strong>{{ totalUserElements() }}</strong>
+                  <small>Total</small>
+                </div>
+              </div>
+              <div class="legend-list">
+                @for (segment of roleDistribution(); track segment.label) {
+                  <div class="data-row legend-row">
+                    <span class="legend-dot" [style.background]="segment.color"></span>
+                    <div>
+                      <strong>{{ segment.label }}</strong>
+                      <small>{{ segment.value }} compte(s)</small>
+                    </div>
+                    <span>{{ formatPercent(segment.percent) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </article>
+
+          <article class="panel department-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Departements</span>
+                <h2>Charge academique</h2>
+              </div>
+              <span class="counter">{{ departmentKpis().length }} departement(s)</span>
+            </div>
+
+            <div class="department-chart">
+              @if (departmentKpis().length > 0) {
+                @for (department of departmentKpis(); track department.name) {
+                  <div class="data-row department-row">
+                    <div>
+                      <strong>{{ department.name }}</strong>
+                      <small>
+                        {{ department.students }} etudiant(s), {{ department.professors }} prof(s),
+                        {{ department.groups }} groupe(s), {{ department.subjects }} matiere(s)
+                      </small>
+                    </div>
+                    <div class="progress-track" aria-hidden="true">
+                      <span [style.width.%]="department.load"></span>
+                    </div>
+                  </div>
+                }
+              } @else {
+                <p class="empty-state">Aucun departement disponible.</p>
+              }
+            </div>
+          </article>
+
+          <article class="panel system-panel">
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">Systeme</span>
+                <h2>Indicateurs operationnels</h2>
+              </div>
+              <span class="counter">{{ activeSemester()?.code || 'Semestre' }}</span>
+            </div>
+
+            <div class="system-kpi-grid">
+              @for (kpi of systemKpis(); track kpi.label) {
+                <div class="data-row system-kpi">
+                  <div>
+                    <strong>{{ kpi.value }}</strong>
+                    <span>{{ kpi.label }}</span>
+                    <small>{{ kpi.meta }}</small>
+                  </div>
+                  <div class="progress-track" aria-hidden="true">
+                    <span [style.width.%]="kpi.progress"></span>
+                  </div>
+                </div>
+              }
+            </div>
+          </article>
+
+          <article class="panel quick-panel">
+            <div class="panel-heading">
+              <span class="eyebrow">Actions rapides</span>
+              <h2>Operations frequentes</h2>
+            </div>
+            <div class="quick-list">
+              @for (action of quickActions; track action) {
+                <button type="button" (click)="activateQuickAction(action)">
+                  <span>{{ action }}</span>
+                  <strong>Open</strong>
+                </button>
+              }
+            </div>
+          </article>
+        </section>
+      </section>
+    } @else if (activeSection() === 'academic-year') {
+      <section class="content-grid academic-year-layout">
+        <article class="panel full-span academic-summary">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annee active</span>
+              <h2>{{ activeAcademicYear()?.label || 'Aucune annee active' }}</h2>
+            </div>
+            <span class="counter">{{ semesterCount() }} semestre(s)</span>
+          </div>
+
+          <div class="summary-grid">
+            <div>
+              <small>Annee universitaire</small>
+              <strong>{{ activeAcademicYear()?.status || 'Non configuree' }}</strong>
+              <span>
+                {{ activeAcademicYear()?.startDate || '--' }} - {{ activeAcademicYear()?.endDate || '--' }}
+              </span>
+            </div>
+            <div>
+              <small>Semestre courant</small>
+              <strong>{{ activeSemester()?.name || 'Aucun semestre actif' }}</strong>
+              <span>
+                {{ activeSemester()?.startDate || '--' }} - {{ activeSemester()?.endDate || '--' }}
+              </span>
+            </div>
+            <div>
+              <small>Verrouillage</small>
+              <strong>{{ activeSemester()?.locked ? 'Semestre verrouille' : 'Edition ouverte' }}</strong>
+              <span>Controle la modification des donnees du semestre.</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Annee universitaire</span>
+            <h2>Creer une annee</h2>
+          </div>
+
+          <form [formGroup]="academicYearForm" (ngSubmit)="submitAcademicYear()">
+            <label>
+              Libelle
+              <input type="text" formControlName="label" placeholder="2026-2027" />
+              @if (hasControlError(academicYearForm, 'label')) {
+                <small class="field-error">Libelle requis.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Date fin
+                <input type="date" formControlName="endDate" />
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <label>
+                <input type="checkbox" formControlName="active" />
+                Activer apres creation
+              </label>
+              <label>
+                <input type="checkbox" formControlName="locked" />
+                Verrouiller l'annee
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Creer l'annee</button>
+          </form>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Semestre</span>
+            <h2>Ajouter un semestre</h2>
+          </div>
+
+          <form [formGroup]="semesterForm" (ngSubmit)="submitSemester()">
+            <label>
+              Annee
+              <select formControlName="academicYearId">
+                <option [ngValue]="0" disabled>Choisir une annee</option>
+                @for (academicYear of academicYears(); track academicYear.id) {
+                  <option [ngValue]="academicYear.id">{{ academicYear.label }}</option>
+                }
+              </select>
+            </label>
+
+            <div class="field-row">
+              <label>
+                Code
+                <input type="text" formControlName="code" placeholder="S1" />
+              </label>
+              <label>
+                Nom
+                <input type="text" formControlName="name" placeholder="Semestre 1" />
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Date fin
+                <input type="date" formControlName="endDate" />
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <label>
+                <input type="checkbox" formControlName="active" />
+                Activer
+              </label>
+              <label>
+                <input type="checkbox" formControlName="locked" />
+                Verrouiller
+              </label>
+            </div>
+
+            <button class="secondary-button" type="submit">Ajouter le semestre</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Calendrier academique</span>
+              <h2>Annees et semestres</h2>
+            </div>
+            <span class="counter">{{ academicYears().length }} annee(s)</span>
+          </div>
+
+          <div class="academic-year-list">
+            @if (academicYears().length > 0) {
+              @for (academicYear of academicYears(); track academicYear.id) {
+                <div class="academic-year-row">
+                  <div class="year-heading">
+                    <div>
+                      <strong>{{ academicYear.label }}</strong>
+                      <small>{{ academicYear.startDate }} - {{ academicYear.endDate }}</small>
+                    </div>
+                    <span class="status-pill" [class.pending]="!academicYear.active">
+                      {{ academicYear.status }}
+                    </span>
+                    @if (!academicYear.active) {
+                      <button type="button" class="mini-button" (click)="activateAcademicYear(academicYear)">
+                        Activer
+                      </button>
+                    }
+                  </div>
+
+                  <div class="semester-list">
+                    @for (semester of academicYear.semesters; track semester.id) {
+                      <div class="semester-row">
+                        <span class="code-pill">{{ semester.code }}</span>
+                        <div>
+                          <strong>{{ semester.name }}</strong>
+                          <small>{{ semester.startDate }} - {{ semester.endDate }}</small>
+                        </div>
+                        <span class="status-pill" [class.pending]="!semester.active">
+                          {{ semester.status }}
+                        </span>
+                        <div class="row-actions">
+                          @if (!semester.active) {
+                            <button type="button" class="mini-button" (click)="activateSemester(semester)">
+                              Activer
+                            </button>
+                          }
+                          <button type="button" class="mini-button" (click)="toggleSemesterLock(semester)">
+                            {{ semester.locked ? 'Deverrouiller' : 'Verrouiller' }}
+                          </button>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isAcademicYearsLoading() ? 'Chargement du calendrier academique...' : 'Aucune annee universitaire trouvee.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'structure') {
+      <section class="content-grid two-columns">
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Structure pedagogique</span>
+            <h2>Gerer une département</h2>
+          </div>
+
+          <form [formGroup]="structureForm" (ngSubmit)="submitStructure()">
+            <label>
+              Type
+              <select formControlName="entity">
+                <option>Departement</option>
+                <option>Matiere</option>
+                <option>Groupe</option>
+              </select>
+            </label>
+
+            <label>
+              Nom
+              <input type="text" formControlName="name" placeholder="Genie Informatique" />
+              @if (hasControlError(structureForm, 'name')) {
+                <small class="field-error">Nom requis, 3 caracteres minimum.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Code
+                <input type="text" formControlName="code" placeholder="GI" />
+                @if (hasControlError(structureForm, 'code')) {
+                  <small class="field-error">Code requis.</small>
+                }
+              </label>
+              <label>
+                Responsable
+                <input type="text" formControlName="owner" placeholder="Chef departement" />
+                @if (hasControlError(structureForm, 'owner')) {
+                  <small class="field-error">Responsable requis.</small>
+                }
+              </label>
+            </div>
+
+            <button class="primary-button" type="submit">Enregistrer la structure</button>
+          </form>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Vue rapide</span>
+            <h2>Departements existants</h2>
+          </div>
+
+          <div class="data-list">
+            @if (academicRows().length > 0) {
+              @for (row of academicRows(); track row.code) {
+                <div class="data-row">
+                  <span class="code-pill">{{ row.code }}</span>
+                  <div>
+                    <strong>{{ row.title }}</strong>
+                    <small>{{ row.meta }}</small>
+                  </div>
+                  <span class="status-pill">{{ row.status }}</span>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des departements...' : 'Aucun departement trouve dans la base.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'users') {
+      <section class="content-grid users-layout">
+        <article class="panel filters-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Organisation utilisateurs</span>
+              <h2>Filtrer par departement, groupe et role</h2>
+            </div>
+            <span class="counter">{{ usersTotalElements() }} resultat(s)</span>
+          </div>
+
+          <div class="filter-grid">
+            <label>
+              Departement
+              <select [value]="selectedDepartment()" (change)="updateDepartmentFilter($event)">
+                @for (department of departmentOptions(); track department) {
+                  <option [value]="department">{{ department }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Groupe
+              <select [value]="selectedGroup()" (change)="updateGroupFilter($event)">
+                @for (group of groupOptions(); track group) {
+                  <option [value]="group">{{ group }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              Role
+              <select [value]="selectedRole()" (change)="updateRoleFilter($event)">
+                <option>Tous</option>
+                <option>Etudiant</option>
+                <option>Professeur</option>
+                <option>Administrateur</option>
+              </select>
+            </label>
+          </div>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Gestion utilisateurs</span>
+            <h2>{{ editingUserEmail() ? 'Modifier un utilisateur' : 'Creer un compte' }}</h2>
+          </div>
+
+          <form [formGroup]="userForm" (ngSubmit)="submitUser()">
+            <label>
+              Nom complet
+              <input type="text" formControlName="fullName" placeholder="Nom Prenom" />
+              @if (hasControlError(userForm, 'fullName')) {
+                <small class="field-error">Nom complet requis.</small>
+              }
+            </label>
+
+            <label>
+              Email
+              <input type="email" formControlName="email" placeholder="user@issatso.tn" />
+              @if (hasControlError(userForm, 'email')) {
+                <small class="field-error">Email valide requis.</small>
+              }
+            </label>
+
+            <div class="field-row">
+              <label>
+                Role
+                <select formControlName="role">
+                  <option>Professeur</option>
+                  <option>Etudiant</option>
+                </select>
+              </label>
+              <label>
+                Statut
+                <select formControlName="status">
+                  <option>Active</option>
+                  <option>Pending</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Departement
+                <select formControlName="department">
+                  <option value="" disabled>Choisir un departement</option>
+                  @for (department of departmentFormOptions(); track department) {
+                    <option [value]="department">{{ department }}</option>
+                  }
+                </select>
+              </label>
+
+              <label>
+                Groupe
+                <select formControlName="group">
+                  <option value="" disabled>Choisir un groupe</option>
+                  @for (group of groupFormOptions(); track group) {
+                    <option [value]="group">{{ group }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <label>
+              Specialite / Niveau
+              <input
+                type="text"
+                formControlName="specialty"
+                placeholder="Architecture, 3eme annee, TP reseaux..."
+              />
+              @if (hasControlError(userForm, 'specialty')) {
+                <small class="field-error">Specialite ou niveau requis.</small>
+              }
+            </label>
+
+            <div class="form-actions">
+              <button class="primary-button" type="submit">
+                {{ editingUserEmail() ? 'Enregistrer les modifications' : 'Valider le compte' }}
+              </button>
+              @if (editingUserEmail()) {
+                <button class="secondary-button" type="button" (click)="cancelUserEdit()">
+                  Annuler
+                </button>
+              }
+            </div>
+          </form>
+        </article>
+
+        <article class="panel table-panel wide-table">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annuaire</span>
+              <h2>Utilisateurs</h2>
+            </div>
+            <span class="counter">
+              Page {{ usersTotalPages() === 0 ? 0 : usersPage() + 1 }}/{{ usersTotalPages() }}
+            </span>
+          </div>
+
+          <div class="user-table">
+            @if (filteredUsers().length > 0) {
+              @for (user of filteredUsers(); track user.email) {
+                <div class="user-row">
+                  <div class="avatar">{{ user.name.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ user.name }}</strong>
+                    <small>{{ user.email }}</small>
+                    <small class="user-meta">
+                      {{ user.department }} - {{ user.group }} - {{ user.specialty }}
+                    </small>
+                  </div>
+                  <span>{{ user.role }}</span>
+                  <span class="status-pill" [class.pending]="user.status === 'Pending'">
+                    {{ user.status }}
+                  </span>
+                  <div class="row-actions">
+                    @if (user.role !== 'Administrateur') {
+                      <button type="button" class="mini-button" (click)="editUser(user)">Modifier</button>
+                    }
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isUsersLoading() ? 'Chargement des utilisateurs...' : 'Aucun utilisateur ne correspond aux donnees en base.' }}
+              </p>
+            }
+          </div>
+
+          <div class="pagination-bar" aria-label="Pagination utilisateurs">
+            <div>
+              <strong>{{ usersTotalElements() }}</strong>
+              <small>compte(s) trouve(s)</small>
+            </div>
+
+            <label>
+              Par page
+              <select [value]="usersPageSize()" (change)="updateUsersPageSize($event)">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+
+            <div class="pagination-actions">
+              <button
+                type="button"
+                class="mini-button"
+                [disabled]="usersPage() === 0 || isUsersLoading()"
+                (click)="goToUsersPage(usersPage() - 1)"
+              >
+                Precedent
+              </button>
+              <span>{{ usersTotalPages() === 0 ? 0 : usersPage() + 1 }}</span>
+              <button
+                type="button"
+                class="mini-button"
+                [disabled]="usersPage() + 1 >= usersTotalPages() || isUsersLoading()"
+                (click)="goToUsersPage(usersPage() + 1)"
+              >
+                Suivant
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel full-span professor-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Professeurs par departement</span>
+            <h2>Vue organisee pour l'administration</h2>
+          </div>
+
+          <div class="professor-grid">
+            @if (professorsByDepartment().length > 0) {
+              @for (departmentGroup of professorsByDepartment(); track departmentGroup.department) {
+                <div class="professor-card">
+                  <strong>{{ departmentGroup.department }}</strong>
+                  <span>{{ departmentGroup.professors.length }} professeur(s)</span>
+                  @for (professor of departmentGroup.professors; track professor.email) {
+                    <small>{{ professor.name }} - {{ professor.specialty }}</small>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des professeurs...' : 'Aucun professeur affecte par departement dans la base.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'attendance') {
+      <section class="content-grid attendance-layout">
+        <article class="panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Supervision presences</span>
+              <h2>Suivi des appels du {{ todayAttendanceDay() }}</h2>
+            </div>
+            <span class="counter">{{ filteredAttendanceSessions().length }} seance(s)</span>
+          </div>
+
+          <div class="attendance-stat-grid">
+            @for (stat of attendanceStats(); track stat.label) {
+              <div>
+                <small>{{ stat.label }}</small>
+                <strong>{{ stat.value }}</strong>
+                <span>{{ stat.meta }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Seances</span>
+            <h2>Appels a superviser aujourd'hui</h2>
+          </div>
+
+          <div class="attendance-session-list">
+            @if (filteredAttendanceSessions().length > 0) {
+              @for (session of filteredAttendanceSessions(); track session.sessionId) {
+                <button
+                  type="button"
+                  class="attendance-session-item"
+                  [class.active]="selectedAttendanceDetail()?.session?.sessionId === session.sessionId"
+                  (click)="selectAttendanceSession(session.sessionId)"
+                >
+                  <span class="code-pill">{{ session.type }}</span>
+                  <span>
+                    <strong>{{ session.subject }}</strong>
+                    <small>{{ session.group }} - {{ session.professor }}</small>
+                    <small>{{ session.day }} {{ session.startTime }} - {{ session.endTime }} - {{ session.room }}</small>
+                  </span>
+                  <span class="attendance-rate">{{ session.absenceRate }}</span>
+                  <span class="status-pill" [class.pending]="!isClosedAttendanceSession(session)">
+                    {{ session.status }}
+                  </span>
+                  @if (session.collectiveAbsenceStatus !== 'Aucune') {
+                    <span class="status-pill pending">Collective {{ session.collectiveAbsenceStatus }}</span>
+                  }
+                </button>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isAttendanceLoading() ? 'Chargement des presences...' : 'Aucune seance a superviser pour ' + todayAttendanceDay() + '.' }}
+              </p>
+            }
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          @if (selectedAttendanceDetail(); as detail) {
+            <div class="panel-heading inline-heading">
+              <div>
+                <span class="eyebrow">{{ detail.session.group }}</span>
+                <h2>{{ detail.session.subject }}</h2>
+                <small>
+                  {{ detail.session.day }} {{ detail.session.startTime }} - {{ detail.session.endTime }}
+                  / {{ detail.session.professor }}
+                </small>
+                @if (detail.session.collectiveAbsenceStatus !== 'Aucune') {
+                  <small>
+                    Absence collective {{ detail.session.collectiveAbsenceStatus }}
+                    {{ detail.session.collectiveAbsenceReportedAt || '' }}
+                  </small>
+                }
+              </div>
+              <span class="status-pill" [class.pending]="!isClosedAttendanceSession(detail.session)">
+                {{ detail.session.status }}
+              </span>
+            </div>
+
+            <div class="attendance-metrics">
+              <div>
+                <small>Attendus</small>
+                <strong>{{ detail.session.expectedCount }}</strong>
+              </div>
+              <div>
+                <small>Saisis</small>
+                <strong>{{ detail.session.recordedCount }}</strong>
+              </div>
+              <div>
+                <small>Presents</small>
+                <strong>{{ detail.session.presentCount }}</strong>
+              </div>
+              <div>
+                <small>Retards</small>
+                <strong>{{ detail.session.lateCount }}</strong>
+              </div>
+              <div>
+                <small>Absents</small>
+                <strong>{{ detail.session.absentCount }}</strong>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              @if (isClosedAttendanceSession(detail.session)) {
+                <button type="button" class="secondary-button" (click)="reopenAttendanceSession(detail.session)">
+                  Rouvrir l'appel
+                </button>
+              } @else {
+                <button type="button" class="primary-button" (click)="closeAttendanceSession(detail.session)">
+                  Cloturer l'appel
+                </button>
+              }
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="!hasCollectiveAbsenceSignal(detail.session)"
+                (click)="markCollectiveAbsence(detail.session)"
+              >
+                Marquer absence collective
+              </button>
+              <span class="helper-card">
+                Derniere saisie: {{ detail.session.lastEntryAt || 'Aucune saisie' }}
+              </span>
+            </div>
+
+            <div class="attendance-student-list">
+              @for (student of detail.students; track student.studentId) {
+                <div class="attendance-student-row">
+                  <div class="avatar">{{ student.studentName.charAt(0) }}</div>
+                  <div>
+                    <strong>{{ student.studentName }}</strong>
+                    <small>{{ student.matricule }} - {{ student.date || 'Non saisie' }}</small>
+                  </div>
+                  <span class="status-pill" [class.pending]="student.status === 'Absent' || student.status === 'Non saisie'">
+                    {{ student.status }}
+                  </span>
+                </div>
+              }
+            </div>
+          } @else {
+            <p class="empty-state">Selectionnez une seance pour consulter le detail de l'appel.</p>
+          }
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Eliminations</span>
+              <h2>Etudiants elimines par absence</h2>
+            </div>
+            <span class="counter">{{ filteredEliminations().length }} dossier(s)</span>
+          </div>
+
+          <div class="data-list">
+            @if (filteredEliminations().length > 0) {
+              @for (record of filteredEliminations(); track record.id) {
+                <div class="data-row action-row">
+                  <span class="code-pill">{{ record.absenceCount }}</span>
+                  <div>
+                    <strong>{{ record.studentName }}</strong>
+                    <small>{{ record.matricule }} - {{ record.group }}</small>
+                    <small>{{ record.subject }} - {{ record.typeSeance }} - detecte le {{ record.detectedAt }}</small>
+                  </div>
+                  <span class="status-pill" [class.pending]="record.status !== 'Renseigne'">
+                    {{ record.status }}
+                  </span>
+                  <button
+                    type="button"
+                    class="mini-button"
+                    [disabled]="record.status === 'Renseigne'"
+                    (click)="notifyEliminatedStudent(record)"
+                  >
+                    Renseigner
+                  </button>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                Aucun etudiant n'a atteint 4 absences dans un type de seance pour une matiere.
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'exams') {
+      <section class="content-grid exam-studio">
+        <article class="panel exam-studio-hero full-span">
+          <div class="panel-heading">
+            <span class="eyebrow">Studio examens</span>
+            <h2>Planification des epreuves</h2>
+          </div>
+
+          <div class="exam-studio-kpis">
+            <div>
+              <small>Annee active</small>
+              <strong>{{ examPlanningOptions()?.activeAcademicYear || 'Non definie' }}</strong>
+              <span>{{ examPlanningOptions()?.activeSemester || 'Semestre non defini' }}</span>
+            </div>
+            @for (stat of examPlanningStats(); track stat.label) {
+              <div>
+                <small>{{ stat.label }}</small>
+                <strong>{{ stat.value }}</strong>
+                <span>{{ stat.meta }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel tp-request-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">TP</span>
+              <h2>Demandes professeurs</h2>
+            </div>
+            <span class="counter">{{ tpExamRequests().length }}</span>
+          </div>
+
+          <div class="tp-request-list">
+            @if (tpExamRequests().length > 0) {
+              @for (request of tpExamRequests(); track request.id) {
+                <button
+                  type="button"
+                  class="tp-request-card"
+                  [class.active]="selectedTpRequest()?.id === request.id"
+                  (click)="planTpRequest(request)"
+                >
+                  <span class="code-pill">TP</span>
+                  <span>
+                    <strong>{{ request.subject }}</strong>
+                    <small>{{ request.group }} - {{ request.professor }}</small>
+                    <small>{{ request.requestedDate }} - {{ request.preferredRoom }}</small>
+                    <em>{{ request.reason }}</em>
+                  </span>
+                  <span class="status-pill" [class.pending]="request.status === 'En attente'">
+                    {{ request.status }}
+                  </span>
+                </button>
+              }
+            } @else {
+              <p class="empty-state">Aucune demande TP disponible.</p>
+            }
+          </div>
+
+          <form class="tp-plan-form" [formGroup]="examForm" (ngSubmit)="submitExam()">
+            <div class="compact-form-heading">
+              <strong>{{ selectedTpRequest()?.subject || 'Selectionnez une demande TP' }}</strong>
+              <span>Planification TP</span>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Date
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Salle TP
+                <input type="text" formControlName="room" placeholder="Labo 1" />
+              </label>
+            </div>
+            <div class="field-row">
+              <label>
+                Debut
+                <input type="time" formControlName="startTime" />
+              </label>
+              <label>
+                Fin
+                <input type="time" formControlName="endTime" />
+              </label>
+            </div>
+            <button class="primary-button" type="submit">Planifier le TP demande</button>
+          </form>
+        </article>
+
+        <article class="panel weekly-generator-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Generateur semaine</span>
+            <h2>DS et examens</h2>
+          </div>
+
+          <div class="exam-week-status">
+            <strong>{{ examWeekPlanningTitle() }}</strong>
+            <span>{{ examWeekPlanningMessage() }}</span>
+          </div>
+
+          <form [formGroup]="examWeekForm" (ngSubmit)="generateExamWeek()">
+            <div class="field-row">
+              <label>
+                Type de semaine
+                <select formControlName="evaluationType">
+                  <option>DS</option>
+                  <option>Examen</option>
+                </select>
+              </label>
+              <label>
+                Filiere
+                <select formControlName="departmentId">
+                  <option [ngValue]="0" disabled>Choisir une filiere</option>
+                  @for (department of examPlanningOptions()?.departments ?? []; track department.id) {
+                    <option [ngValue]="department.id">{{ department.label }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <label>
+                Date debut
+                <input type="date" formControlName="startDate" />
+              </label>
+              <label>
+                Date fin
+                <input type="date" formControlName="endDate" />
+              </label>
+            </div>
+
+            <label>
+              Batiment principal
+              <input type="text" formControlName="building" placeholder="Bloc B" />
+            </label>
+
+            <div class="exam-rule-grid">
+              <div>
+                <strong>DS</strong>
+                <span>1h par epreuve</span>
+              </div>
+              <div>
+                <strong>Examen</strong>
+                <span>1h30 par epreuve</span>
+              </div>
+              <div>
+                <strong>Salles</strong>
+                <span>Rotation automatique</span>
+              </div>
+            </div>
+
+            <button class="primary-button" type="submit">Generer la semaine</button>
+          </form>
+        </article>
+
+        <article class="panel generated-week-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Semaine generee</span>
+              <h2>Revue avant publication</h2>
+            </div>
+            <span class="counter">{{ examDrafts().length }} epreuve(s)</span>
+          </div>
+
+          <div class="generated-week-summary">
+            <span class="status-pill" [class.pending]="examWeekPlanningStatus() !== 'published'">
+              {{ examWeekPlanningTitle() }}
+            </span>
+            <small>{{ examWeekPlanningMessage() }}</small>
+          </div>
+
+          @if (examDrafts().length > 0) {
+            <div class="generated-week-grid">
+              @for (draft of examDrafts(); track draft.id) {
+                <div class="generated-exam-card">
+                  <div class="generated-exam-time">
+                    <strong>{{ draft.dayLabel || draft.examDate }}</strong>
+                    <span>{{ draft.startTime }} - {{ draft.endTime }}</span>
+                  </div>
+                  <div>
+                    <span class="eyebrow">{{ draft.evaluationType }}</span>
+                    <h3>{{ optionLabel('subject', draft.subjectId) }}</h3>
+                    <small>{{ optionLabel('group', draft.groupId) }} - {{ draft.guardLabel }}</small>
+                    <small>{{ draft.building }} / {{ draft.room }} - {{ draft.roomSource }}</small>
+                  </div>
+                  <div class="generated-exam-actions">
+                    <button type="button" class="mini-button" (click)="shiftExamDraft(draft.id, -30)">-30 min</button>
+                    <button type="button" class="mini-button" (click)="shiftExamDraft(draft.id, 30)">+30 min</button>
+                    <button type="button" class="mini-button" (click)="rotateDraftRoom(draft.id)">Salle</button>
+                    <button type="button" class="mini-button" (click)="removeExamDraft(draft.id)">Retirer</button>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="form-actions publish-week-actions">
+              <button
+                class="primary-button"
+                type="button"
+                [disabled]="!canPublishExamWeek()"
+                (click)="submitExamDrafts()"
+              >
+                Publier la semaine
+              </button>
+              <button class="secondary-button" type="button" (click)="clearGeneratedWeek()">Vider la generation</button>
+            </div>
+          } @else {
+            @if (examWeekPlanningStatus() === 'published') {
+              <p class="empty-state">Semaine publiee. Consultez le calendrier pour verifier les epreuves.</p>
+            } @else if (examWeekPlanningStatus() === 'draft') {
+              <p class="empty-state">Planning enregistre en brouillon. Consultez le calendrier pour finaliser.</p>
+            } @else {
+              <p class="empty-state">Generez une semaine DS ou examens pour afficher le planning modifiable.</p>
+            }
+          }
+        </article>
+
+        <article class="panel table-panel full-span published-exam-panel">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Planning publie</span>
+              <h2>Calendrier</h2>
+            </div>
+            <span class="counter">{{ plannedExams().length }} examen(s)</span>
+          </div>
+
+          <div class="exam-calendar">
+            @if (plannedExams().length > 0) {
+              @for (week of plannedExamWeeks(); track week.weekStart) {
+                <div class="exam-week">
+                  <div class="week-heading">
+                    <div>
+                      <strong>{{ week.label }}</strong>
+                      <small>{{ week.days.length }} jour(s) planifie(s)</small>
+                    </div>
+                    <span class="status-pill" [class.pending]="week.status !== 'Publiee'">
+                      {{ week.status }}
+                    </span>
+                    @if (week.status !== 'Publiee') {
+                      <button type="button" class="mini-button" (click)="publishExamWeek(week.weekStart)">
+                        Publier semaine
+                      </button>
+                    }
+                  </div>
+
+                  @for (day of week.days; track day.key) {
+                    <div class="exam-day">
+                      <div class="exam-day-heading">
+                        <strong>{{ day.label }}</strong>
+                      </div>
+
+                      @for (exam of day.exams; track exam.evaluationId) {
+                        <div class="exam-card-row">
+                          <span class="code-pill">{{ exam.type }}</span>
+                          <div>
+                            <strong>{{ exam.subject }}</strong>
+                            <small>{{ exam.group }} - {{ exam.scope }} - {{ exam.professor }}</small>
+                            <small>{{ exam.startTime }} - {{ exam.endTime }} - {{ exam.room }}</small>
+                          </div>
+                          <span class="status-pill">{{ exam.status }}</span>
+                          @if (!isPublishedExam(exam)) {
+                            <button type="button" class="mini-button" (click)="publishPlannedExam(exam)">
+                              Publier
+                            </button>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isExamPlanningLoading() ? 'Chargement des examens...' : 'Aucun examen planifie dans le calendrier.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'notes') {
+      <section class="content-grid notes-workspace">
+        <article class="panel notes-command-center full-span">
+          <div class="panel-heading">
+            <span class="eyebrow">Validation notes</span>
+            <h2>Centre de decision academique</h2>
+          </div>
+
+          <div class="notes-workflow-rail" aria-label="Workflow de validation des notes">
+            @for (stage of noteWorkflowStages(); track stage.label) {
+              <div class="workflow-step" [class]="stage.tone">
+                <small>{{ stage.label }}</small>
+                <strong>{{ stage.value }}</strong>
+                <span>{{ stage.meta }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel notes-review-board full-span">
+          <div class="notes-board-grid">
+            <aside class="notes-inbox">
+              <div class="notes-board-heading">
+                <div>
+                  <span class="eyebrow">Inbox evaluations</span>
+                  <h3>{{ filteredNoteValidationEvaluations().length }} dossier(s)</h3>
+                  <small>Filtre global applique depuis la barre de recherche.</small>
+                </div>
+                <span class="counter">{{ noteValidationSummary().pendingEvaluations }} ouvert(s)</span>
+              </div>
+
+              @if (filteredNoteValidationEvaluations().length > 0) {
+                @for (evaluation of filteredNoteValidationEvaluations(); track evaluation.evaluationId) {
+                  <button
+                    type="button"
+                    class="note-case-card"
+                    [class.active]="selectedNoteEvaluation()?.evaluationId === evaluation.evaluationId"
+                    (click)="selectNoteEvaluation(evaluation.evaluationId)"
+                  >
+                    <span class="note-case-topline">
+                      <span class="code-pill">{{ evaluation.type }}</span>
+                      <span class="status-pill" [class.pending]="evaluation.status !== 'Publiee'">
+                        {{ evaluation.status }}
+                      </span>
+                    </span>
+                    <strong>{{ evaluation.subject }}</strong>
+                    <small>{{ evaluation.group }} - {{ evaluation.professor }}</small>
+                    <span class="note-case-progress" aria-hidden="true">
+                      <span [style.width.%]="noteProgressPercent(evaluation)"></span>
+                    </span>
+                    <span class="note-case-footer">
+                      <span>{{ evaluation.totalNotes }} note(s)</span>
+                      <span>{{ evaluation.publishedCount }} publiee(s)</span>
+                    </span>
+                  </button>
+                }
+              } @else {
+                <p class="empty-state">
+                  {{ isNoteValidationLoading() ? 'Chargement des notes...' : 'Aucune evaluation ne correspond aux filtres.' }}
+                </p>
+              }
+            </aside>
+
+            <section class="notes-case-detail">
+              @if (selectedNoteValidationDetail(); as detail) {
+                <div class="notes-case-hero">
+                  <div>
+                    <span class="eyebrow">{{ detail.evaluation.type }}</span>
+                    <h3>{{ detail.evaluation.label }}</h3>
+                    <small>{{ detail.evaluation.subject }} - {{ detail.evaluation.group }} - {{ detail.evaluation.professor }}</small>
+                  </div>
+                  <div class="notes-publication-meter">
+                    <strong>{{ formatPercent(selectedNotePublicationRatio()) }}</strong>
+                    <span>publication</span>
+                  </div>
+                </div>
+
+                <div class="selected-note-kpis">
+                  @for (kpi of selectedNoteKpis(); track kpi.label) {
+                    <div>
+                      <small>{{ kpi.label }}</small>
+                      <strong>{{ kpi.value }}</strong>
+                    </div>
+                  }
+                </div>
+
+                <div class="notes-review-shell">
+                  <form class="notes-decision-card" [formGroup]="noteValidationForm">
+                    <div>
+                      <span class="eyebrow">Decision</span>
+                      <h4>Action administrative</h4>
+                      <small>{{ detail.evaluation.date }} - {{ detail.evaluation.totalNotes }} note(s)</small>
+                    </div>
+                    <label>
+                      Remarque de validation
+                      <input type="text" formControlName="remark" placeholder="Controle effectue, correction demandee..." />
+                    </label>
+                    <div class="form-actions notes-action-bar">
+                      <button type="button" class="primary-button" (click)="validateSelectedNotes()">Valider</button>
+                      <button type="button" class="secondary-button" (click)="publishSelectedNotes()">Publier</button>
+                      <button type="button" class="mini-button" (click)="rejectSelectedNotes()">Rejeter</button>
+                    </div>
+                  </form>
+
+                  <div class="note-table notes-review-list">
+                    <div class="notes-table-heading">
+                      <span>Etudiant</span>
+                      <span>Note</span>
+                      <span>Statut</span>
+                    </div>
+                    @for (note of detail.notes; track note.noteId) {
+                      <div class="note-row note-review-row">
+                        <div class="avatar">{{ note.studentName.charAt(0) }}</div>
+                        <div class="note-student-cell">
+                          <strong>{{ note.studentName }}</strong>
+                          <small>{{ note.matricule }} - {{ note.remark || 'Sans remarque professeur' }}</small>
+                          @if (note.validationRemark) {
+                            <small>{{ note.validationRemark }}</small>
+                          }
+                        </div>
+                        <strong class="note-value-badge">{{ note.value }}/20</strong>
+                        <span class="status-pill" [class.pending]="note.status !== 'Publiee'">
+                          {{ note.status }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+                </div>
+              } @else {
+                <p class="empty-state notes-empty-detail">Selectionnez une evaluation pour ouvrir son dossier de validation.</p>
+              }
+            </section>
+          </div>
+        </article>
+      </section>
+    }
+  </section>
+</main>

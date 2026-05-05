@@ -1,0 +1,384 @@
+<main class="student-page" [class.sidebar-collapsed]="sidebarCollapsed()">
+  <aside class="sidebar" aria-label="Navigation etudiant">
+    <div class="brand-block">
+      <span class="brand-mark"></span>
+      <div>
+        <strong>ISSATSO+</strong>
+        <span>Student Space</span>
+      </div>
+      <button
+        type="button"
+        class="ghost-button shell-toggle"
+        [attr.aria-label]="sidebarCollapsed() ? 'Afficher le menu' : 'Masquer le menu'"
+        (click)="toggleSidebar()"
+      >
+        @if (sidebarCollapsed()) {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        }
+      </button>
+    </div>
+
+    <nav class="nav-stack">
+      @for (item of navItems; track item.id) {
+        <button
+          type="button"
+          class="nav-item"
+          [class.active]="activeSection() === item.id"
+          [attr.aria-current]="activeSection() === item.id ? 'page' : null"
+          (click)="setSection(item.id)"
+        >
+          <span class="nav-dot"></span>
+          <span>
+            <strong>{{ item.label }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+        </button>
+      }
+    </nav>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">College Management System</span>
+        <h1>Espace Etudiant</h1>
+      </div>
+
+      <div class="topbar-actions">
+        <app-notification-center
+          storageKey="student-notifications"
+          [items]="notificationItems()"
+          (notificationSelected)="openNotificationTarget($event)"
+        />
+        <button
+          type="button"
+          class="ghost-button theme-toggle"
+          [attr.aria-label]="'Activer le mode ' + themeLabel()"
+          (click)="toggleTheme()"
+        >
+          @if (themeLabel() === 'Light') {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3a6 6 0 0 0 9 7 9 9 0 1 1-9-7" />
+            </svg>
+          }
+        </button>
+        <button type="button" class="ghost-button" (click)="logout()">Logout</button>
+      </div>
+    </header>
+
+    @if (activeSection() === 'announcements') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Annonces publiees</span>
+              @if (profile(); as student) {
+                <p>{{ student.name }} - {{ student.group }} - {{ student.level }} - {{ student.year }}</p>
+              }
+            </div>
+            <span class="counter">{{ filteredAnnouncements().length }} annonce(s)</span>
+          </div>
+
+          <div class="announcement-list">
+            @if (filteredAnnouncements().length > 0) {
+              @for (announcement of filteredAnnouncements(); track announcement.id) {
+                <article class="announcement-card">
+                  <strong>{{ announcement.title }}</strong>
+                  <p>{{ announcement.content }}</p>
+                  <small>{{ announcement.author }} - publiee le {{ announcement.publicationDate }}</small>
+                  <small>Expire le {{ announcement.expirationDate }}</small>
+                </article>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des annonces...' : 'Aucune annonce publiee active.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'grades') {
+      <section class="content-grid">
+        <article class="panel average-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Moyenne</span>
+              <h2>Semestre 1</h2>
+            </div>
+            @if (gradeSummary(); as summary) {
+              <span class="counter">{{ summary.receivedCount }}/{{ summary.expectedCount }} evaluations</span>
+            }
+          </div>
+
+          @if (gradeSummary(); as summary) {
+            <div class="average-card" [class.incomplete]="!summary.complete">
+              <strong>{{ summary.complete ? summary.average : '--' }}</strong>
+              <div>
+                <span>{{ summary.complete ? 'Moyenne' : 'Moyenne en attente' }}</span>
+              </div>
+            </div>
+          } @else {
+            <p class="empty-state">
+              {{ isDashboardLoading() ? 'Chargement de la moyenne...' : 'Moyenne indisponible.' }}
+            </p>
+          }
+        </article>
+
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Notes par matiere</span>
+              <h2></h2>
+            </div>
+            <span class="counter">{{ filteredSubjectGrades().length }} matiere(s)</span>
+          </div>
+
+          <div class="subject-grade-list">
+            @if (filteredSubjectGrades().length > 0) {
+              @for (subjectGrade of filteredSubjectGrades(); track subjectGrade.subject) {
+                <article class="subject-grade-card" [class.incomplete]="!subjectGrade.complete">
+                  <div class="subject-grade-heading">
+                    <div>
+                      <strong>{{ subjectGrade.subject }}</strong>
+                      <small>{{ subjectGrade.professor }} - Coef matiere {{ subjectGrade.subjectCoefficient }}</small>
+                    </div>
+                    <div class="subject-average">
+                      <span>{{ subjectGrade.complete ? subjectGrade.average : '--' }}</span>
+                      <small>{{ subjectGrade.receivedCount }}/{{ subjectGrade.expectedCount }} notes</small>
+                    </div>
+                  </div>
+
+                  <div class="subject-grade-grid">
+                    @for (evaluation of subjectGrade.evaluations; track evaluation.type) {
+                      <div class="evaluation-cell" [class.pending]="!evaluation.published">
+                        <div class="evaluation-cell-heading">
+                          <span>{{ evaluation.type }}</span>
+                          <strong>{{ evaluation.value }}</strong>
+                        </div>
+                        <small>{{ evaluation.label }}</small>
+                        <small>{{ evaluation.date }}</small>
+                        <div class="evaluation-meta">
+                          <span>Coef {{ evaluation.coefficient }}</span>
+                          <span>{{ evaluation.status }}</span>
+                        </div>
+                        @if (evaluation.remark) {
+                        }
+                      </div>
+                    }
+                  </div>
+                </article>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des notes...' : 'Aucune note ne correspond a la recherche.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'schedule') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Planning hebdomadaire</span>
+              <h2>Emploi du temps</h2>
+            </div>
+            <span class="counter">{{ filteredSchedule().length }} seance(s)</span>
+          </div>
+
+          <div class="schedule-board">
+            @if (scheduleDayGroups().length > 0) {
+              @for (dayGroup of scheduleDayGroups(); track dayGroup.day) {
+                <section class="schedule-day">
+                  <div class="schedule-day-heading">
+                    <strong>{{ dayGroup.day }}</strong>
+                    <span>{{ dayGroup.sessions.length }} seance(s)</span>
+                  </div>
+                  <div class="schedule-table">
+                    <div class="schedule-row schedule-header">
+                      <span>Horaire</span>
+                      <span>Matiere</span>
+                      <span>Type</span>
+                      <span>Professeur</span>
+                      <span>Salle</span>
+                    </div>
+                    @for (session of dayGroup.sessions; track session.id) {
+                      <div class="schedule-row">
+                        <strong>{{ session.start }} - {{ session.end }}</strong>
+                        <span>{{ session.subject }}</span>
+                        <span class="status-pill">{{ session.type }}</span>
+                        <span>{{ session.professor }}</span>
+                        <span>{{ session.room }}</span>
+                      </div>
+                    }
+                  </div>
+                </section>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement de l emploi du temps...' : 'Aucun planning disponible.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'exams') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Calendrier des examens</span>
+              <h2>Examens planifies</h2>
+            </div>
+            <span class="counter">{{ filteredExams().length }} examen(s)</span>
+          </div>
+
+          <div class="exam-grid">
+            @if (filteredExams().length > 0) {
+              @for (exam of filteredExams(); track exam.id) {
+                <article class="exam-card">
+                  <span class="code-pill">EX</span>
+                  <div>
+                    <strong>{{ exam.subject }}</strong>
+                    <small>{{ exam.professor }}</small>
+                    <small>{{ exam.day }} de {{ exam.start }} a {{ exam.end }}</small>
+                  </div>
+                  <span class="status-pill">{{ exam.room }}</span>
+                </article>
+              }
+            } @else {
+              <p class="empty-state grid-empty">
+                {{ isDashboardLoading() ? 'Chargement des examens...' : 'Aucun examen planifie publie.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'absences') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Suivi absences</span>
+              <h2>Absences par matiere et type de seance</h2>
+            </div>
+            <span class="counter">{{ filteredAbsenceSummaries().length }} matiere(s)</span>
+          </div>
+
+          <div class="subject-grade-list">
+            @if (filteredAbsenceSummaries().length > 0) {
+              @for (summary of filteredAbsenceSummaries(); track summary.subject + summary.typeSeance) {
+                <article class="subject-grade-card" [class.incomplete]="summary.absenceCount >= summary.threshold">
+                  <div class="subject-grade-heading">
+                    <div>
+                      <strong>{{ summary.subject }}</strong>
+                      <small>{{ summary.professor }} - {{ summary.typeSeance }}</small>
+                    </div>
+                    <div class="subject-average">
+                      <span>{{ summary.absenceCount }}/{{ summary.threshold }}</span>
+                      <small>{{ summary.status }}</small>
+                    </div>
+                  </div>
+
+                  <div class="data-list">
+                    @for (absence of summary.absences; track absence.presenceId) {
+                      <div class="data-row">
+                        <span class="code-pill">ABS</span>
+                        <div>
+                          <strong>{{ absence.session }}</strong>
+                          <small>{{ absence.date }} - {{ absence.room }}</small>
+                        </div>
+                        <span class="status-pill">Absent</span>
+                      </div>
+                    }
+                  </div>
+                </article>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des absences...' : 'Aucune absence enregistree par matiere.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else if (activeSection() === 'materials') {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Supports de cours</span>
+              <h2>Documents disponibles</h2>
+            </div>
+            <span class="counter">{{ filteredMaterials().length }} fichier(s)</span>
+          </div>
+
+          <div class="material-grid">
+            @if (filteredMaterials().length > 0) {
+              @for (material of filteredMaterials(); track material.id) {
+                <article class="material-card">
+                  <span class="code-pill">DOC</span>
+                  <div>
+                    <strong>{{ material.title }}</strong>
+                    <small>{{ material.subject }}</small>
+                    <small>{{ material.fileName }} - {{ material.size }} - {{ material.date }}</small>
+                  </div>
+                  <button type="button" class="secondary-button" (click)="downloadMaterial(material)">
+                    Telecharger
+                  </button>
+                </article>
+              }
+            } @else {
+              <p class="empty-state grid-empty">
+                {{ isDashboardLoading() ? 'Chargement des supports...' : 'Aucun support disponible.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    } @else {
+      <section class="content-grid">
+        <article class="panel table-panel full-span">
+          <div class="panel-heading inline-heading">
+            <div>
+              <span class="eyebrow">Rattrapages</span>
+              <h2>Seances supplementaires planifiees</h2>
+            </div>
+            <span class="counter">{{ filteredMakeups().length }} seance(s)</span>
+          </div>
+
+          <div class="timeline">
+            @if (filteredMakeups().length > 0) {
+              @for (makeup of filteredMakeups(); track makeup.id) {
+                <div class="timeline-item">
+                  <span class="timeline-dot"></span>
+                  <div>
+                    <strong>{{ makeup.subject }}</strong>
+                    <small>{{ makeup.professor }} - {{ makeup.room }}</small>
+                    <small>{{ makeup.day }} de {{ makeup.start }} a {{ makeup.end }}</small>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="empty-state">
+                {{ isDashboardLoading() ? 'Chargement des rattrapages...' : 'Aucun rattrapage programme.' }}
+              </p>
+            }
+          </div>
+        </article>
+      </section>
+    }
+  </section>
+</main>

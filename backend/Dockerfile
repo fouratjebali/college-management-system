@@ -1,21 +1,12 @@
-FROM openjdk:17-jdk-slim
+FROM maven:3.9.5-eclipse-temurin-21
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
-COPY mvnw .
-COPY .mvn .mvn
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Download dependencies
-RUN ./mvnw dependency:go-offline -B
+COPY src ./src
 
-# Copy source code
-COPY src src
+EXPOSE 8080 5005
 
-# Build application
-RUN ./mvnw package -DskipTests
-
-# Run application
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "target/*.jar"]
+CMD ["mvn", "spring-boot:run", "-Dspring-boot.run.jvmArguments=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"]

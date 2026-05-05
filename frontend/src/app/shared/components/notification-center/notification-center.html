@@ -1,0 +1,65 @@
+<div class="notification-center" [class.open]="open()">
+  <button
+    type="button"
+    class="notification-trigger"
+    aria-label="Ouvrir le centre de notifications"
+    [attr.aria-expanded]="open()"
+    (click)="toggleOpen()"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5" />
+      <path d="M9 17a3 3 0 0 0 6 0" />
+    </svg>
+    @if (unreadCount() > 0) {
+      <span class="notification-count">{{ unreadCount() }}</span>
+    }
+  </button>
+
+  @if (open()) {
+    <section class="notification-drawer" aria-label="Centre de notifications">
+      <header class="notification-header">
+        <div>
+          <span>Notifications</span>
+          <strong>{{ unreadCount() }} non lue(s)</strong>
+        </div>
+        @if (criticalCount() > 0) {
+          <em>{{ criticalCount() }} prioritaire(s)</em>
+        }
+      </header>
+
+      <div class="notification-toolbar">
+        <button type="button" [class.active]="activeFilter() === 'all'" (click)="setFilter('all')">
+          Toutes
+        </button>
+        <button type="button" [class.active]="activeFilter() === 'unread'" (click)="setFilter('unread')">
+          Non lues
+        </button>
+        <button type="button" class="mark-read" (click)="markAllAsRead()">Tout lu</button>
+      </div>
+
+      <div class="notification-list">
+        @if (filteredItems().length > 0) {
+          @for (item of filteredItems(); track item.id) {
+            <button
+              type="button"
+              class="notification-item"
+              [class.unread]="isUnread(item)"
+              [class.critical]="item.priority === 'critical'"
+              [class.high]="item.priority === 'high'"
+              (click)="selectItem(item)"
+            >
+              <span class="notification-dot"></span>
+              <span class="notification-copy">
+                <small>{{ item.category }} - {{ item.meta }}</small>
+                <strong>{{ item.title }}</strong>
+                <span>{{ item.description }}</span>
+              </span>
+            </button>
+          }
+        } @else {
+          <p class="notification-empty">Aucune notification dans ce filtre.</p>
+        }
+      </div>
+    </section>
+  }
+</div>
