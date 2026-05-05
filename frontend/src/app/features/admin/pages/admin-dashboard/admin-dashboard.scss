@@ -974,6 +974,44 @@ label {
   margin-top: 0.25rem;
 }
 
+.pagination-bar {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(223, 208, 184, 0.1);
+  border-radius: 18px;
+  background: rgba(34, 40, 49, 0.38);
+}
+
+.pagination-bar > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.pagination-bar label {
+  width: min(180px, 100%);
+}
+
+.pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-actions span {
+  min-width: 38px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.mini-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
 .avatar {
   width: 44px;
   height: 44px;
@@ -1231,6 +1269,7 @@ label {
   .quick-list button,
   .data-row,
   .user-row,
+  .pagination-bar,
   .attendance-session-item,
   .attendance-student-row,
   .validation-item,
@@ -1413,6 +1452,15 @@ label {
   .notes-case-hero {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .pagination-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pagination-actions {
+    justify-content: space-between;
   }
 
   .user-row > span,
