@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
@@ -24,6 +24,32 @@ export interface AdminUserRow {
   department: string;
   group: string;
   specialty: string;
+}
+
+export interface AdminDepartmentUserSummary {
+  department: string;
+  students: number;
+  professors: number;
+}
+
+export interface AdminDepartmentProfessors {
+  department: string;
+  professors: AdminUserRow[];
+}
+
+export interface AdminUserPageResponse {
+  content: AdminUserRow[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  totalUserElements: number;
+  activeUserElements: number;
+  roleCounts: Record<string, number>;
+  departments: string[];
+  groups: string[];
+  departmentSummaries: AdminDepartmentUserSummary[];
+  professorsByDepartment: AdminDepartmentProfessors[];
 }
 
 export interface AdminExamRow {
@@ -231,6 +257,25 @@ export class AdminDashboardApi {
 
   getDashboard(): Observable<AdminDashboardResponse> {
     return this.http.get<AdminDashboardResponse>(`${this.apiUrl}/dashboard`);
+  }
+
+  getUsersPage(options: {
+    page: number;
+    size: number;
+    search: string;
+    role: string;
+    department: string;
+    group: string;
+  }): Observable<AdminUserPageResponse> {
+    const params = new HttpParams()
+      .set('page', options.page)
+      .set('size', options.size)
+      .set('search', options.search)
+      .set('role', options.role)
+      .set('department', options.department)
+      .set('group', options.group);
+
+    return this.http.get<AdminUserPageResponse>(`${this.apiUrl}/users`, { params });
   }
 
   getAcademicYears(): Observable<AdminAcademicYear[]> {

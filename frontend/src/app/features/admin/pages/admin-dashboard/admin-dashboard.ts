@@ -22,6 +22,7 @@ import {
   AdminPlanningOption,
   AdminPlannedExam,
   AdminSemester,
+  AdminUserPageResponse,
 } from '../../services/admin-dashboard-api';
 
 type AdminSection =
@@ -166,6 +167,7 @@ export class AdminDashboardComponent {
   protected readonly selectedRole = signal('Tous');
   protected readonly editingUserEmail = signal<string | null>(null);
   protected readonly isDashboardLoading = signal(true);
+  protected readonly isUsersLoading = signal(true);
   protected readonly isAcademicYearsLoading = signal(true);
   protected readonly isExamPlanningLoading = signal(true);
   protected readonly isNoteValidationLoading = signal(true);
@@ -212,8 +214,8 @@ export class AdminDashboardComponent {
   protected readonly overviewMetrics = computed<readonly OverviewMetric[]>(() => {
     const students = this.countUsersByRole('Etudiant');
     const professors = this.countUsersByRole('Professeur');
-    const activeUsers = this.users().filter((user) => user.status === 'Active').length;
-    const totalUsers = this.users().length;
+    const activeUsers = this.activeUserElements();
+    const totalUsers = this.totalUserElements();
     const departments = this.academicRows().length;
     const groups = this.totalGroups();
     const subjects = this.totalSubjects();
@@ -252,7 +254,7 @@ export class AdminDashboardComponent {
       { label: 'Professeurs', role: 'Professeur', color: '#948979' },
       { label: 'Admins', role: 'Administrateur', color: '#6f7f8f' },
     ];
-    const total = this.users().length;
+    const total = this.totalUserElements();
 
     return roles.map((item) => {
       const value = this.countUsersByRole(item.role);
@@ -280,21 +282,18 @@ export class AdminDashboardComponent {
 
   protected readonly departmentKpis = computed<readonly DepartmentKpi[]>(() => {
     const departments = this.academicRows().map((row) => {
-      const students = this.users().filter(
-        (user) => user.role === 'Etudiant' && user.department === row.title
-      ).length;
-      const professors = this.users().filter(
-        (user) => user.role === 'Professeur' && user.department === row.title
-      ).length;
+      const userSummary = this.departmentUserSummaries().find(
+        (summary) => summary.department === row.title
+      );
       const structure = this.parseAcademicMeta(row.meta);
 
       return {
         name: row.title,
-        students,
-        professors,
+        students: userSummary?.students ?? 0,
+        professors: userSummary?.professors ?? 0,
         groups: structure.groups,
         subjects: structure.subjects,
-        load: students + professors + structure.groups + structure.subjects,
+        load: (userSummary?.students ?? 0) + (userSummary?.professors ?? 0) + structure.groups + structure.subjects,
       };
     });
     const maxLoad = Math.max(...departments.map((department) => department.load), 0);
@@ -414,6 +413,19 @@ export class AdminDashboardComponent {
   protected readonly academicRows = signal<readonly AcademicRow[]>([]);
 
   protected readonly users = signal<readonly UserRow[]>([]);
+  protected readonly usersPage = signal(0);
+  protected readonly usersPageSize = signal(20);
+  protected readonly usersTotalElements = signal(0);
+  protected readonly usersTotalPages = signal(0);
+  protected readonly totalUserElements = signal(0);
+  protected readonly activeUserElements = signal(0);
+  protected readonly userRoleCounts = signal<Record<string, number>>({});
+  protected readonly userDepartmentOptions = signal<readonly string[]>([]);
+  protected readonly userGroupOptions = signal<readonly string[]>([]);
+  protected readonly departmentUserSummaries = signal<
+    readonly { department: string; students: number; professors: number }[]
+  >([]);
+  protected readonly userProfessorsByDepartment = signal<readonly ProfessorDepartmentGroup[]>([]);
 
   protected readonly examRows = signal<readonly ExamRow[]>([]);
   protected readonly academicYears = signal<readonly AdminAcademicYear[]>([]);
@@ -613,26 +625,7 @@ export class AdminDashboardComponent {
   });
 
   protected readonly filteredUsers = computed(() => {
-    const query = this.searchTerm().trim().toLowerCase();
-    const department = this.selectedDepartment();
-    const group = this.selectedGroup();
-    const role = this.selectedRole();
-
-    return this.users().filter((user) => {
-      const matchesQuery =
-        !query ||
-        [user.name, user.email, user.role, user.status, user.department, user.group, user.specialty].some(
-          (value) => value.toLowerCase().includes(query)
-        );
-      const matchesDepartment = department === 'Tous' || user.department === department;
-      const matchesRole = role === 'Tous' || user.role === role;
-      const matchesGroup =
-        group === 'Tous' ||
-        user.group === group ||
-        (user.role === 'Professeur' && group === 'Tous les groupes');
-
-      return matchesQuery && matchesDepartment && matchesRole && matchesGroup;
-    });
+    return this.users();
   });
 
   protected readonly departmentOptions = computed(() => {
@@ -644,27 +637,15 @@ export class AdminDashboardComponent {
       }
     });
 
-    this.users().forEach((user) => {
-      if (user.department && user.department !== 'Non affecte') {
-        departments.add(user.department);
-      }
-    });
+    this.userDepartmentOptions().forEach((department) => departments.add(department));
 
     return ['Tous', ...Array.from(departments).sort((first, second) => first.localeCompare(second))];
   });
 
   protected readonly groupOptions = computed(() => {
-    const department = this.selectedDepartment();
-    const scopedUsers =
-      department === 'Tous'
-        ? this.users()
-        : this.users().filter((user) => user.department === department);
-
     return [
       'Tous',
-      ...Array.from(new Set(scopedUsers.map((user) => user.group))).filter(
-        (group) => group && group !== 'Non affecte'
-      ),
+      ...Array.from(new Set(this.userGroupOptions())).filter((group) => group && group !== 'Non affecte'),
     ];
   });
 
@@ -677,8 +658,7 @@ export class AdminDashboardComponent {
   protected readonly groupFormOptions = computed(() =>
     Array.from(
       new Set(
-        this.users()
-          .map((user) => user.group)
+        this.userGroupOptions()
           .filter((group) => group && group !== 'Non affecte' && group !== 'Tous les groupes')
       )
     ).sort((first, second) => first.localeCompare(second))
@@ -730,15 +710,7 @@ export class AdminDashboardComponent {
   });
 
   protected readonly professorsByDepartment = computed<readonly ProfessorDepartmentGroup[]>(() =>
-    this.departmentOptions()
-      .filter((department) => department !== 'Tous')
-      .map((department) => ({
-        department,
-        professors: this.users().filter(
-          (user) => user.role === 'Professeur' && user.department === department
-        ),
-      }))
-      .filter((group) => group.professors.length > 0)
+    this.userProfessorsByDepartment()
   );
 
   protected readonly structureForm = this.formBuilder.nonNullable.group({
@@ -803,6 +775,7 @@ export class AdminDashboardComponent {
 
   constructor() {
     this.loadDashboard();
+    this.loadUsersPage(0);
     this.loadAcademicYears();
     this.loadExamPlanning();
     this.loadNoteValidation();
@@ -815,7 +788,6 @@ export class AdminDashboardComponent {
     this.dashboardApi.getDashboard().subscribe({
       next: (dashboard) => {
         this.academicRows.set(this.normalizeAcademicRows(dashboard.academicRows ?? []));
-        this.users.set((dashboard.users ?? []).map((user) => this.normalizeUser(user)));
         this.examRows.set((dashboard.exams ?? []).map((exam) => this.normalizeExam(exam)));
         this.isDashboardLoading.set(false);
       },
@@ -831,8 +803,58 @@ export class AdminDashboardComponent {
     });
   }
 
+  private loadUsersPage(page: number): void {
+    this.isUsersLoading.set(true);
+
+    this.dashboardApi
+      .getUsersPage({
+        page,
+        size: this.usersPageSize(),
+        search: this.searchTerm().trim(),
+        role: this.selectedRole(),
+        department: this.selectedDepartment(),
+        group: this.selectedGroup(),
+      })
+      .subscribe({
+        next: (response) => {
+          this.applyUsersPage(response);
+          this.isUsersLoading.set(false);
+        },
+        error: () => {
+          this.users.set([]);
+          this.usersTotalElements.set(0);
+          this.usersTotalPages.set(0);
+          this.isUsersLoading.set(false);
+          this.toastMessage.set("Impossible de charger l'annuaire pagine.");
+        },
+      });
+  }
+
+  private applyUsersPage(response: AdminUserPageResponse): void {
+    this.users.set((response.content ?? []).map((user) => this.normalizeUser(user)));
+    this.usersPage.set(response.page ?? 0);
+    this.usersPageSize.set(response.size ?? this.usersPageSize());
+    this.usersTotalElements.set(response.totalElements ?? 0);
+    this.usersTotalPages.set(response.totalPages ?? 0);
+    this.totalUserElements.set(response.totalUserElements ?? response.totalElements ?? 0);
+    this.activeUserElements.set(response.activeUserElements ?? 0);
+    this.userRoleCounts.set(response.roleCounts ?? {});
+    this.userDepartmentOptions.set(response.departments ?? []);
+    this.userGroupOptions.set(response.groups ?? []);
+    this.departmentUserSummaries.set(response.departmentSummaries ?? []);
+    this.userProfessorsByDepartment.set(
+      (response.professorsByDepartment ?? []).map((group) => ({
+        department: group.department,
+        professors: (group.professors ?? []).map((professor) => this.normalizeUser(professor)),
+      }))
+    );
+  }
+
   protected setSection(section: AdminSection): void {
     this.activeSection.set(section);
+    if (section === 'users') {
+      this.loadUsersPage(this.usersPage());
+    }
   }
 
   protected openNotificationTarget(item: NotificationCenterItem): void {
@@ -855,19 +877,35 @@ export class AdminDashboardComponent {
   protected updateSearch(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.searchTerm.set(input.value);
+    if (this.activeSection() === 'users') {
+      this.loadUsersPage(0);
+    }
   }
 
   protected updateDepartmentFilter(event: Event): void {
     this.selectedDepartment.set(this.readSelectValue(event));
     this.selectedGroup.set('Tous');
+    this.loadUsersPage(0);
   }
 
   protected updateGroupFilter(event: Event): void {
     this.selectedGroup.set(this.readSelectValue(event));
+    this.loadUsersPage(0);
   }
 
   protected updateRoleFilter(event: Event): void {
     this.selectedRole.set(this.readSelectValue(event));
+    this.loadUsersPage(0);
+  }
+
+  protected updateUsersPageSize(event: Event): void {
+    const size = Number(this.readSelectValue(event));
+    this.usersPageSize.set(Number.isFinite(size) ? size : 20);
+    this.loadUsersPage(0);
+  }
+
+  protected goToUsersPage(page: number): void {
+    this.loadUsersPage(page);
   }
 
   protected submitStructure(): void {
@@ -1397,7 +1435,7 @@ export class AdminDashboardComponent {
   }
 
   private countUsersByRole(role: string): number {
-    return this.users().filter((user) => user.role === role).length;
+    return this.userRoleCounts()[role] ?? 0;
   }
 
   private totalGroups(): number {

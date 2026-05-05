@@ -1,11 +1,13 @@
 package MiniProjet_Backend.Backend.Service;
 
 import MiniProjet_Backend.Backend.DTO.AdminDashboardResponseDTO;
+import MiniProjet_Backend.Backend.DTO.AdminUserPageResponseDTO;
 import MiniProjet_Backend.Backend.Model.Administrateur;
 import MiniProjet_Backend.Backend.Model.Departement;
 import MiniProjet_Backend.Backend.Model.Enseignement;
 import MiniProjet_Backend.Backend.Model.Etudiant;
 import MiniProjet_Backend.Backend.Model.Evaluation;
+import MiniProjet_Backend.Backend.Model.Groupe;
 import MiniProjet_Backend.Backend.Model.Professeur;
 import MiniProjet_Backend.Backend.Model.User;
 import MiniProjet_Backend.Backend.Repository.DepartementRepository;
@@ -21,7 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminDashboardService {
@@ -64,8 +72,44 @@ public class AdminDashboardService {
         return AdminDashboardResponseDTO.builder()
                 .stats(buildStats())
                 .academicRows(buildAcademicRows())
-                .users(buildUsers())
+                .users(List.of())
                 .exams(buildExams())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public AdminUserPageResponseDTO getUsersPage(
+            int requestedPage,
+            int requestedSize,
+            String search,
+            String role,
+            String department,
+            String group
+    ) {
+        int size = Math.min(Math.max(requestedSize, 5), 100);
+        List<AdminDashboardResponseDTO.UserRowDTO> users = buildUsers();
+        List<AdminDashboardResponseDTO.UserRowDTO> filteredUsers = users.stream()
+                .filter(user -> matchesUserFilters(user, search, role, department, group))
+                .toList();
+
+        int totalPages = filteredUsers.isEmpty() ? 0 : (int) Math.ceil((double) filteredUsers.size() / size);
+        int page = totalPages == 0 ? 0 : Math.min(Math.max(requestedPage, 0), totalPages - 1);
+        int start = page * size;
+        int end = Math.min(start + size, filteredUsers.size());
+
+        return AdminUserPageResponseDTO.builder()
+                .content(filteredUsers.subList(start, end))
+                .page(page)
+                .size(size)
+                .totalElements(filteredUsers.size())
+                .totalPages(totalPages)
+                .totalUserElements(users.size())
+                .activeUserElements(users.stream().filter(user -> "Active".equalsIgnoreCase(user.getStatus())).count())
+                .roleCounts(buildRoleCounts(users))
+                .departments(buildDepartmentOptions(users))
+                .groups(buildGroupOptions())
+                .departmentSummaries(buildDepartmentSummaries(users))
+                .professorsByDepartment(buildProfessorsByDepartment(users))
                 .build();
     }
 
@@ -116,6 +160,126 @@ public class AdminDashboardService {
                         .specialty(resolveSpecialty(user))
                         .build())
                 .toList();
+    }
+
+    private boolean matchesUserFilters(
+            AdminDashboardResponseDTO.UserRowDTO user,
+            String search,
+            String role,
+            String department,
+            String group
+    ) {
+        String query = normalize(search);
+        boolean matchesQuery = query.isBlank()
+                || normalize(user.getName()).contains(query)
+                || normalize(user.getEmail()).contains(query)
+                || normalize(user.getRole()).contains(query)
+                || normalize(user.getStatus()).contains(query)
+                || normalize(user.getDepartment()).contains(query)
+                || normalize(user.getGroup()).contains(query)
+                || normalize(user.getSpecialty()).contains(query);
+
+        boolean matchesRole = isAllFilter(role) || equalsFilter(user.getRole(), role);
+        boolean matchesDepartment = isAllFilter(department) || equalsFilter(user.getDepartment(), department);
+        boolean matchesGroup = isAllFilter(group)
+                || equalsFilter(user.getGroup(), group)
+                || ("Professeur".equalsIgnoreCase(user.getRole()) && "Tous les groupes".equalsIgnoreCase(group));
+
+        return matchesQuery && matchesRole && matchesDepartment && matchesGroup;
+    }
+
+    private Map<String, Long> buildRoleCounts(List<AdminDashboardResponseDTO.UserRowDTO> users) {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        counts.put("Etudiant", countRole(users, "Etudiant"));
+        counts.put("Professeur", countRole(users, "Professeur"));
+        counts.put("Administrateur", countRole(users, "Administrateur"));
+        return counts;
+    }
+
+    private long countRole(List<AdminDashboardResponseDTO.UserRowDTO> users, String role) {
+        return users.stream().filter(user -> role.equalsIgnoreCase(user.getRole())).count();
+    }
+
+    private List<String> buildDepartmentOptions(List<AdminDashboardResponseDTO.UserRowDTO> users) {
+        Set<String> departments = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        departementRepository.findAll().stream()
+                .map(Departement::getNom)
+                .filter(this::hasText)
+                .forEach(departments::add);
+        users.stream()
+                .map(AdminDashboardResponseDTO.UserRowDTO::getDepartment)
+                .filter(this::hasText)
+                .filter(value -> !"Non affecte".equalsIgnoreCase(value))
+                .forEach(departments::add);
+        return departments.stream().toList();
+    }
+
+    private List<String> buildGroupOptions() {
+        Set<String> groups = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        groupeRepository.findAll().stream()
+                .map(Groupe::getLibelle)
+                .filter(this::hasText)
+                .forEach(groups::add);
+        return groups.stream().toList();
+    }
+
+    private List<AdminUserPageResponseDTO.DepartmentUserSummaryDTO> buildDepartmentSummaries(
+            List<AdminDashboardResponseDTO.UserRowDTO> users
+    ) {
+        return buildDepartmentOptions(users).stream()
+                .map(department -> AdminUserPageResponseDTO.DepartmentUserSummaryDTO.builder()
+                        .department(department)
+                        .students(countUsersByRoleAndDepartment(users, "Etudiant", department))
+                        .professors(countUsersByRoleAndDepartment(users, "Professeur", department))
+                        .build())
+                .toList();
+    }
+
+    private long countUsersByRoleAndDepartment(
+            List<AdminDashboardResponseDTO.UserRowDTO> users,
+            String role,
+            String department
+    ) {
+        return users.stream()
+                .filter(user -> role.equalsIgnoreCase(user.getRole()))
+                .filter(user -> department.equalsIgnoreCase(user.getDepartment()))
+                .count();
+    }
+
+    private List<AdminUserPageResponseDTO.DepartmentProfessorsDTO> buildProfessorsByDepartment(
+            List<AdminDashboardResponseDTO.UserRowDTO> users
+    ) {
+        return users.stream()
+                .filter(user -> "Professeur".equalsIgnoreCase(user.getRole()))
+                .filter(user -> hasText(user.getDepartment()))
+                .collect(Collectors.groupingBy(
+                        AdminDashboardResponseDTO.UserRowDTO::getDepartment,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ))
+                .entrySet()
+                .stream()
+                .map(entry -> AdminUserPageResponseDTO.DepartmentProfessorsDTO.builder()
+                        .department(entry.getKey())
+                        .professors(entry.getValue())
+                        .build())
+                .toList();
+    }
+
+    private boolean isAllFilter(String value) {
+        return !hasText(value) || "Tous".equalsIgnoreCase(value.trim());
+    }
+
+    private boolean equalsFilter(String actual, String expected) {
+        return hasText(actual) && hasText(expected) && actual.trim().equalsIgnoreCase(expected.trim());
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isBlank();
     }
 
     private List<AdminDashboardResponseDTO.ExamRowDTO> buildExams() {
