@@ -997,11 +997,11 @@
                 </select>
               </label>
               <label>
-                Classe
-                <select formControlName="groupId">
-                  <option [ngValue]="0" disabled>Choisir une classe</option>
-                  @for (group of examPlanningOptions()?.groups ?? []; track group.id) {
-                    <option [ngValue]="group.id">{{ group.label }} - {{ group.meta }}</option>
+                Filiere
+                <select formControlName="departmentId">
+                  <option [ngValue]="0" disabled>Choisir une filiere</option>
+                  @for (department of examPlanningOptions()?.departments ?? []; track department.id) {
+                    <option [ngValue]="department.id">{{ department.label }}</option>
                   }
                 </select>
               </label>
