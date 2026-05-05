@@ -91,10 +91,6 @@
         <article class="hero-card">
           <span class="eyebrow">Pilotage pedagogique</span>
           <h2>Suivre les cours, groupes et prochaines seances au meme endroit.</h2>
-          <p>
-            Le professeur accede rapidement aux enseignements assignes, a ses groupes et aux
-            actions principales de suivi academique.
-          </p>
           <div class="hero-actions">
             <button type="button" class="secondary-button" (click)="setSection('schedule')">
               Voir emploi du temps
@@ -235,7 +231,6 @@
             <div>
               <span class="eyebrow">Planning hebdomadaire</span>
               <h2>Emploi du temps du professeur</h2>
-              <p>Les seances sont organisees par jour avec horaire, salle, matiere et groupe.</p>
             </div>
             <span class="counter">{{ sessions().length }} seances</span>
           </div>
@@ -284,7 +279,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Evaluations</span>
             <h2>{{ editingEvaluationId() ? 'Modifier une evaluation' : 'Creer une evaluation' }}</h2>
-            <p>Le professeur prepare les DS, examens et examens TP lies a ses seances.</p>
           </div>
 
           <form [formGroup]="evaluationForm" (ngSubmit)="submitEvaluation()">
@@ -385,7 +379,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Saisie des notes</span>
             <h2>Choisir un groupe et une evaluation</h2>
-            <p>Les notes sont preparees dans le tableau puis soumises a l'administration.</p>
           </div>
 
           <form [formGroup]="gradeForm" (ngSubmit)="submitGrades()">
@@ -486,7 +479,6 @@
           <div class="panel-heading">
             <span class="eyebrow">Gestion presences</span>
             <h2>Preparer l'appel</h2>
-            <p>Les etudiants sont presents par defaut. Marquez seulement les absents.</p>
           </div>
 
           <form [formGroup]="attendanceForm" (ngSubmit)="submitAttendance()">
@@ -563,7 +555,6 @@
             <div>
               <span class="eyebrow">Appel</span>
               <h2>Statuts des etudiants</h2>
-              <p>Cliquez sur une ligne pour basculer entre present et absent.</p>
             </div>
             <span class="counter">{{ attendanceStudents().length }} etudiants</span>
           </div>
