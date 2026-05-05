@@ -151,13 +151,13 @@ public class AdminDashboardService {
         return userRepository.findAll().stream()
                 .sorted(Comparator.comparing(User::getId))
                 .map(user -> AdminDashboardResponseDTO.UserRowDTO.builder()
-                        .name(user.getNomComplet())
-                        .email(user.getEmail())
+                        .name(defaultText(user.getNomComplet(), "Utilisateur sans nom"))
+                        .email(defaultText(user.getEmail(), "Email non renseigne"))
                         .role(resolveRole(user))
                         .status(user.isActif() ? "Active" : "Pending")
-                        .department(resolveDepartment(user))
-                        .group(resolveGroup(user))
-                        .specialty(resolveSpecialty(user))
+                        .department(defaultText(resolveDepartment(user), "Non affecte"))
+                        .group(defaultText(resolveGroup(user), "Non affecte"))
+                        .specialty(defaultText(resolveSpecialty(user), "Non renseigne"))
                         .build())
                 .toList();
     }
@@ -242,7 +242,7 @@ public class AdminDashboardService {
     ) {
         return users.stream()
                 .filter(user -> role.equalsIgnoreCase(user.getRole()))
-                .filter(user -> department.equalsIgnoreCase(user.getDepartment()))
+                .filter(user -> equalsFilter(user.getDepartment(), department))
                 .count();
     }
 
@@ -280,6 +280,10 @@ public class AdminDashboardService {
 
     private boolean hasText(String value) {
         return value != null && !value.trim().isBlank();
+    }
+
+    private String defaultText(String value, String fallback) {
+        return hasText(value) ? value.trim() : fallback;
     }
 
     private List<AdminDashboardResponseDTO.ExamRowDTO> buildExams() {
@@ -321,7 +325,8 @@ public class AdminDashboardService {
 
     private String resolveDepartment(User user) {
         if (user instanceof Etudiant etudiant && etudiant.getGroupe() != null) {
-            return etudiant.getGroupe().getDepartement().getNom();
+            Departement departement = etudiant.getGroupe().getDepartement();
+            return departement == null ? "Non affecte" : defaultText(departement.getNom(), "Non affecte");
         }
         if (user instanceof Professeur professeur) {
             return enseignementRepository.findByProfesseurId(professeur.getId()).stream()
@@ -340,12 +345,12 @@ public class AdminDashboardService {
             return "Non affecte";
         }
 
-        return enseignement.getMatiere().getDepartement().getNom();
+        return defaultText(enseignement.getMatiere().getDepartement().getNom(), "Non affecte");
     }
 
     private String resolveGroup(User user) {
         if (user instanceof Etudiant etudiant && etudiant.getGroupe() != null) {
-            return etudiant.getGroupe().getLibelle();
+            return defaultText(etudiant.getGroupe().getLibelle(), "Non affecte");
         }
         if (user instanceof Professeur) {
             return "Tous les groupes";
@@ -355,13 +360,13 @@ public class AdminDashboardService {
 
     private String resolveSpecialty(User user) {
         if (user instanceof Professeur professeur) {
-            return professeur.getGrade();
+            return defaultText(professeur.getGrade(), "Non renseigne");
         }
         if (user instanceof Etudiant etudiant) {
-            return etudiant.getNiveau();
+            return defaultText(etudiant.getNiveau(), "Non renseigne");
         }
         if (user instanceof Administrateur administrateur) {
-            return administrateur.getFonction();
+            return defaultText(administrateur.getFonction(), "Non renseigne");
         }
         return "Profil general";
     }
