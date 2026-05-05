@@ -1158,6 +1158,27 @@ label {
   text-transform: uppercase;
 }
 
+.exam-week-status,
+.generated-week-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(223, 208, 184, 0.12);
+  border-radius: 16px;
+  background: rgba(34, 40, 49, 0.38);
+  color: var(--admin-soft);
+}
+
+.exam-week-status strong {
+  color: var(--admin-text);
+}
+
+.generated-week-summary {
+  margin-bottom: 14px;
+}
+
 .exam-rule-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

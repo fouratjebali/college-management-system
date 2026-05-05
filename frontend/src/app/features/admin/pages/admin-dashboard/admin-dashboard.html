@@ -987,6 +987,11 @@
             <h2>DS et examens</h2>
           </div>
 
+          <div class="exam-week-status">
+            <strong>{{ examWeekPlanningTitle() }}</strong>
+            <span>{{ examWeekPlanningMessage() }}</span>
+          </div>
+
           <form [formGroup]="examWeekForm" (ngSubmit)="generateExamWeek()">
             <div class="field-row">
               <label>
@@ -1051,6 +1056,13 @@
             <span class="counter">{{ examDrafts().length }} epreuve(s)</span>
           </div>
 
+          <div class="generated-week-summary">
+            <span class="status-pill" [class.pending]="examWeekPlanningStatus() !== 'published'">
+              {{ examWeekPlanningTitle() }}
+            </span>
+            <small>{{ examWeekPlanningMessage() }}</small>
+          </div>
+
           @if (examDrafts().length > 0) {
             <div class="generated-week-grid">
               @for (draft of examDrafts(); track draft.id) {
@@ -1075,11 +1087,24 @@
               }
             </div>
             <div class="form-actions publish-week-actions">
-              <button class="primary-button" type="button" (click)="submitExamDrafts()">Publier la semaine</button>
+              <button
+                class="primary-button"
+                type="button"
+                [disabled]="!canPublishExamWeek()"
+                (click)="submitExamDrafts()"
+              >
+                Publier la semaine
+              </button>
               <button class="secondary-button" type="button" (click)="clearGeneratedWeek()">Vider la generation</button>
             </div>
           } @else {
-            <p class="empty-state">Generez une semaine DS ou examens pour afficher le planning modifiable.</p>
+            @if (examWeekPlanningStatus() === 'published') {
+              <p class="empty-state">Semaine publiee. Consultez le calendrier pour verifier les epreuves.</p>
+            } @else if (examWeekPlanningStatus() === 'draft') {
+              <p class="empty-state">Planning enregistre en brouillon. Consultez le calendrier pour finaliser.</p>
+            } @else {
+              <p class="empty-state">Generez une semaine DS ou examens pour afficher le planning modifiable.</p>
+            }
           }
         </article>
 

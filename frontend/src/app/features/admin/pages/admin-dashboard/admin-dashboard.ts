@@ -34,6 +34,8 @@ type AdminSection =
   | 'exams'
   | 'notes';
 
+type ExamWeekPlanningStatus = 'idle' | 'draft' | 'publishing' | 'published' | 'error';
+
 interface NavItem {
   id: AdminSection;
   label: string;
@@ -432,6 +434,8 @@ export class AdminDashboardComponent {
   protected readonly examPlanningOptions = signal<AdminExamPlanningOptions | null>(null);
   protected readonly plannedExams = signal<readonly AdminPlannedExam[]>([]);
   protected readonly examDrafts = signal<readonly ExamDraftRow[]>([]);
+  protected readonly examWeekPlanningStatus = signal<ExamWeekPlanningStatus>('idle');
+  protected readonly examWeekPlanningMessage = signal('Aucune semaine generee pour le moment.');
   protected readonly selectedTpRequestId = signal<number | null>(null);
   protected readonly noteValidationEvaluations = signal<readonly AdminNoteValidationEvaluation[]>([]);
   protected readonly selectedNoteValidationDetail = signal<AdminNoteValidationDetail | null>(null);
@@ -484,6 +488,25 @@ export class AdminDashboardComponent {
       };
     });
   });
+
+  protected readonly examWeekPlanningTitle = computed(() => {
+    switch (this.examWeekPlanningStatus()) {
+      case 'draft':
+        return 'Brouillon genere';
+      case 'publishing':
+        return 'Publication en cours';
+      case 'published':
+        return 'Semaine planifiee';
+      case 'error':
+        return 'Generation bloquee';
+      default:
+        return 'Etat de generation';
+    }
+  });
+
+  protected readonly canPublishExamWeek = computed(
+    () => this.examDrafts().length > 0 && this.examWeekPlanningStatus() !== 'publishing'
+  );
 
   protected readonly selectedNoteEvaluation = computed(() =>
     this.selectedNoteValidationDetail()?.evaluation ?? null
@@ -1022,10 +1045,22 @@ export class AdminDashboardComponent {
 
   protected removeExamDraft(draftId: number): void {
     this.examDrafts.update((drafts) => drafts.filter((draft) => draft.id !== draftId));
+
+    const remaining = this.examDrafts().length;
+    if (remaining === 0) {
+      this.examWeekPlanningStatus.set('idle');
+      this.examWeekPlanningMessage.set('Aucune epreuve dans le brouillon de semaine.');
+      return;
+    }
+
+    this.examWeekPlanningStatus.set('draft');
+    this.examWeekPlanningMessage.set(`${remaining} epreuve(s) restent dans le brouillon.`);
   }
 
   protected clearGeneratedWeek(): void {
     this.examDrafts.set([]);
+    this.examWeekPlanningStatus.set('idle');
+    this.examWeekPlanningMessage.set('Generation videe. Lancez une nouvelle semaine DS ou examens.');
   }
 
   protected planTpRequest(request: TpExamRequest): void {
@@ -1047,6 +1082,8 @@ export class AdminDashboardComponent {
   protected generateExamWeek(): void {
     if (this.examWeekForm.invalid) {
       this.examWeekForm.markAllAsTouched();
+      this.examWeekPlanningStatus.set('error');
+      this.examWeekPlanningMessage.set('Completez le type, la filiere, les dates et le batiment avant de generer.');
       return;
     }
 
@@ -1060,7 +1097,9 @@ export class AdminDashboardComponent {
     const startSlots = evaluationType === 'DS' ? ['09:00', '10:30', '12:00'] : ['09:00', '11:00'];
 
     if (!groups.length || !subjects.length) {
-      this.toastMessage.set('Aucun groupe ou matiere disponible pour cette filiere.');
+      this.examDrafts.set([]);
+      this.examWeekPlanningStatus.set('error');
+      this.examWeekPlanningMessage.set('Aucun groupe ou matiere disponible pour cette filiere.');
       return;
     }
 
@@ -1092,8 +1131,12 @@ export class AdminDashboardComponent {
     );
 
     this.examDrafts.set(drafts);
-    this.toastMessage.set(
-      `${drafts.length} epreuve(s) generee(s) pour la filiere ${this.optionLabel('department', departmentId)}.`
+    this.examWeekPlanningStatus.set('draft');
+    this.examWeekPlanningMessage.set(
+      `${drafts.length} epreuve(s) generee(s) pour la filiere ${this.optionLabel(
+        'department',
+        departmentId
+      )}. Verifiez puis publiez la semaine.`
     );
   }
 
@@ -1135,9 +1178,13 @@ export class AdminDashboardComponent {
     const drafts = this.examDrafts();
 
     if (drafts.length === 0) {
-      this.toastMessage.set('Ajoutez au moins un examen au lot avant de planifier la semaine.');
+      this.examWeekPlanningStatus.set('error');
+      this.examWeekPlanningMessage.set('Generez au moins une epreuve avant de publier la semaine.');
       return;
     }
+
+    this.examWeekPlanningStatus.set('publishing');
+    this.examWeekPlanningMessage.set(`${drafts.length} epreuve(s) en cours de planification...`);
 
     this.dashboardApi
       .createPlannedExams({ exams: drafts.map(({ id, ...request }) => request) })
@@ -1149,13 +1196,17 @@ export class AdminDashboardComponent {
           if (weekStart) {
             this.dashboardApi.publishExamWeek(weekStart).subscribe({
               next: (publishedExams) => {
-                this.toastMessage.set(`${publishedExams.length} examen(s) publie(s) pour la semaine.`);
+                this.examWeekPlanningStatus.set('published');
+                this.examWeekPlanningMessage.set(
+                  `${publishedExams.length} epreuve(s) publiee(s) pour la semaine du ${this.formatIsoDate(weekStart)}.`
+                );
                 this.loadExamPlanning();
                 this.loadDashboard();
               },
               error: () => {
-                this.toastMessage.set(
-                  `${exams.length} examen(s) planifie(s), publication semaine a relancer depuis le calendrier.`
+                this.examWeekPlanningStatus.set('draft');
+                this.examWeekPlanningMessage.set(
+                  `${exams.length} epreuve(s) planifiee(s) en brouillon. Publication a relancer depuis le calendrier.`
                 );
                 this.loadExamPlanning();
                 this.loadDashboard();
@@ -1164,12 +1215,14 @@ export class AdminDashboardComponent {
             return;
           }
 
-          this.toastMessage.set(`${exams.length} examen(s) planifie(s) en brouillon.`);
+          this.examWeekPlanningStatus.set('draft');
+          this.examWeekPlanningMessage.set(`${exams.length} epreuve(s) planifiee(s) en brouillon.`);
           this.loadExamPlanning();
           this.loadDashboard();
         },
         error: (error) => {
-          this.toastMessage.set(
+          this.examWeekPlanningStatus.set('error');
+          this.examWeekPlanningMessage.set(
             error.error?.message ||
               error.error?.error ||
               'Impossible de planifier ce lot. Verifiez les conflits de salle, groupe ou professeur.'
