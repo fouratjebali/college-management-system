@@ -307,7 +307,7 @@ Dans le cadre de notre Scrum allégé hybride adapté à un binôme, les rôles 
 
 \subsubsection{Organisation en Sprints}
 
-Le projet est organisé en \textbf{six sprints} : un sprint d'initialisation technique, quatre sprints fonctionnels alignés sur les modules réellement livrés, puis un sprint final réservé aux tests, à la validation et à la finalisation.
+Le projet est organisé en \textbf{sept sprints} : un sprint d'initialisation technique, quatre sprints fonctionnels alignés sur les modules principaux, un sprint de stabilisation et de validation, puis un sprint d'amélioration UI/UX destiné à renforcer l'expérience utilisateur avant la soutenance.
 
 \begin{table}[H]
 \centering
@@ -326,7 +326,9 @@ Sprint 3 & 2 semaines & Module professeur : dashboard, enseignements, séances, 
 \hline
 Sprint 4 & 2 semaines & Module étudiant : annonces par défaut, notifications, notes publiées, emploi du temps, calendrier des examens, supports, rattrapages et suivi des absences & 36 \\
 \hline
-Sprint 5 & À définir & Tests, validation et finalisation du projet & À compléter \\
+Sprint 5 & 1 semaine & Tests, validation globale, corrections finales et finalisation documentaire & 20 \\
+\hline
+Sprint 6 & 1 semaine & Améliorations UI/UX : thème clair/sombre, sidebar masquable, centre de notifications, calendrier académique, pagination et ergonomie des examens & 34 \\
 \hline
 \end{tabular}
 \end{table}
@@ -337,7 +339,7 @@ Sprint 5 & À définir & Tests, validation et finalisation du projet & À compl�
 La \textbf{Definition of Done} définit les critères qu'une User Story doit satisfaire pour être considérée comme terminée. Elle s'applique à l'ensemble des sprints du projet :
 
 \begin{itemize}[itemsep=0.4em]
-    \item  Le code source est versionné sur GitHub dans la branche appropriée (feature branch mergée dans develop)
+    \item  Le code source est versionné sur GitHub dans la branche appropriée (feature branch mergée dans \texttt{dev})
     \item  Les tests unitaires associés sont écrits et passent avec succès (couverture $\geq$ 75\%)
     \item  Le code a été relu par l'autre membre de l'équipe (code review)
     \item  La fonctionnalité est intégrée et testée dans l'environnement Docker Compose
@@ -1347,24 +1349,390 @@ Le Sprint 5 sera consacré aux tests, à la validation globale, aux corrections 
 
 \section{Présentation du sprint}
 
+Le Sprint 5 correspond à la phase de stabilisation du projet. Après la livraison des trois espaces principaux, l'objectif n'est plus d'ajouter un nouveau module métier lourd, mais de vérifier la cohérence globale de l'application, corriger les anomalies bloquantes, renforcer la qualité du rendu et préparer les éléments nécessaires à la soutenance.
+
+Ce sprint couvre donc les tests fonctionnels transverses, les tests de compilation, la vérification des flux de sécurité, la validation des règles de visibilité, la synchronisation entre le code et le rapport, ainsi que la préparation d'un scénario de démonstration.
+
 \section{Sprint Goal}
+
+Valider l'application de bout en bout afin de disposer d'une version stable, démontrable et documentée, couvrant les parcours administrateur, professeur et étudiant sans régression fonctionnelle majeure.
 
 \section{Sprint Backlog}
 
+\begin{longtable}{|p{1.6cm}|p{6cm}|p{5.6cm}|p{1.4cm}|}
+\caption{Sprint Backlog -- Sprint 5}\\
+\hline
+\textbf{ID} & \textbf{User Story / Tâche} & \textbf{Critères d'acceptation} & \textbf{Pts} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{User Story / Tâche} & \textbf{Critères d'acceptation} & \textbf{Pts} \\
+\hline
+\endhead
+S5-01 & En tant que développeur, je veux vérifier la compilation frontend & La commande de build Angular se termine sans erreur bloquante & 3 \\
+\hline
+S5-02 & En tant que développeur, je veux vérifier les tests backend & Les tests Spring Boot s'exécutent avec une configuration Java compatible & 4 \\
+\hline
+S5-03 & En tant qu'équipe, nous voulons valider les parcours de connexion & Chaque rôle est redirigé vers son espace et ne peut pas accéder aux autres espaces & 3 \\
+\hline
+S5-04 & En tant qu'équipe, nous voulons vérifier les règles de publication & Les notes, annonces et examens non publiés ne sont pas visibles côté étudiant & 4 \\
+\hline
+S5-05 & En tant qu'équipe, nous voulons corriger les retours UI bloquants & Les messages inutiles sont supprimés et les sections critiques restent lisibles & 3 \\
+\hline
+S5-06 & En tant qu'équipe, nous voulons finaliser le rapport & Le rapport décrit les fonctionnalités réellement livrées et la méthode suivie & 3 \\
+\hline
+\end{longtable}
+
 \section{Analyse fonctionnelle}
+
+La validation concerne tous les acteurs du système :
+
+\begin{itemize}[itemsep=0.4em]
+    \item l'\textbf{administrateur} doit pouvoir gérer les données académiques, superviser les présences, planifier les examens et valider les notes ;
+    \item le \textbf{professeur} doit pouvoir consulter ses enseignements, créer des évaluations, saisir les notes, gérer les présences, créer des rattrapages et déposer des supports ;
+    \item l'\textbf{étudiant} doit pouvoir consulter uniquement les informations publiées ou autorisées pour son groupe ;
+    \item le \textbf{système} doit garantir l'authentification, le filtrage par rôle, la cohérence des données et la traçabilité des opérations.
+\end{itemize}
+
+Les cas de test ont été organisés autour des parcours utilisateurs plutôt qu'autour de fichiers isolés. Cette approche permet de vérifier que les contrôleurs, services backend, appels HTTP Angular et composants d'interface fonctionnent ensemble.
 
 \section{Conception du sprint}
 
+\subsection*{Plan de validation}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.75cm]
+    \node[sprintstart] (start) {};
+    \node[sprintactivity, below=of start] (build) {Compiler frontend et backend};
+    \node[sprintactivity, below=of build] (auth) {Tester authentification et rôles};
+    \node[sprintactivity, below=of auth] (admin) {Valider parcours administrateur};
+    \node[sprintactivity, below=of admin] (prof) {Valider parcours professeur};
+    \node[sprintactivity, below=of prof] (student) {Valider parcours étudiant};
+    \node[sprintactivity, below=of student] (fix) {Corriger anomalies détectées};
+    \node[sprintactivity, below=of fix] (doc) {Synchroniser rapport et code};
+    \node[sprintend, below=of doc] (end) {};
+
+    \draw[sprintarrow] (start) -- (build);
+    \draw[sprintarrow] (build) -- (auth);
+    \draw[sprintarrow] (auth) -- (admin);
+    \draw[sprintarrow] (admin) -- (prof);
+    \draw[sprintarrow] (prof) -- (student);
+    \draw[sprintarrow] (student) -- (fix);
+    \draw[sprintarrow] (fix) -- (doc);
+    \draw[sprintarrow] (doc) -- (end);
+\end{tikzpicture}
+\caption{Processus de validation globale du Sprint 5}
+\label{fig:sprint5-validation-process}
+\end{figure}
+
 \section{Réalisation}
+
+Les principales réalisations du Sprint 5 sont :
+
+\begin{itemize}[itemsep=0.4em]
+    \item suppression des messages de succès non nécessaires dans les espaces administrateur, professeur et étudiant afin de réduire le bruit visuel ;
+    \item correction de l'espacement entre les barres supérieures et les sections principales ;
+    \item vérification des filtres côté administrateur, notamment les filtres par département, groupe et rôle ;
+    \item durcissement de l'endpoint paginé des utilisateurs pour éviter les erreurs serveur lors du filtrage ;
+    \item mise à jour du rapport afin de refléter les modules réellement implémentés ;
+    \item préparation d'un scénario de démonstration couvrant les trois rôles.
+\end{itemize}
+
+Le Sprint 5 a aussi servi à vérifier que les améliorations livrées dans les sprints précédents restaient compatibles entre elles : authentification JWT, guards Angular, endpoints REST, services métier, signaux Angular et affichage conditionnel des données publiées.
 
 \section{Tests}
 
+\subsection*{Tests techniques}
+
+\begin{itemize}[itemsep=0.4em]
+    \item \textbf{Frontend} : exécution de \texttt{npm run build} dans le dossier \texttt{frontend}. Le build Angular vérifie le typage TypeScript, les templates et la génération des bundles.
+    \item \textbf{Backend} : exécution des tests Maven avec un JDK compatible Java 17 ou supérieur. Les tests couvrent notamment le contexte Spring Boot, le stockage de fichiers et certaines règles de séances.
+    \item \textbf{Intégration} : vérification manuelle des appels API via l'interface Angular et le proxy local.
+\end{itemize}
+
+\subsection*{Tests fonctionnels}
+
+\begin{longtable}{|p{4cm}|p{9.5cm}|}
+\caption{Synthèse des tests fonctionnels}\\
+\hline
+\textbf{Parcours} & \textbf{Résultat attendu} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Parcours} & \textbf{Résultat attendu} \\
+\hline
+\endhead
+Connexion administrateur & Accès à l'espace administrateur, chargement des indicateurs et des sections de gestion \\
+\hline
+Connexion professeur & Accès à l'espace professeur, chargement des enseignements, groupes, séances, notes et supports \\
+\hline
+Connexion étudiant & Accès à l'espace étudiant avec les annonces publiées affichées par défaut \\
+\hline
+Validation des notes & Notes soumises, validées, rejetées ou publiées selon le workflow défini \\
+\hline
+Publication des examens & Examens visibles côté étudiant uniquement après publication \\
+\hline
+Présences & Appel optimisé côté professeur avec étudiants présents par défaut et marquage des absents \\
+\hline
+Pagination utilisateurs & Chargement paginé côté administrateur sans afficher tous les comptes en une seule fois \\
+\hline
+\end{longtable}
+
 \section{Review}
+
+La revue du Sprint 5 confirme que l'application est exploitable pour une démonstration de soutenance. Les trois espaces sont accessibles, les données sont chargées depuis le backend et les principales règles métier sont respectées.
+
+Les tests ont aussi permis d'identifier des améliorations UI utiles pour le sprint suivant : meilleure lisibilité des sections, réduction des messages inutiles, thème clair/sombre, sidebar masquable, centre de notifications et calendrier académique plus interactif.
 
 \section{Rétrospective}
 
+Le point positif principal du Sprint 5 est la stabilisation progressive de l'application. Le fait de tester par parcours utilisateur a permis de détecter des problèmes plus réalistes que des tests isolés.
+
+Les axes d'amélioration identifiés sont :
+
+\begin{itemize}[itemsep=0.4em]
+    \item augmenter la couverture des tests automatisés sur les workflows complexes ;
+    \item documenter systématiquement les règles métier ajoutées pendant le développement ;
+    \item mieux anticiper les performances des listes volumineuses, comme la liste des utilisateurs.
+\end{itemize}
+
 \section{Bilan}
 
+Le Sprint 5 clôture la phase de stabilisation fonctionnelle. L'application peut être présentée avec des parcours cohérents et un rapport synchronisé avec l'état du code.
+
 \section{Sprint suivant}
+
+Le Sprint 6 sera consacré aux améliorations secondaires mais visibles de l'interface : ergonomie, thème clair/sombre, navigation, notifications, calendrier académique et optimisation de certaines vues administrateur.
+
+% ==========================================================
+% CHAPITRE 9 : SPRINT 6
+% ==========================================================
+\chapter{Sprint 6 : Améliorations UI/UX et fonctionnalités secondaires}
+
+\section{Présentation du sprint}
+
+Le Sprint 6 a pour objectif d'améliorer la qualité perçue de l'application. Les modules métier principaux étant déjà livrés, ce sprint se concentre sur l'ergonomie, la lisibilité, la navigation, la performance des listes et l'expérience de démonstration.
+
+Les améliorations apportées touchent principalement les interfaces Angular : espaces administrateur, professeur et étudiant, barres latérales, thème visuel, notifications, calendrier académique, pagination des utilisateurs et planification des examens.
+
+\section{Sprint Goal}
+
+Amener l'interface de l'application à un niveau plus professionnel en ajoutant des fonctionnalités UI transverses, en réduisant les frictions d'utilisation et en améliorant les vues critiques pour la soutenance.
+
+\section{Sprint Backlog}
+
+\begin{longtable}{|p{1.6cm}|p{6cm}|p{5.6cm}|p{1.4cm}|}
+\caption{Sprint Backlog -- Sprint 6}\\
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Critères d'acceptation} & \textbf{Pts} \\
+\hline
+\endfirsthead
+\hline
+\textbf{ID} & \textbf{User Story} & \textbf{Critères d'acceptation} & \textbf{Pts} \\
+\hline
+\endhead
+S6-01 & En tant qu'utilisateur, je veux basculer entre thème clair et sombre & Un bouton avec icône permet de changer le thème dans les espaces principaux & 5 \\
+\hline
+S6-02 & En tant qu'utilisateur, je veux masquer ou afficher la sidebar & La sidebar est visible par défaut et peut être repliée depuis un bouton intégré & 5 \\
+\hline
+S6-03 & En tant qu'utilisateur, je veux consulter un centre de notifications & Les informations importantes sont regroupées dans un panneau dédié & 5 \\
+\hline
+S6-04 & En tant qu'administrateur, je veux un calendrier académique plus lisible & Les événements académiques sont affichés de manière structurée et interactive & 4 \\
+\hline
+S6-05 & En tant qu'administrateur, je veux paginer la liste des utilisateurs & Le backend et le frontend chargent les comptes par page avec filtres & 5 \\
+\hline
+S6-06 & En tant qu'administrateur, je veux séparer examens et notes & Les sections examens et notes sont indépendantes dans le menu administrateur & 3 \\
+\hline
+S6-07 & En tant qu'administrateur, je veux planifier une semaine d'examens par filière & Le générateur produit une semaine DS ou examens pour toute une filière & 5 \\
+\hline
+S6-08 & En tant qu'administrateur, je veux savoir si la semaine a été générée ou publiée & Un statut visible indique l'état de génération et de publication & 2 \\
+\hline
+\end{longtable}
+
+\section{Analyse fonctionnelle}
+
+Le Sprint 6 répond à des besoins d'usage quotidien :
+
+\begin{itemize}[itemsep=0.4em]
+    \item \textbf{Lisibilité} : les utilisateurs peuvent choisir un thème adapté à leurs préférences.
+    \item \textbf{Espace de travail} : la sidebar masquable libère de l'espace pour les tableaux et les calendriers.
+    \item \textbf{Priorisation} : le centre de notifications regroupe les éléments importants sans multiplier les messages temporaires.
+    \item \textbf{Performance} : la pagination évite de charger tous les utilisateurs dans une seule page.
+    \item \textbf{Planification} : la génération des semaines DS et examens se fait par filière, puis peut être revue avant publication.
+\end{itemize}
+
+\section{Conception du sprint}
+
+\subsection*{Diagramme de cas d'utilisation}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=1.05cm and 1.45cm, scale=0.84, transform shape]
+    \node[sprintactor] (user) {Utilisateur};
+    \node[sprintcase, right=3.0cm of user] (theme) {Changer\\thème};
+    \node[sprintcase, above=of theme] (sidebar) {Masquer\\sidebar};
+    \node[sprintcase, below=of theme] (notif) {Consulter\\notifications};
+    \node[sprintactor, below=2.0cm of user] (admin) {Administrateur};
+    \node[sprintcase, right=3.0cm of admin] (calendar) {Consulter\\calendrier};
+    \node[sprintcase, above=of calendar] (users) {Paginer\\utilisateurs};
+    \node[sprintcase, below=of calendar] (week) {Générer semaine\\par filière};
+    \node[sprintboundary, fit=(sidebar)(theme)(notif)(users)(calendar)(week), label=above:{Améliorations UI/UX}] {};
+
+    \draw[sprintline] (user) -- (theme);
+    \draw[sprintline] (user) |- (sidebar);
+    \draw[sprintline] (user) |- (notif);
+    \draw[sprintline] (admin) -- (calendar);
+    \draw[sprintline] (admin) |- (users);
+    \draw[sprintline] (admin) |- (week);
+\end{tikzpicture}
+\caption{Cas d'utilisation des améliorations UI/UX}
+\label{fig:sprint6-usecase}
+\end{figure}
+
+\subsection*{Diagramme d'activité -- génération d'une semaine d'examens}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[node distance=0.75cm]
+    \node[sprintstart] (start) {};
+    \node[sprintactivity, below=of start] (select) {Choisir type, filière et dates};
+    \node[sprintdecision, below=of select] (valid) {Formulaire\\valide ?};
+    \node[sprintactivity, below=of valid] (generate) {Générer les épreuves};
+    \node[sprintactivity, below=of generate] (review) {Modifier horaires, salles ou surveillants};
+    \node[sprintactivity, below=of review] (publish) {Publier la semaine};
+    \node[sprintactivity, below=of publish] (status) {Afficher statut planifié};
+    \node[sprintend, below=of status] (end) {};
+    \node[sprintactivity, right=2.6cm of valid] (error) {Afficher état bloqué};
+
+    \draw[sprintarrow] (start) -- (select);
+    \draw[sprintarrow] (select) -- (valid);
+    \draw[sprintarrow] (valid) -- node[right, font=\scriptsize]{Oui} (generate);
+    \draw[sprintarrow] (generate) -- (review);
+    \draw[sprintarrow] (review) -- (publish);
+    \draw[sprintarrow] (publish) -- (status);
+    \draw[sprintarrow] (status) -- (end);
+    \draw[sprintarrow] (valid) -- node[above, font=\scriptsize]{Non} (error);
+\end{tikzpicture}
+\caption{Activité de génération et publication d'une semaine d'examens}
+\label{fig:sprint6-exam-week-activity}
+\end{figure}
+
+\section{Réalisation}
+
+\subsection*{Thème clair/sombre}
+
+Un service de thème centralise l'état visuel de l'application. Les espaces administrateur, professeur et étudiant disposent d'un bouton avec icône permettant de basculer entre thème clair et thème sombre. Les couleurs ont été ajustées afin d'éviter une palette incohérente en mode clair.
+
+\subsection*{Sidebar masquable}
+
+La navigation latérale est visible par défaut. Un bouton intégré à la sidebar permet de la replier et de la réafficher. Ce comportement améliore l'utilisation des vues larges comme les tableaux, calendriers et écrans de planification.
+
+\subsection*{Centre de notifications}
+
+Un composant partagé \texttt{NotificationCenterComponent} regroupe les éléments importants : alertes de présence, notes, examens, annonces et événements académiques. Cette approche remplace les messages temporaires inutiles par un espace consultable et plus stable.
+
+\subsection*{Calendrier académique interactif}
+
+Le calendrier académique présente les événements liés aux examens, séances, années académiques et échéances. Il sert de support visuel pour la supervision et facilite la lecture des semaines planifiées.
+
+\subsection*{Pagination des utilisateurs}
+
+La liste des utilisateurs administrateur a été optimisée par une pagination backend et frontend. Le backend expose un endpoint paginé, tandis que le frontend envoie les paramètres \texttt{page}, \texttt{size}, \texttt{search}, \texttt{role}, \texttt{department} et \texttt{group}. Cette correction évite de charger tous les comptes en une seule fois et améliore les performances.
+
+\subsection*{Planification des examens par filière}
+
+La planification d'une semaine DS ou examens a été modifiée pour fonctionner par filière. L'administrateur choisit le type d'épreuve, la filière, la date de début, la date de fin et le bâtiment. Le système génère des épreuves pour les groupes concernés, avec durée adaptée : 1h pour un DS et 1h30 pour un examen. La semaine générée peut être revue avant publication.
+
+Un statut visible indique si la semaine est non générée, en brouillon, en publication, publiée ou bloquée par une erreur de formulaire. Cela facilite le test et la démonstration.
+
+\section{Tests}
+
+La validation du Sprint 6 couvre :
+
+\begin{itemize}[itemsep=0.4em]
+    \item bascule thème clair/sombre dans les trois espaces ;
+    \item ouverture et fermeture de la sidebar ;
+    \item affichage du centre de notifications ;
+    \item pagination des utilisateurs avec filtres par département, groupe et rôle ;
+    \item génération d'une semaine DS ou examens par filière ;
+    \item publication d'une semaine et affichage du statut de planification ;
+    \item build Angular après modification des composants.
+\end{itemize}
+
+\section{Review}
+
+La revue confirme que le Sprint 6 améliore fortement l'expérience de démonstration. Les interfaces sont plus lisibles, les sections administrateur sont mieux séparées, la navigation devient plus flexible et les listes volumineuses sont moins coûteuses à charger.
+
+\section{Rétrospective}
+
+Ce sprint montre que les fonctionnalités secondaires peuvent avoir un impact important sur la qualité perçue du projet. Les améliorations UI/UX ne changent pas toujours la logique métier, mais elles rendent l'application plus crédible, plus confortable et plus proche d'un produit utilisable.
+
+L'axe d'amélioration restant est de poursuivre la factorisation des composants partagés afin de réduire la taille des fichiers de style et d'éviter la duplication entre les espaces.
+
+\section{Bilan}
+
+Le Sprint 6 complète l'application par une couche ergonomique importante. Le projet final ne se limite plus à des CRUD et tableaux de bord : il propose une interface plus moderne, une navigation adaptable, des notifications centralisées, une planification d'examens plus avancée et une meilleure gestion des volumes de données.
+
+\section{Sprint suivant}
+
+Le projet atteint une version présentable pour la soutenance. Les évolutions futures pourront porter sur l'intelligence artificielle, les statistiques prédictives, les notifications en temps réel et le déploiement cloud.
+
+% ==========================================================
+% CONCLUSION GENERALE
+% ==========================================================
+\chapter*{Conclusion générale}
+\addcontentsline{toc}{chapter}{Conclusion générale}
+
+Ce projet a permis de concevoir et développer une application web de gestion d'institut universitaire couvrant les besoins principaux des administrateurs, professeurs et étudiants. L'application centralise les données académiques, sécurise l'accès par rôle, automatise plusieurs processus répétitifs et améliore la consultation des informations pédagogiques.
+
+Sur le plan technique, le projet repose sur une architecture moderne séparant le frontend Angular, le backend Spring Boot et la base de données PostgreSQL. Cette séparation a facilité l'organisation du code, l'intégration progressive des modules et la maintenance des fonctionnalités.
+
+Les principaux résultats obtenus sont :
+
+\begin{itemize}[itemsep=0.4em]
+    \item une authentification JWT avec redirection par rôle ;
+    \item un espace administrateur pour piloter la structure académique, les utilisateurs, les présences, les examens et les notes ;
+    \item un espace professeur pour gérer les enseignements, évaluations, notes, présences, rattrapages et supports ;
+    \item un espace étudiant pour consulter les annonces, notes publiées, examens, supports, rattrapages et absences ;
+    \item une interface améliorée par thème clair/sombre, sidebar masquable, centre de notifications et calendrier académique ;
+    \item une optimisation des listes volumineuses grâce à la pagination des utilisateurs ;
+    \item une planification plus avancée des semaines DS et examens par filière.
+\end{itemize}
+
+La démarche Scrum allégée hybride a permis de structurer le travail en incréments successifs. Chaque sprint a livré une partie exploitable du système, depuis l'infrastructure jusqu'aux améliorations UI/UX finales. Cette organisation a favorisé l'intégration continue des retours et la correction progressive des limites détectées.
+
+Le projet présente toutefois quelques limites. Certains workflows méritent davantage de tests automatisés, notamment la validation des notes, la publication des examens et le calcul des moyennes. L'application pourrait aussi bénéficier d'une meilleure factorisation frontend afin de réduire la taille des composants et des fichiers de style.
+
+Comme perspectives, nous proposons :
+
+\begin{itemize}[itemsep=0.4em]
+    \item l'ajout de notifications en temps réel avec WebSocket ;
+    \item l'intégration d'un module d'intelligence artificielle pour prédire les risques d'absence excessive ou recommander des créneaux d'examen ;
+    \item l'export PDF/Excel des notes, présences et plannings ;
+    \item l'ajout d'un système de messagerie interne ;
+    \item le déploiement de l'application sur une infrastructure cloud avec sauvegarde automatique de la base de données.
+\end{itemize}
+
+En conclusion, l'application développée répond à la problématique initiale de centralisation et de fiabilisation de la gestion académique. Elle constitue une base solide, extensible et démontrable pour un système de gestion universitaire complet.
+
+% ==========================================================
+% GUIDE DE DEMONSTRATION
+% ==========================================================
+\chapter*{Guide de démonstration pour la soutenance}
+\addcontentsline{toc}{chapter}{Guide de démonstration pour la soutenance}
+
+Pour présenter le projet de manière claire, il est recommandé de suivre le scénario suivant :
+
+\begin{enumerate}[itemsep=0.5em]
+    \item \textbf{Présenter l'objectif général} : expliquer la centralisation des données académiques et les trois rôles principaux.
+    \item \textbf{Montrer la connexion} : se connecter avec un compte administrateur, puis expliquer la sécurité JWT et les guards Angular.
+    \item \textbf{Démontrer l'espace administrateur} : consulter les indicateurs, la liste paginée des utilisateurs, les années académiques, les présences, les examens et les notes.
+    \item \textbf{Tester la génération d'une semaine d'examens} : choisir une filière, générer une semaine DS ou examens, vérifier le statut, modifier une épreuve puis publier.
+    \item \textbf{Démontrer l'espace professeur} : créer une évaluation, saisir les notes, effectuer l'appel de présence optimisé, créer un rattrapage et déposer un support.
+    \item \textbf{Démontrer l'espace étudiant} : afficher les annonces par défaut, consulter les notes publiées, les examens, les supports, les rattrapages et le suivi des absences.
+    \item \textbf{Montrer les améliorations UI} : thème clair/sombre, sidebar masquable, centre de notifications et calendrier académique.
+    \item \textbf{Conclure} : rappeler les technologies utilisées, les résultats obtenus et les perspectives.
+\end{enumerate}
 
 \end{document}
