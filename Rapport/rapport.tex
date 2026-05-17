@@ -1282,10 +1282,28 @@ Le module étudiant est essentiellement consultatif. Il applique les règles de 
 \subsection*{Diagramme de séquence -- consultation des notes}
 
 \begin{figure}[H]
-    \centering
-    \includegraphics[width=14cm]{Diagrammesequence-consultationnotes.png}
-    \caption{Séquence de consultation des notes publiées}
-    \label{fig:sprint4-grade-sequence}
+\centering
+\begin{tikzpicture}[node distance=0.9cm and 0.75cm, scale=0.78, transform shape]
+    \node[sprintseq] (ui) {StudentDashboard};
+    \node[sprintseq, right=of ui] (api) {StudentDashboardApi};
+    \node[sprintseq, right=of api] (ctrl) {StudentDashboardController};
+    \node[sprintseq, right=of ctrl] (svc) {StudentDashboardService};
+    \node[sprintseq, right=of svc] (repo) {Repositories};
+
+    \foreach \x in {ui,api,ctrl,svc,repo}
+        \draw[dashed, gray] (\x.south) -- ++(0,-5.2);
+
+    \draw[sprintarrow] ([yshift=-0.7cm]ui.south) -- node[above, font=\scriptsize]{ouvrir section notes} ([yshift=-0.7cm]api.south);
+    \draw[sprintarrow] ([yshift=-1.3cm]api.south) -- node[above, font=\scriptsize]{GET \texttt{/api/student/dashboard}} ([yshift=-1.3cm]ctrl.south);
+    \draw[sprintarrow] ([yshift=-1.9cm]ctrl.south) -- node[above, font=\scriptsize]{charger étudiant connecté} ([yshift=-1.9cm]svc.south);
+    \draw[sprintarrow] ([yshift=-2.5cm]svc.south) -- node[above, font=\scriptsize]{notes, groupe, enseignements} ([yshift=-2.5cm]repo.south);
+    \draw[sprintarrow] ([yshift=-3.1cm]repo.south) -- node[above, font=\scriptsize]{données persistées} ([yshift=-3.1cm]svc.south);
+    \draw[sprintarrow] ([yshift=-3.7cm]svc.south) -- node[above, font=\scriptsize]{filtrer notes publiées} ([yshift=-3.7cm]ctrl.south);
+    \draw[sprintarrow] ([yshift=-4.3cm]ctrl.south) -- node[above, font=\scriptsize]{dashboard étudiant} ([yshift=-4.3cm]api.south);
+    \draw[sprintarrow] ([yshift=-4.9cm]api.south) -- node[above, font=\scriptsize]{afficher notes et moyennes} ([yshift=-4.9cm]ui.south);
+\end{tikzpicture}
+\caption{Séquence de consultation des notes publiées}
+\label{fig:sprint4-grade-sequence}
 \end{figure}
 
 \subsection*{Diagramme d'activité -- chargement de l'espace étudiant}
